@@ -36,6 +36,24 @@ namespace hgl
     constexpr uint PixelFormatCount=sizeof(pf_list)/sizeof(PixelFormat);
 }//namespace
 
+const PixelFormat *GetPixelFormat(ColorFormat fmt)
+{
+    if(fmt<=ColorFormat::NONE
+     ||fmt>=ColorFormat::END)return(nullptr);
+
+    const PixelFormat *pf=pf_list;
+
+    for(uint i=0;i<PixelFormatCount;i++)
+    {
+        if(pf->format==fmt)
+            return pf;
+
+        ++pf;
+    }
+
+    return nullptr;
+}
+
 const PixelFormat *GetPixelFormat(const char *name)
 {
     if(!name||!*name)return(nullptr);

@@ -63,8 +63,8 @@ struct ColorDataFormat
 
 struct PixelFormat
 {
-    ColorFormat color_format;
-    char name[32];
+    ColorFormat     format;
+    char            name[32];
 
     char            color[4];
     uint8           bits[4];
@@ -75,4 +75,5 @@ public:
     const uint GetPixelBytes()const{return bits[0]+bits[1]+bits[2]+bits[3];}                        ///<获取单个象素所需字节数
 };//
 
+const PixelFormat *GetPixelFormat(ColorFormat);                                                     ///<根据获取获取象素格式类型
 const PixelFormat *GetPixelFormat(const char *name);                                                ///<根据名称获取象素格式类型

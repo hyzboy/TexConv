@@ -8,13 +8,15 @@
 
 using namespace hgl;
 
-const	PixelFormat *   glfmt[4]	={NULL,NULL,NULL,NULL};				//选中格式
-bool					gen_mipmaps	=false;								//是否产生mipmaps
+bool                    sub_folder      =false;
 
-bool					use_color_key=false;							//是否使用ColorKey
-uint8					color_key[3];									//ColorKey颜色
+const	PixelFormat *   pixel_fmt[4]	={nullptr,nullptr,nullptr,nullptr};     //选中格式
+bool					gen_mipmaps	    =false;								    //是否产生mipmaps
 
-const PixelFormat *CheckOpenGLCoreFormat(const cmd_parse &cmd,const char *flag,const PixelFormat *default_format)
+bool					use_color_key   =false;							        //是否使用ColorKey
+uint8					color_key[3];									        //ColorKey颜色
+
+const PixelFormat *ParseParamFormat(const cmd_parse &cmd,const char *flag,const PixelFormat *default_format)
 {
     std::string fmtstr;
 
@@ -27,16 +29,16 @@ const PixelFormat *CheckOpenGLCoreFormat(const cmd_parse &cmd,const char *flag,c
     return default_format;
 }
 
-void CheckOpenGLCoreFormat(const cmd_parse &cmd)
+void ParseParamFormat(const cmd_parse &cmd)
 {
     //指定格式
-    glfmt[0]=CheckOpenGLCoreFormat(cmd,"/R:",      &TextureFormatInfoList[HGL_SF_R8]);
-    glfmt[1]=CheckOpenGLCoreFormat(cmd,"/RG:",     &TextureFormatInfoList[HGL_SF_RG8]);
-    glfmt[2]=CheckOpenGLCoreFormat(cmd,"/RGB:",    &TextureFormatInfoList[HGL_SF_RGB8]);
-    glfmt[3]=CheckOpenGLCoreFormat(cmd,"/RGBA:",   &TextureFormatInfoList[HGL_SF_RGBA8]);
+    pixel_fmt[0]=ParseParamFormat(cmd,"/R:",      GetPixelFormat(ColorFormat::R8UN));
+    pixel_fmt[1]=ParseParamFormat(cmd,"/RG:",     GetPixelFormat(ColorFormat::RG8UN));
+    pixel_fmt[2]=ParseParamFormat(cmd,"/RGB:",    GetPixelFormat(ColorFormat::RGB565));
+    pixel_fmt[3]=ParseParamFormat(cmd,"/RGBA:",   GetPixelFormat(ColorFormat::RGBA8UN));
 }
 
-void CheckColorKey(const cmd_parse &cmd)
+void ParamColorKey(const cmd_parse &cmd)
 {
     std::string ckstr;
 
@@ -71,11 +73,11 @@ int main(int argc,char **argv)
 
     cmd_parse cp(argc,argv);
 
-    if(cp.Find("/s")!=-1)sub=true;						    //检测是否处理子目录
+    if(cp.Find("/s")!=-1)sub_folder=true;					//检测是否处理子目录
     if(cp.Find("/mip")!=-1)gen_mipmaps=true;				//检测是否生成mipmaps
     
-    CheckColorKey(cp);
-    CheckFormat(cp);								        //检测推荐格式
+    ParamColorKey(cp);
+    ParseParamFormat(cp);								        //检测推荐格式
    
     ilInit();
 

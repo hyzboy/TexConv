@@ -37,4 +37,4 @@ set(COMPANY "hyzgame.com")
 set(COPYRIGHT "Copyright (c) 1997-2019 hyzgame.com. All rights reserved.")
 set(IDENTIFIER "com.hyzgame.texconv")
 
-target_link_libraries(TexConv PRIVATE CMCore Qt5::Core Qt5::Gui Qt5::Widgets)
+target_link_libraries(TexConv PRIVATE CMCore CMPlatform Qt5::Core Qt5::Gui Qt5::Widgets)
