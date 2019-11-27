@@ -1,4 +1,4 @@
-#include"config.h"
+﻿#include"config.h"
 #include"json_tools.h"
 #include<iostream>
 #include<hgl/log/LogInfo.h>
@@ -14,7 +14,7 @@ namespace
 bool LoadConfig(const OSString &filename)
 {
     Json::Value js;
-    
+
     if(!LoadJson(js,filename))
     {
         LOG_ERROR(OS_TEXT("load config file<")+filename+OS_TEXT("> failed."));

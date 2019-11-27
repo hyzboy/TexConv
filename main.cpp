@@ -1,4 +1,4 @@
-#include<il/il.h>
+﻿#include<il/il.h>
 #include<il/ilu.h>
 #include<iostream>
 #include"cmd_parse.h"
@@ -83,7 +83,7 @@ int main(int argc,char **argv)
     if(cp.Find("/mip")!=-1)gen_mipmaps=true;				//检测是否生成mipmaps
     
     ParamColorKey(cp);
-    ParseParamFormat(cp);								        //检测推荐格式
+    ParseParamFormat(cp);								    //检测推荐格式
    
     ilInit();
 
