@@ -12,7 +12,7 @@ add_subdirectory(jsoncpp)
 include_directories(jsoncpp/include)
 
 set(SOURCE_FILE main.cpp config.cpp json_tools.cpp cmd_parse.cpp pixel_format.cpp)
-set(HEADER_FILE config.h json_tools.h cmd_parse.h)
+set(HEADER_FILE config.h json_tools.h cmd_parse.h pixel_format.h)
 
 SOURCE_GROUP("Header Files" FILES ${HEADER_FILE})
 SOURCE_GROUP("Source Files" FILES ${SOURCE_FILE})

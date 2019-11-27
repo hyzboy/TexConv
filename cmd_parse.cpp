@@ -11,7 +11,7 @@ int cmd_parse::Find(const std::string &flag)const
     const int count=(const int)args.size();
 
     for(int i=0;i<count;i++)
-        if(args[i]==flag)
+        if(strncmp(flag.c_str(),args[i].c_str(),flag.length())==0)
             return i;
 
     return -1;

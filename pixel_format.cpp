@@ -1,8 +1,24 @@
 #include"pixel_format.h"
 #include<hgl/type/StrChar.h>
+#include<iostream>
+#include<iomanip>
 
 namespace hgl
 {
+    constexpr char *ColorDataName[]=
+    {
+        "NONE",
+
+        "UNORM",
+        "SNORM",
+        "USCALED",
+        "SSCALED",
+        "UINT",
+        "SINT",
+        "UFLOAT",
+        "SFLOAT"
+    };
+
     constexpr PixelFormat pf_list[]=
     {
         {ColorFormat::BGRA4,      "BGRA4",      {'B','G','R','A'},{ 4, 4, 4, 4},ColorDataType::UNORM},
@@ -35,6 +51,18 @@ namespace hgl
 
     constexpr uint PixelFormatCount=sizeof(pf_list)/sizeof(PixelFormat);
 }//namespace
+
+void PrintFormatList()
+{
+    const PixelFormat *pf=pf_list;
+
+    for(uint i=0;i<PixelFormatCount;i++)
+    {
+        std::cout<<std::setw(10)<<pf->name<<" "<<std::setw(3)<<pf->GetPixelBytes()<<" bits "<<ColorDataName[(uint)(pf->type)]<<std::endl;
+
+        ++pf;
+    }
+}
 
 const PixelFormat *GetPixelFormat(ColorFormat fmt)
 {
@@ -69,4 +97,61 @@ const PixelFormat *GetPixelFormat(const char *name)
     }
 
     return nullptr;
+}
+
+/**
+ * 检测是否所有ALPHA一致
+ */
+bool CheckSameAlpha(uint8 *data,uint count)
+{
+    uint8 *p=data;
+
+    while(count--)
+    {
+        if(*p!=*data)return(false);
+
+        p++;
+    }
+
+    return(true);
+}
+
+/**
+* 检测RGB数据是否一致
+*/
+bool CheckSameRGB(uint8 *data,int color,uint count)
+{
+    uint8 *p=data;
+
+    while(count--)
+    {
+        if(memcmp(data,p,color-1))
+            return(false);
+
+        p+=color;
+    }
+
+    return(true);
+}
+
+void MixLA(uint8 *lum,uint8 *alpha,int size)
+{
+    int i;
+
+    for(i=0;i<size;i++)
+    {
+        lum++;
+        *lum++=*alpha++;
+    }
+}
+
+void MixRGBA(uint8 *rgba,uint8 *alpha,int size)
+{
+    int i;
+
+    for(i=0;i<size;i++)
+    {
+        rgba+=3;
+        *rgba++=*alpha++;
+    }
 }

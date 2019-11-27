@@ -26,6 +26,8 @@ const PixelFormat *ParseParamFormat(const cmd_parse &cmd,const char *flag,const 
 
     if(result)return(result);
 
+    std::cerr<<"[FORMAT ERROR] Don't support \""<<fmtstr.c_str()<<"\" format."<<std::endl;
+
     return default_format;
 }
 
@@ -36,6 +38,9 @@ void ParseParamFormat(const cmd_parse &cmd)
     pixel_fmt[1]=ParseParamFormat(cmd,"/RG:",     GetPixelFormat(ColorFormat::RG8UN));
     pixel_fmt[2]=ParseParamFormat(cmd,"/RGB:",    GetPixelFormat(ColorFormat::RGB565));
     pixel_fmt[3]=ParseParamFormat(cmd,"/RGBA:",   GetPixelFormat(ColorFormat::RGBA8UN));
+
+    for(uint i=0;i<4;i++)
+        std::cout<<i<<": "<<pixel_fmt[i]->name<<std::endl;
 }
 
 void ParamColorKey(const cmd_parse &cmd)
@@ -62,12 +67,13 @@ int main(int argc,char **argv)
     if(argc<=1)
     {
         std::cout<< "Command format:\n"
-                    "\tTexConv [/s] [/mip] <filename or pathname>\n"
+                    "\tTexConv [/R:][/RG:][/RGB:][/RGBA:] [/s] [/mip] <filename or pathname>\n"
                     "\n"
                     "Params:\n"
                     "\t/s : proc sub-directory\n"
-                    "\n\n";
+                    "\n";
 
+        PrintFormatList();
         return 0;
     }
 
@@ -84,4 +90,5 @@ int main(int argc,char **argv)
 
 
 	ilShutDown();
+    return 0;
 }
