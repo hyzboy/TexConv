@@ -5,8 +5,12 @@
 #include"pixel_format.h"
 #include<hgl/type/DataType.h>
 #include<hgl/type/StrChar.h>
+#include<hgl/Time.h>
+#include<hgl/filesystem/EnumFile.h>
+#include<hgl/log/LogInfo.h>
 
 using namespace hgl;
+using namespace hgl::filesystem;
 
 bool                    sub_folder      =false;
 
@@ -60,7 +64,29 @@ void ParamColorKey(const cmd_parse &cmd)
     use_color_key=true;
 }
 
+class EnumConvertImage:public EnumFile
+{
+private:
+
+    uint convert_count=0;
+
+protected:
+
+    void ProcFile(EnumFileConfig *efc,FileInfo &fi) override
+    {
+        //ConvertImage(fi.fullname);
+    }
+
+public:
+
+    const uint GetConvertCount()const{return convert_count;}
+};//class EnumConvertImage:public EnumFile
+
+#if HGL_OS == HGL_OS_Windows
+int _wmain(int argc,wchar_t **argv)
+#else
 int main(int argc,char **argv)
+#endif//
 {
     std::cout<<"Image to Texture Convert tools 1.1"<<std::endl<<std::endl;
 
@@ -87,7 +113,23 @@ int main(int argc,char **argv)
    
     ilInit();
 
+    double start_time=GetMicroTime();
+    double end_time;
 
+    EnumFileConfig efc(cur_path);
+
+    efc.find_name   =OSString(argv[1]);
+    efc.proc_file   =true;
+    efc.sub_folder  =sub_folder;
+
+    EnumConvertImage eci;
+    
+    eci.Enum(&efc);
+
+    end_time=GetTime();
+
+    LOG_INFO(OS_TEXT("总计转换图片")+OSString(eci.GetConvertCount())
+        +OS_TEXT("张，总计耗时")+OSString(end_time-start_time)+OS_TEXT("秒"));
 
 	ilShutDown();
     return 0;
