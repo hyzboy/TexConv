@@ -14,7 +14,6 @@ enum class ColorFormat
     R8UN,
     RG8UN,
     RGBA8UN,
-    ABGR8UN,
     A2BGR10UN,
     R16UN,
     R16F,
@@ -44,10 +43,10 @@ enum class ColorDataType
 
     UNORM,
     SNORM,
-    USCALED,
-    SSCALED,
     UINT,
     SINT,
+    USCALE,
+    SSCALE,
     UFLOAT,
     SFLOAT,
 
@@ -66,13 +65,14 @@ struct PixelFormat
     ColorFormat     format;
     char            name[32];
 
+    uint8           channels;   //颜色通道数
     char            color[4];
     uint8           bits[4];
     ColorDataType   type;
 
 public:
 
-    const uint GetPixelBytes()const{return bits[0]+bits[1]+bits[2]+bits[3];}                        ///<获取单个象素所需字节数
+    const uint GetPixelBytes()const{return (bits[0]+bits[1]+bits[2]+bits[3])>>3;}                   ///<获取单个象素所需字节数
 };//
 
 const PixelFormat *GetPixelFormat(ColorFormat);                                                     ///<根据获取获取象素格式类型

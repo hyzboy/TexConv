@@ -7,8 +7,18 @@ add_definitions(-DUNICODE -D_UNICODE)
 include_directories("DevIL Windows SDK/include")
 link_directories("DevIL Windows SDK/lib/x64/unicode/Release")
 
-set(SOURCE_FILE main.cpp pixel_format.cpp)
-set(HEADER_FILE pixel_format.h)
+set(SOURCE_FILE main.cpp pixel_format.cpp
+                ILImage.h
+				ILImageSupport.cpp
+                ConvertImage.cpp
+				TextureFileCreater.h
+				TextureFileCreater.cpp
+                TextureFileCreaterR.cpp
+                TextureFileCreaterRG.cpp
+                TextureFileCreaterRGB.cpp
+                TextureFileCreaterRGBA.cpp)
+
+set(HEADER_FILE pixel_format.h ConvertImage.h)
 
 SOURCE_GROUP("Header Files" FILES ${HEADER_FILE})
 SOURCE_GROUP("Source Files" FILES ${SOURCE_FILE})

@@ -1,13 +1,11 @@
-﻿#include<il/il.h>
-#include<il/ilu.h>
-#include<iostream>
+﻿#include<iostream>
 #include<hgl/util/cmd/CmdParse.h>
-#include"pixel_format.h"
 #include<hgl/type/DataType.h>
 #include<hgl/type/StrChar.h>
 #include<hgl/Time.h>
 #include<hgl/filesystem/EnumFile.h>
 #include<hgl/log/LogInfo.h>
+#include"ConvertImage.h"
 
 using namespace hgl;
 using namespace hgl::filesystem;
@@ -48,7 +46,7 @@ void ParseParamFormat(const CmdParse &cmd)
         std::cout<<i<<": "<<pixel_fmt[i]->name<<std::endl;
 }
 
-void ParamColorKey(const CmdParse &cmd)
+void ParseParamColorKey(const CmdParse &cmd)
 {
     OSString ckstr;
 
@@ -75,7 +73,13 @@ protected:
 
     void ProcFile(EnumFileConfig *efc,FileInfo &fi) override
     {
-        //ConvertImage(fi.fullname);
+        ConvertImage ci(fi.fullname);
+
+        if(!ci.Load())return;
+
+        if(!ci.Convert(pixel_fmt))return;
+
+
     }
 
 public:
@@ -109,7 +113,7 @@ int main(int argc,char **argv)
     if(cp.Find(OS_TEXT("/s"))!=-1)sub_folder=true;					//检测是否处理子目录
     if(cp.Find(OS_TEXT("/mip"))!=-1)gen_mipmaps=true;				//检测是否生成mipmaps
     
-    ParamColorKey(cp);
+    ParseParamColorKey(cp);
     ParseParamFormat(cp);								    //检测推荐格式
    
     ilInit();
