@@ -1,7 +1,7 @@
 ﻿#include<il/il.h>
 #include<il/ilu.h>
 #include<iostream>
-#include"cmd_parse.h"
+#include<hgl/util/cmd/CmdParse.h>
 #include"pixel_format.h"
 #include<hgl/type/DataType.h>
 #include<hgl/type/StrChar.h>
@@ -11,6 +11,7 @@
 
 using namespace hgl;
 using namespace hgl::filesystem;
+using namespace hgl::util;
 
 bool                    sub_folder      =false;
 
@@ -20,38 +21,38 @@ bool					gen_mipmaps	    =false;								    //是否产生mipmaps
 bool					use_color_key   =false;							        //是否使用ColorKey
 uint8					color_key[3];									        //ColorKey颜色
 
-const PixelFormat *ParseParamFormat(const cmd_parse &cmd,const char *flag,const PixelFormat *default_format)
+const PixelFormat *ParseParamFormat(const CmdParse &cmd,const os_char *flag,const PixelFormat *default_format)
 {
-    std::string fmtstr;
+    OSString fmtstr;
 
-    if(!cmd.GetString(flag,fmtstr))return(nullptr);
+    if(!cmd.GetString(flag,fmtstr))return(default_format);
 
     const PixelFormat *result=GetPixelFormat(fmtstr.c_str());
 
     if(result)return(result);
 
-    std::cerr<<"[FORMAT ERROR] Don't support \""<<fmtstr.c_str()<<"\" format."<<std::endl;
+    LOG_INFO(OS_TEXT("[FORMAT ERROR] Don't support ")+fmtstr+OS_TEXT(" format."));
 
     return default_format;
 }
 
-void ParseParamFormat(const cmd_parse &cmd)
+void ParseParamFormat(const CmdParse &cmd)
 {
     //指定格式
-    pixel_fmt[0]=ParseParamFormat(cmd,"/R:",      GetPixelFormat(ColorFormat::R8UN));
-    pixel_fmt[1]=ParseParamFormat(cmd,"/RG:",     GetPixelFormat(ColorFormat::RG8UN));
-    pixel_fmt[2]=ParseParamFormat(cmd,"/RGB:",    GetPixelFormat(ColorFormat::RGB565));
-    pixel_fmt[3]=ParseParamFormat(cmd,"/RGBA:",   GetPixelFormat(ColorFormat::RGBA8UN));
+    pixel_fmt[0]=ParseParamFormat(cmd,OS_TEXT("/R:"),      GetPixelFormat(ColorFormat::R8UN));
+    pixel_fmt[1]=ParseParamFormat(cmd,OS_TEXT("/RG:"),     GetPixelFormat(ColorFormat::RG8UN));
+    pixel_fmt[2]=ParseParamFormat(cmd,OS_TEXT("/RGB:"),    GetPixelFormat(ColorFormat::RGB565));
+    pixel_fmt[3]=ParseParamFormat(cmd,OS_TEXT("/RGBA:"),   GetPixelFormat(ColorFormat::RGBA8UN));
 
     for(uint i=0;i<4;i++)
         std::cout<<i<<": "<<pixel_fmt[i]->name<<std::endl;
 }
 
-void ParamColorKey(const cmd_parse &cmd)
+void ParamColorKey(const CmdParse &cmd)
 {
-    std::string ckstr;
+    OSString ckstr;
 
-    if(!cmd.GetString("/ColorKey:",ckstr))return;
+    if(!cmd.GetString(OS_TEXT("/ColorKey:"),ckstr))return;
 
     char rgbstr[6];
 
@@ -83,7 +84,7 @@ public:
 };//class EnumConvertImage:public EnumFile
 
 #if HGL_OS == HGL_OS_Windows
-int _wmain(int argc,wchar_t **argv)
+int wmain(int argc,wchar_t **argv)
 #else
 int main(int argc,char **argv)
 #endif//
@@ -103,10 +104,10 @@ int main(int argc,char **argv)
         return 0;
     }
 
-    cmd_parse cp(argc,argv);
+    CmdParse cp(argc,argv);
 
-    if(cp.Find("/s")!=-1)sub_folder=true;					//检测是否处理子目录
-    if(cp.Find("/mip")!=-1)gen_mipmaps=true;				//检测是否生成mipmaps
+    if(cp.Find(OS_TEXT("/s"))!=-1)sub_folder=true;					//检测是否处理子目录
+    if(cp.Find(OS_TEXT("/mip"))!=-1)gen_mipmaps=true;				//检测是否生成mipmaps
     
     ParamColorKey(cp);
     ParseParamFormat(cp);								    //检测推荐格式
@@ -116,6 +117,10 @@ int main(int argc,char **argv)
     double start_time=GetMicroTime();
     double end_time;
 
+    OSString cur_path;
+
+    GetCurrentPath(cur_path);
+
     EnumFileConfig efc(cur_path);
 
     efc.find_name   =OSString(argv[1]);
@@ -123,13 +128,13 @@ int main(int argc,char **argv)
     efc.sub_folder  =sub_folder;
 
     EnumConvertImage eci;
-    
+
     eci.Enum(&efc);
 
     end_time=GetTime();
 
     LOG_INFO(OS_TEXT("总计转换图片")+OSString(eci.GetConvertCount())
-        +OS_TEXT("张，总计耗时")+OSString(end_time-start_time)+OS_TEXT("秒"));
+            +OS_TEXT("张，总计耗时")+OSString(end_time-start_time)+OS_TEXT("秒"));
 
 	ilShutDown();
     return 0;

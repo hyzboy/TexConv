@@ -7,8 +7,8 @@ add_definitions(-DUNICODE -D_UNICODE)
 include_directories("DevIL Windows SDK/include")
 link_directories("DevIL Windows SDK/lib/x64/unicode/Release")
 
-set(SOURCE_FILE main.cpp config.cpp pixel_format.cpp)
-set(HEADER_FILE config.h pixel_format.h)
+set(SOURCE_FILE main.cpp pixel_format.cpp)
+set(HEADER_FILE pixel_format.h)
 
 SOURCE_GROUP("Header Files" FILES ${HEADER_FILE})
 SOURCE_GROUP("Source Files" FILES ${SOURCE_FILE})
@@ -33,4 +33,5 @@ set(COMPANY "hyzgame.com")
 set(COPYRIGHT "Copyright (c) 1997-2019 hyzgame.com. All rights reserved.")
 set(IDENTIFIER "com.hyzgame.texconv")
 
-target_link_libraries(TexConv PRIVATE CMCore CMPlatform Qt5::Core Qt5::Gui Qt5::Widgets)
+target_link_libraries(TexConv PRIVATE	CMCore CMPlatform CMUtil
+										Qt5::Core Qt5::Gui Qt5::Widgets)

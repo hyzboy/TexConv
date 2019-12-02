@@ -76,6 +76,6 @@ public:
 };//
 
 const PixelFormat *GetPixelFormat(ColorFormat);                                                     ///<根据获取获取象素格式类型
-const PixelFormat *GetPixelFormat(const char *name);                                                ///<根据名称获取象素格式类型
+const PixelFormat *GetPixelFormat(const os_char *name);                                             ///<根据名称获取象素格式类型
 
 void PrintFormatList();
