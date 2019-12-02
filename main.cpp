@@ -1,4 +1,5 @@
 ﻿#include<iostream>
+#include<IL/il.h>
 #include<hgl/util/cmd/CmdParse.h>
 #include<hgl/type/DataType.h>
 #include<hgl/type/StrChar.h>
@@ -73,13 +74,11 @@ protected:
 
     void ProcFile(EnumFileConfig *efc,FileInfo &fi) override
     {
-        ConvertImage ci(fi.fullname);
+        ConvertImage ci;
 
-        if(!ci.Load())return;
+        if(!ci.Load(fi.fullname))return;
 
         if(!ci.Convert(pixel_fmt))return;
-
-
     }
 
 public:
