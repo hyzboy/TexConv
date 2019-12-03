@@ -1,4 +1,4 @@
-#include"ConvertImage.h"
+#include<hgl/log/LogInfo.h>
 #include"ILImage.h"
 #include"TextureFileCreater.h"
 
@@ -7,45 +7,25 @@ TextureFileCreater *CreateTextureFileCreaterRG(const PixelFormat *,ILImage *);
 TextureFileCreater *CreateTextureFileCreaterRGB(const PixelFormat *,ILImage *);
 TextureFileCreater *CreateTextureFileCreaterRGBA(const PixelFormat *,ILImage *);
 
-ConvertImage::ConvertImage()
+bool ConvertImage(const OSString &filename,const PixelFormat **pf)
 {
-    image=nullptr;
-}
+    ILImage image;
 
-ConvertImage::~ConvertImage()
-{
-    SAFE_CLEAR(image);
-}
+    LOG_INFO(OS_TEXT("File: ")+filename);
 
-bool ConvertImage::Load(const OSString &fn)
-{
-    LOG_INFO(OS_TEXT("File: ")+fn);
-
-    image=new ILImage();
-
-    if(!image->LoadFile(fn))
-    {
-        delete image;
+    if(!image.LoadFile(filename))
         return(false);
-    }
 
-    filename=fn;
+    image.Bind();
 
-    return(true);
-}
-
-bool ConvertImage::Convert(const PixelFormat **pf)
-{
-    image->Bind();
-
-    const uint channels=image->channels();
+    const uint channels=image.channels();
 
     TextureFileCreater *tex_file_creater;
 
-    if(channels==1)tex_file_creater=CreateTextureFileCreaterR(pf[0],image);else
-    if(channels==2)tex_file_creater=CreateTextureFileCreaterRG(pf[1],image);else
-    if(channels==3)tex_file_creater=CreateTextureFileCreaterRGB(pf[2],image);else
-    if(channels==4)tex_file_creater=CreateTextureFileCreaterRGBA(pf[3],image);else
+    if(channels==1)tex_file_creater=CreateTextureFileCreaterR(pf[0],&image);else
+    if(channels==2)tex_file_creater=CreateTextureFileCreaterRG(pf[1],&image);else
+    if(channels==3)tex_file_creater=CreateTextureFileCreaterRGB(pf[2],&image);else
+    if(channels==4)tex_file_creater=CreateTextureFileCreaterRGBA(pf[3],&image);else
     {
         LOG_ERROR(OS_TEXT("image format don't support "));
         return(false);
@@ -69,3 +49,4 @@ bool ConvertImage::Convert(const PixelFormat **pf)
     delete tex_file_creater;
     return(true);
 }
+

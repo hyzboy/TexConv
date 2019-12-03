@@ -7,23 +7,29 @@ add_definitions(-DUNICODE -D_UNICODE)
 include_directories("DevIL Windows SDK/include")
 link_directories("DevIL Windows SDK/lib/x64/unicode/Release")
 
-set(SOURCE_FILE main.cpp pixel_format.cpp
-                ILImage.h
-				ILImageSupport.cpp
-                ConvertImage.cpp
-				TextureFileCreater.h
-				TextureFileCreater.cpp
-                TextureFileCreaterR.cpp
-                TextureFileCreaterRG.cpp
-                TextureFileCreaterRGB.cpp
-                TextureFileCreaterRGBA.cpp)
+SET(ILIMAGE_SOURCE  ILImage.h
+                    ILImageSupport.cpp)
 
-set(HEADER_FILE pixel_format.h ConvertImage.h)
+SET(PIXEL_FORMAT_SOURCE pixel_format.cpp
+                        pixel_format.h)
 
-SOURCE_GROUP("Header Files" FILES ${HEADER_FILE})
-SOURCE_GROUP("Source Files" FILES ${SOURCE_FILE})
+SET(TEXTURE_FILE_CREATER_SOURCE TextureFileCreater.h
+                                TextureFileCreater.cpp
+                                TextureFileCreaterR.cpp
+                                TextureFileCreaterRG.cpp
+                                TextureFileCreaterRGB.cpp
+                                TextureFileCreaterRGBA.cpp)
 
-add_executable(TexConv ${SOURCE_FILE} ${HEADER_FILE})
+set(SOURCE_FILE main.cpp
+                ConvertImage.cpp)
+
+set(HEADER_FILE )
+
+SOURCE_GROUP("Image File" FILES ${ILIMAGE_SOURCE})
+SOURCE_GROUP("Pixel Format" FILES ${PIXEL_FORMAT_SOURCE})
+SOURCE_GROUP("Texture File Creater" FILES ${TEXTURE_FILE_CREATER_SOURCE})
+
+add_executable(TexConv ${SOURCE_FILE} ${ILIMAGE_SOURCE} ${PIXEL_FORMAT_SOURCE} ${TEXTURE_FILE_CREATER_SOURCE})
 
 target_link_libraries(TexConv PRIVATE DevIL)
 

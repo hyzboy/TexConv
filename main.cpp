@@ -6,7 +6,7 @@
 #include<hgl/Time.h>
 #include<hgl/filesystem/EnumFile.h>
 #include<hgl/log/LogInfo.h>
-#include"ConvertImage.h"
+#include"pixel_format.h"
 
 using namespace hgl;
 using namespace hgl::filesystem;
@@ -19,6 +19,8 @@ bool					gen_mipmaps	    =false;								    //是否产生mipmaps
 
 bool					use_color_key   =false;							        //是否使用ColorKey
 uint8					color_key[3];									        //ColorKey颜色
+
+bool ConvertImage(const OSString &filename,const PixelFormat **pf);
 
 const PixelFormat *ParseParamFormat(const CmdParse &cmd,const os_char *flag,const PixelFormat *default_format)
 {
@@ -74,11 +76,7 @@ protected:
 
     void ProcFile(EnumFileConfig *efc,FileInfo &fi) override
     {
-        ConvertImage ci;
-
-        if(!ci.Load(fi.fullname))return;
-
-        if(!ci.Convert(pixel_fmt))return;
+        ConvertImage(fi.fullname,pixel_fmt);
     }
 
 public:
