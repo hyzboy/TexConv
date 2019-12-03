@@ -36,8 +36,8 @@ namespace
 
         const int pos=old_name.FindRightChar(split_char);
 
-        if(pos==-1)
-            return old_name.SubString(0,pos+1)+new_extname;
+        if(pos!=-1)
+            return old_name.SubString(0,pos)+new_extname;
         else
             return old_name+BaseString<T>::charOf(split_char)+new_extname;
     }

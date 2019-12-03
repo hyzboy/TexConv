@@ -46,7 +46,7 @@ void ParseParamFormat(const CmdParse &cmd)
     pixel_fmt[3]=ParseParamFormat(cmd,OS_TEXT("/RGBA:"),   GetPixelFormat(ColorFormat::RGBA8UN));
 
     for(uint i=0;i<4;i++)
-        std::cout<<i<<": "<<pixel_fmt[i]->name<<std::endl;
+        std::cout<<(i+1)<<": "<<pixel_fmt[i]->name<<std::endl;
 }
 
 void ParseParamColorKey(const CmdParse &cmd)
@@ -118,13 +118,8 @@ int main(int argc,char **argv)
     double start_time=GetMicroTime();
     double end_time;
 
-    OSString cur_path;
+    EnumFileConfig efc(argv[argc-1]);
 
-    GetCurrentPath(cur_path);
-
-    EnumFileConfig efc(cur_path);
-
-    efc.find_name   =OSString(argv[1]);
     efc.proc_file   =true;
     efc.sub_folder  =sub_folder;
 

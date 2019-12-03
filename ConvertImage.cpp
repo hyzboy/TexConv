@@ -11,8 +11,6 @@ bool ConvertImage(const OSString &filename,const PixelFormat **pf)
 {
     ILImage image;
 
-    LOG_INFO(OS_TEXT("File: ")+filename);
-
     if(!image.LoadFile(filename))
         return(false);
 

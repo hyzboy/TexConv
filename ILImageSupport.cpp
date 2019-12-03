@@ -6,6 +6,46 @@
 
 using namespace hgl;
 
+namespace
+{
+    const OSString GetILFormatName(const ILuint format)
+    {
+        #define IL_FMT2NAME(name)    if(format==IL_##name)return OS_TEXT(#name);
+
+        IL_FMT2NAME(COLOR_INDEX)
+        IL_FMT2NAME(ALPHA)
+        IL_FMT2NAME(RGB)
+        IL_FMT2NAME(RGBA)
+        IL_FMT2NAME(BGR)
+        IL_FMT2NAME(BGRA)
+        IL_FMT2NAME(LUMINANCE)
+        IL_FMT2NAME(LUMINANCE_ALPHA)
+
+        #undef IL_FMT2NAME
+
+        return OS_TEXT("Error format");
+    }
+    
+    const OSString GetILTypeName(const ILuint type)
+    {
+        #define IL_TYPE2NAME(name)    if(type==IL_##name)return OS_TEXT(#name);
+
+        IL_TYPE2NAME(BYTE)
+        IL_TYPE2NAME(UNSIGNED_BYTE)
+        IL_TYPE2NAME(SHORT)
+        IL_TYPE2NAME(UNSIGNED_SHORT)
+        IL_TYPE2NAME(INT)
+        IL_TYPE2NAME(UNSIGNED_INT)
+        IL_TYPE2NAME(FLOAT)
+        IL_TYPE2NAME(DOUBLE)
+        IL_TYPE2NAME(HALF)
+
+        #undef IL_TYPE2NAME
+
+        return OS_TEXT("Error type");
+    }
+}//namespace
+
 ILImage::ILImage()
 {
     ilGenImages(1,&il_index);
@@ -40,10 +80,9 @@ bool ILImage::LoadFile(const OSString &filename)
     Bind();
 
     if(!ilLoadImage(filename.c_str()))
-    {
-        LOG_ERROR(OS_TEXT("LoadImage failed."));
         return(false);
-    }
+
+    LOG_INFO(OS_TEXT("File: ")+filename);
 
     il_width	=ilGetInteger(IL_IMAGE_WIDTH);
     il_height	=ilGetInteger(IL_IMAGE_HEIGHT);
@@ -57,8 +96,8 @@ bool ILImage::LoadFile(const OSString &filename)
     LOG_INFO(OS_TEXT("\t width: ")+OSString(il_width));
     LOG_INFO(OS_TEXT("\theight: ")+OSString(il_height));
     LOG_INFO(OS_TEXT("\t   bit: ")+OSString(il_bit));
-    LOG_INFO(OS_TEXT("\tformat: ")+OSString(il_format));
-    LOG_INFO(OS_TEXT("\t  type: ")+OSString(il_type));
+    LOG_INFO(OS_TEXT("\tformat: ")+GetILFormatName(il_format));
+    LOG_INFO(OS_TEXT("\t  type: ")+GetILTypeName(il_type));
 
     if(il_format==IL_COLOR_INDEX)
     {
