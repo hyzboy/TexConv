@@ -149,12 +149,10 @@ void *ILImage::GetR(ILuint type)
     if(il_format==IL_LUMINANCE)
     {
         if(il_type!=type)
-        {
             if(!Convert(il_format,type))
                 return(nullptr);
 
-            return ilGetData();
-        }
+        return ilGetData();
     }
 
     return(nullptr);
