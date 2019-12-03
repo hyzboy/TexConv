@@ -12,9 +12,9 @@ public:
     {
         for(uint i=0;i<size;i++)
         {
-            *target=((src[2]<<8)&0xF800)
+            *target=((src[0]<<8)&0xF800)
                    |((src[1]<<3)&0x7E0)
-                   | (src[0]>>3);
+                   | (src[2]>>3);
 
             ++target;
             src+=3;

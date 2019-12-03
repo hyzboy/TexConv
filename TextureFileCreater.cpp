@@ -96,8 +96,8 @@ bool TextureFileCreater::WriteFileHeader(const OSString &old_filename)
     dos->WriteUint32(image->width());
     dos->WriteUint32(image->height());
     dos->WriteUint8(fmt->channels);                     //颜色通道数
-    dos->WriteUint8((uint8 *)fmt->color,fmt->channels); //颜色标记
-    dos->WriteUint8(fmt->bits,fmt->channels);           //颜色位数
+    dos->WriteUint8((uint8 *)fmt->color,4);             //颜色标记
+    dos->WriteUint8(fmt->bits,4);                       //颜色位数
     dos->WriteUint8((uint8)fmt->type);                  //数据类型
 
     return(true);

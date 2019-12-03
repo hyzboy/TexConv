@@ -12,10 +12,10 @@ public:
     {
         for(uint i=0;i<size;i++)
         {
-            *target=((src[3]<<8)&0xF000)
-                   |((src[2]<<4)&0xF00)
-                   |((src[1]   )&0xF0)
-                   | (src[0]>>4);
+            *target=((src[0]<<8)&0xF000)
+                   |((src[1]<<4)&0xF00)
+                   |((src[2]   )&0xF0)
+                   | (src[3]>>4);
 
             ++target;
             src+=4;
@@ -27,9 +27,9 @@ public:
         for(uint i=0;i<size;i++)
         {
             *target=((src[3]<<8)&0x8000)
-                   |((src[2]<<7)&0x7C00)
+                   |((src[0]<<7)&0x7C00)
                    |((src[1]<<2)&0x3E0)
-                   | (src[0]>>3);
+                   | (src[2]>>3);
 
             ++target;
             src+=4;
@@ -41,9 +41,9 @@ public:
         for(uint i=0;i<size;i++)
         {
             *target=((src[3]<<16)&0xC0000000)
-                   |((src[0]<<14)&0x3FF00000)
+                   |((src[2]<<14)&0x3FF00000)
                    |((src[1]<< 4)&0xFFC00)
-                   | (src[2]>> 6);
+                   | (src[0]>> 6);
 
             ++target;
             src+=4;
@@ -54,8 +54,8 @@ public:
  
     bool Write() override
     {
-        if(fmt->format==ColorFormat::RGBA8UN
-         ||fmt->format==ColorFormat::RGBA16UN
+        if(fmt->format==ColorFormat::RGBA8
+         ||fmt->format==ColorFormat::RGBA16
          ||fmt->format==ColorFormat::RGBA16F
          ||fmt->format==ColorFormat::RGBA32U
          ||fmt->format==ColorFormat::RGBA32I
@@ -90,7 +90,7 @@ public:
 
             return TextureFileCreater::Write(a1_rgb5);
         }
-        else if(fmt->format==ColorFormat::A2BGR10UN)
+        else if(fmt->format==ColorFormat::A2BGR10)
         {
             void *origin_rgba=image->GetRGBA(IL_UNSIGNED_SHORT);
 

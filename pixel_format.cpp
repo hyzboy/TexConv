@@ -16,7 +16,8 @@ namespace hgl
         "UINT",
         "SINT",
         "UFLOAT",
-        "SFLOAT"
+        "SFLOAT",
+        "sRGB"
     };
 
     constexpr PixelFormat pf_list[]=
@@ -24,15 +25,15 @@ namespace hgl
         {ColorFormat::BGRA4,      "BGRA4",     4,{'B','G','R','A'},{ 4, 4, 4, 4},ColorDataType::UNORM},
         {ColorFormat::RGB565,     "RGB565",    3,{'R','G','B', 0 },{ 5, 6, 5, 0},ColorDataType::UNORM},
         {ColorFormat::A1RGB5,     "A1RGB5",    4,{'A','R','G','B'},{ 1, 5, 5, 5},ColorDataType::UNORM},
-        {ColorFormat::R8UN,       "R8UN",      1,{'R', 0 , 0 , 0 },{ 8, 0, 0, 0},ColorDataType::UNORM},
-        {ColorFormat::RG8UN,      "RG8UN",     2,{'R','G', 0 , 0 },{ 8, 8, 0, 0},ColorDataType::UNORM},
-        {ColorFormat::RGBA8UN,    "RGBA8UN",   4,{'R','G','B','A'},{ 8, 8, 8, 8},ColorDataType::UNORM},
-        {ColorFormat::A2BGR10UN,  "A2BGR10UN", 4,{'A','B','G','R'},{ 2,10,10,10},ColorDataType::UNORM},
-        {ColorFormat::R16UN,      "R16UN",     1,{'R', 0 , 0 , 0 },{16, 0, 0, 0},ColorDataType::UNORM},
+        {ColorFormat::R8,         "R8",        1,{'R', 0 , 0 , 0 },{ 8, 0, 0, 0},ColorDataType::UNORM},
+        {ColorFormat::RG8,        "RG8",       2,{'R','G', 0 , 0 },{ 8, 8, 0, 0},ColorDataType::UNORM},
+        {ColorFormat::RGBA8,      "RGBA8",     4,{'R','G','B','A'},{ 8, 8, 8, 8},ColorDataType::UNORM},
+        {ColorFormat::A2BGR10,    "A2BGR10",   4,{'A','B','G','R'},{ 2,10,10,10},ColorDataType::UNORM},
+        {ColorFormat::R16,        "R16",       1,{'R', 0 , 0 , 0 },{16, 0, 0, 0},ColorDataType::UNORM},
         {ColorFormat::R16F,       "R16F",      1,{'R', 0 , 0 , 0 },{16, 0, 0, 0},ColorDataType::SFLOAT},
-        {ColorFormat::RG16UN,     "RG16UN",    2,{'R','G', 0 , 0 },{16,16, 0, 0},ColorDataType::UNORM},
+        {ColorFormat::RG16,       "RG16",      2,{'R','G', 0 , 0 },{16,16, 0, 0},ColorDataType::UNORM},
         {ColorFormat::RG16F,      "RG16F",     2,{'R','G', 0 , 0 },{16,16, 0, 0},ColorDataType::SFLOAT},
-        {ColorFormat::RGBA16UN,   "RGBA16UN",  4,{'R','G','B','A'},{16,16,16,16},ColorDataType::UNORM},
+        {ColorFormat::RGBA16,     "RGBA16",    4,{'R','G','B','A'},{16,16,16,16},ColorDataType::UNORM},
         {ColorFormat::RGBA16F,    "RGBA16F",   4,{'R','G','B','A'},{16,16,16,16},ColorDataType::SFLOAT},
         {ColorFormat::R32U,       "R32U",      1,{'R', 0 , 0 , 0 },{32, 0, 0, 0},ColorDataType::UINT},
         {ColorFormat::R32I,       "R32I",      1,{'R', 0 , 0 , 0 },{32, 0, 0, 0},ColorDataType::SINT},
