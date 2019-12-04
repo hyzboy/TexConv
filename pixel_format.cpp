@@ -46,7 +46,8 @@ namespace hgl
         {ColorFormat::RGB32F,     "RGB32F",    3,{'R','G','B', 0 },{32,32,32, 0},ColorDataType::SFLOAT},
         {ColorFormat::RGBA32U,    "RGBA32U",   4,{'R','G','B','A'},{32,32,32,32},ColorDataType::UINT},
         {ColorFormat::RGBA32I,    "RGBA32I",   4,{'R','G','B','A'},{32,32,32,32},ColorDataType::SINT},
-        {ColorFormat::RGBA32F,    "RGBA32F",   4,{'R','G','B','A'},{32,32,32,32},ColorDataType::SFLOAT}
+        {ColorFormat::RGBA32F,    "RGBA32F",   4,{'R','G','B','A'},{32,32,32,32},ColorDataType::SFLOAT},
+        {ColorFormat::B10GR11UF,  "B10GR11UF", 3,{'B','G','R', 0 },{11,11,11, 0},ColorDataType::UFLOAT}
     };
 
     constexpr uint PixelFormatCount=sizeof(pf_list)/sizeof(PixelFormat);

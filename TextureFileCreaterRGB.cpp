@@ -21,6 +21,25 @@ public:
         }
     }
 
+    // Bit depth    Sign bit present    Exponent bits   Mantissa bits
+    //  32              Yes                 8               23
+    //  16              Yes                 5               10
+    //  11              No                  5               6
+    //  10              No                  5               5
+
+    void RGB16FtoB10GR11UF(uint32 *target,uint16 *src,uint size)
+    {
+        for(uint i=0;i<size;i++)
+        {
+            *target=((src[2]&0x7FE0)<<17)
+                   |((src[1]&0x7FF0)<<7)
+                   | (src[0]&0x7FF0)>>4;
+
+            ++target;
+            src+=3;
+        }
+    }
+
 public:
  
     bool Write() override
@@ -47,6 +66,16 @@ public:
             RGB8toRGB565(rgb565,(uint8 *)origin_rgb,image->pixel_total());
 
             return TextureFileCreater::Write(rgb565);
+        }
+        else if(fmt->format==ColorFormat::B10GR11UF)
+        {
+            void *origin_rgb=image->GetRGB(IL_HALF);
+
+            AutoDelete<uint32> b10gr11=new uint32[image->pixel_total()];
+
+            RGB16FtoB10GR11UF(b10gr11,(uint16 *)origin_rgb,image->pixel_total());
+
+            return TextureFileCreater::Write(b10gr11);
         }
         else
         {

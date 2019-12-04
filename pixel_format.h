@@ -33,6 +33,7 @@ enum class ColorFormat
     RGBA32U,
     RGBA32I,
     RGBA32F,
+    B10GR11UF,
 
     END
 };//enum class ColorFormat
