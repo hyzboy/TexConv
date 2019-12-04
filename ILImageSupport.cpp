@@ -103,33 +103,21 @@ bool ILImage::LoadFile(const OSString &filename)
     {
         uint il_pattle=ilGetInteger(IL_PALETTE_TYPE);
 
-        if(il_pattle==IL_PAL_RGB24||il_pattle==IL_PAL_BGR24)
+        if(il_pattle==IL_PAL_RGB24||il_pattle==IL_PAL_BGR24
+         ||il_pattle==IL_PAL_RGB32||il_pattle==IL_PAL_BGR32)
         {
-            il_bit      =24;
-            il_format   =IL_BGR;
-            il_type     =IL_UNSIGNED_BYTE;
-        }
-        else
-        if(il_pattle==IL_PAL_RGB32||il_pattle==IL_PAL_BGR32)
-        {
-            il_bit      =48;
-            il_format   =IL_BGR;
-            il_type     =IL_UNSIGNED_SHORT;
+            channel_count=3;
         }
         else
         if(il_pattle==IL_PAL_RGBA32||il_pattle==IL_PAL_BGRA32)
         {
-            il_bit      =32;
-            il_format   =IL_BGRA;
-            il_type     =IL_UNSIGNED_BYTE;
+            channel_count=4;
         }
         else
         {
             LOG_ERROR("Don't support the pattle format.");
             return(false);
         }
-
-        Convert(il_format,il_type);
     }
     
     if(il_format==IL_LUMINANCE||il_format==IL_ALPHA)channel_count=1;else
