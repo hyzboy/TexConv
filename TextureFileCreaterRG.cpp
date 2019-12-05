@@ -1,4 +1,4 @@
-#include"TextureFileCreater.h"
+﻿#include"TextureFileCreater.h"
 #include"ILImage.h"
 
 class TextureFileCreaterRG:public TextureFileCreater
@@ -19,7 +19,7 @@ public:
         void *data=image->GetRG(type);
 
         //目前仅有R8UN,R16UN,R16F,R32U,R32I,R32F几种，都是8的整倍数，所以直接写
-        
+
         return TextureFileCreater::Write(data);
     }
 };//class TextureFileCreaterRG:public TextureFileCreater
