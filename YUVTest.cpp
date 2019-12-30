@@ -34,10 +34,11 @@ int main(int argc,char **argv)
     ILImage rgb_image;
 
     if(!rgb_image.LoadFile(argv[1]))
+    {
+        std::cout<<"open source file failed!"<<std::endl;
         return(1);
-
-    std::cout<<"open source file failed!"<<std::endl;
-
+    }
+    
     uint8 *rgb=(uint8 *)rgb_image.GetRGB(IL_UNSIGNED_BYTE);
 
     const uint pixels=rgb_image.pixel_total();
