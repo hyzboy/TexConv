@@ -61,6 +61,14 @@ void ILImage::Bind()
     ilBindImage(il_index);
 }
 
+bool ILImage::Resize(uint nw,uint nh)
+{
+    if(nw==il_width&&nh==il_height)return(false);
+    if(nw==0||nh==0)return(false);
+
+    return iluScale(nw,nh,il_depth);
+}
+
 bool ILImage::Convert(ILuint format,ILuint type)
 {
     if(il_format==format
@@ -86,6 +94,7 @@ bool ILImage::LoadFile(const OSString &filename)
 
     il_width	=ilGetInteger(IL_IMAGE_WIDTH);
     il_height	=ilGetInteger(IL_IMAGE_HEIGHT);
+    il_depth    =ilGetInteger(IL_IMAGE_DEPTH);
     il_bit		=ilGetInteger(IL_IMAGE_BITS_PER_PIXEL);
     il_format	=ilGetInteger(IL_IMAGE_FORMAT);
     il_type	    =ilGetInteger(IL_IMAGE_TYPE);
@@ -95,6 +104,7 @@ bool ILImage::LoadFile(const OSString &filename)
 
     LOG_INFO(OS_TEXT("\t width: ")+OSString(il_width));
     LOG_INFO(OS_TEXT("\theight: ")+OSString(il_height));
+    LOG_INFO(OS_TEXT("\t depth: ")+OSString(il_depth));
     LOG_INFO(OS_TEXT("\t   bit: ")+OSString(il_bit));
     LOG_INFO(OS_TEXT("\tformat: ")+GetILFormatName(il_format));
     LOG_INFO(OS_TEXT("\t  type: ")+GetILTypeName(il_type));

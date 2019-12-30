@@ -1,4 +1,4 @@
-﻿cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.0)
 
 project(TexConv)
 
@@ -52,3 +52,9 @@ set(IDENTIFIER "com.hyzgame.texconv")
 target_link_libraries(TexConv PRIVATE	CMCore CMPlatform CMUtil
 										Qt5::Core Qt5::Gui Qt5::Widgets
 										DevIL ILU)
+
+add_executable(MicroPBR MicroPBR.cpp YUV.cpp ${ILIMAGE_SOURCE})
+target_link_libraries(MicroPBR PRIVATE CMCore CMPlatform CMUtil DevIL ILU)
+
+add_executable(YUVTest YUVTest.cpp YUV.cpp ${ILIMAGE_SOURCE})
+target_link_libraries(YUVTest PRIVATE CMCore CMPlatform CMUtil DevIL ILU)

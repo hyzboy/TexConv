@@ -7,7 +7,7 @@ using namespace hgl;
 class ILImage
 {
     ILuint il_index;
-    ILuint il_width,il_height;
+    ILuint il_width,il_height,il_depth;
     ILuint il_bit,il_format,il_type;
 
     uint channel_count;
@@ -20,13 +20,14 @@ private:
 
 public:
 
-    const ILuint width   ()const{return il_width;}
-    const ILuint height  ()const{return il_height;}
-    const ILuint bit     ()const{return il_bit;}
-    const ILuint format  ()const{return il_format;}
-    const ILuint type    ()const{return il_type;}
+    const ILuint width  ()const{return il_width;}
+    const ILuint height ()const{return il_height;}
+    const ILuint depth  ()const{return il_depth;}
+    const ILuint bit    ()const{return il_bit;}
+    const ILuint format ()const{return il_format;}
+    const ILuint type   ()const{return il_type;}
 
-    const ILuint pixel_total()const{return il_width*il_height;}
+    const ILuint pixel_total()const{return il_width*il_height*il_depth;}
 
 public:
 
@@ -40,6 +41,8 @@ public:
     bool LoadFile(const OSString &);
 
     void Bind();
+
+    bool Resize(uint,uint);
     
     void *GetR(ILuint type);
 
