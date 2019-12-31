@@ -1,16 +1,17 @@
-#include<hgl/type/DataType.h>
+﻿#include<hgl/type/DataType.h>
 #include<hgl/math/Vector.h>
 
 /**
  * A_bit_more_deferred_-_CryEngine3
 
     Normal to GBufffer:
- 
+
     G=normalize(N.xy)*sqrt(N.z*0.5+0.5)
 
     GBuffer to Normal:
 
-    N.z=length2(G.xy)*2-1N.xy=normalize(G.xy)*sqrt(1-N.z*N.z)
+    N.z=length2(G.xy)*2-1
+    N.xy=normalize(G.xy)*sqrt(1-N.z*N.z)
 */
 
 namespace hgl

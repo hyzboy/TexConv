@@ -59,7 +59,7 @@ ILImage::~ILImage()
 
 bool ILImage::Create(ILuint w,ILuint h,ILuint c,ILuint t,void *data)
 {
-    const ILenum format[]=
+    const ILenum format_list[]=
 	{
 		IL_LUMINANCE,
 		IL_LUMINANCE_ALPHA,
@@ -71,8 +71,11 @@ bool ILImage::Create(ILuint w,ILuint h,ILuint c,ILuint t,void *data)
 
     Bind();
 
-    ilClearImage();
-    return ilTexImage(w,h,1,c,format[c-1],t,data);
+    if(!ilTexImage(w,h,1,c,format_list[c-1],t,data))
+        return(false);
+
+    iluFlipImage();
+    return(true);
 }
 
 bool ILImage::SaveFile(const OSString &filename)
@@ -90,10 +93,18 @@ void ILImage::Bind()
 
 bool ILImage::Resize(uint nw,uint nh)
 {
-    if(nw==il_width&&nh==il_height)return(false);
+    if(nw==il_width&&nh==il_height)return(true);
     if(nw==0||nh==0)return(false);
 
-    return iluScale(nw,nh,il_depth);
+    Bind();
+
+    if(!iluScale(nw,nh,il_depth))
+        return(false);
+
+    il_width=nw;
+    il_height=nh;
+
+    return(true);
 }
 
 bool ILImage::Convert(ILuint format,ILuint type)

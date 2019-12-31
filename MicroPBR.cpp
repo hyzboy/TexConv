@@ -93,6 +93,8 @@ namespace hgl
 
         uint8 *GetRGB(){return (uint8 *)img.GetRGB(IL_UNSIGNED_BYTE);}
         uint8 *GetLum(){return (uint8 *)img.GetLum(IL_UNSIGNED_BYTE);}
+
+        bool SaveFile(const OSString &fn){return img.SaveFile(fn);}
     };//class PBRComponent
 }//namespace hgl
 
@@ -112,13 +114,13 @@ namespace hgl
     }
     
     CmdParse cp(argc,argv);
+    
+    ilInit();
 
     PBRComponent    color       (OS_TEXT("BaseColor"),OS_TEXT("/C:")),
                     normal      (OS_TEXT("Normal"   ),OS_TEXT("/N:")),
                     metallic    (OS_TEXT("Metallic" ),OS_TEXT("/M:")),
                     roughness   (OS_TEXT("Roughness"),OS_TEXT("/R:"));
-
-    ilInit();
 
     color.Parse(cp);
     normal.Parse(cp);
@@ -138,12 +140,15 @@ namespace hgl
         uint nh=hgl_max(color.height(),normal.height());
 
         color.Resize(nw,nh);
+        normal.Resize(nw,nh);
     }
 
     const uint w=color.width();
     const uint h=color.height();
     const uint half_w=w>>1;
     const uint half_h=h>>1;
+    const uint pixel_total=w*h;
+    const uint half_pixel_total=half_w*half_h;
 
     if(metallic.isHas())
     {
@@ -159,11 +164,11 @@ namespace hgl
 
     uint8 *y,*u,*v,*nx,*ny;
 
-    y=new uint8[w*h];
-    u=new uint8[half_w*half_h];
-    v=new uint8[half_w*half_h];
-    nx=new uint8[w*h];
-    ny=new uint8[w*h];
+    y=new uint8[pixel_total];
+    u=new uint8[half_pixel_total];
+    v=new uint8[half_pixel_total];
+    nx=new uint8[pixel_total];
+    ny=new uint8[pixel_total];
 
     RGB2YUV(y,u,v,color.GetRGB(),w,h);
     normal_compress(nx,ny,normal.GetRGB(),w*h);
@@ -173,9 +178,9 @@ namespace hgl
         ILImage img;
         const OSString out_filename=OSString(argv[1])+OS_TEXT("_YN.png");
 
-        uint8 *pixels=new uint8[w*h*3];
+        uint8 *pixels=new uint8[pixel_total*3];
 
-        MixRGB<uint8>(pixels,y,nx,ny,w*h);
+        MixRGB<uint8>(pixels,y,nx,ny,pixel_total);
 
         img.Create(w,h,3,IL_UNSIGNED_BYTE,pixels);
 
@@ -190,9 +195,12 @@ namespace hgl
         ILImage img;
         const OSString out_filename=OSString(argv[1])+OS_TEXT("_UVMR.png");
 
-        uint8 *pixels=new uint8[half_w*half_h*4];
+        const uint8 *m=metallic.GetLum();
+        const uint8 *r=roughness.GetLum();
 
-        MixRGBA<uint8>(pixels,u,v,metallic.GetLum(),roughness.GetLum(),half_w*half_h);
+        uint8 *pixels=new uint8[half_pixel_total*4];
+
+        MixRGBA<uint8>(pixels,u,v,m,r,half_pixel_total);
 
         img.Create(half_w,half_h,4,IL_UNSIGNED_BYTE,pixels);
 
@@ -207,9 +215,10 @@ namespace hgl
         ILImage img;
         const OSString out_filename=OSString(argv[1])+OS_TEXT("_UVM.png");
 
-        uint8 *pixels=new uint8[half_w*half_h*3];
+        uint8 *pixels=new uint8[half_pixel_total*3];
+        const uint8 *m=metallic.GetLum();
 
-        MixRGB<uint8>(pixels,u,v,metallic.GetLum(),half_w*half_h);
+        MixRGB<uint8>(pixels,u,v,m,half_pixel_total);
 
         img.Create(half_w,half_h,3,IL_UNSIGNED_BYTE,pixels);
 
@@ -224,9 +233,10 @@ namespace hgl
         ILImage img;
         const OSString out_filename=OSString(argv[1])+OS_TEXT("_UVR.png");
 
-        uint8 *pixels=new uint8[half_w*half_h*3];
+        uint8 *pixels=new uint8[half_pixel_total*3];
+        const uint8 *r=roughness.GetLum();
 
-        MixRGB<uint8>(pixels,u,v,roughness.GetLum(),half_w*half_h);
+        MixRGB<uint8>(pixels,u,v,r,half_pixel_total);
 
         img.Create(half_w,half_h,3,IL_UNSIGNED_BYTE,pixels);
 
