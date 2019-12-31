@@ -3,6 +3,7 @@
 #include"ILImage.h"
 #include<IL/ilu.h>
 #include<hgl/log/LogInfo.h>
+#include<hgl/filesystem/FileSystem.h>
 
 using namespace hgl;
 
@@ -56,6 +57,32 @@ ILImage::~ILImage()
     ilDeleteImages(1,&il_index);
 }
 
+bool ILImage::Create(ILuint w,ILuint h,ILuint c,ILuint t,void *data)
+{
+    const ILenum format[]=
+	{
+		IL_LUMINANCE,
+		IL_LUMINANCE_ALPHA,
+		IL_RGB,
+		IL_RGBA,
+	};
+
+    if(c<1||c>4)return(false);
+
+    Bind();
+
+    ilClearImage();
+    return ilTexImage(w,h,1,c,format[c-1],t,data);
+}
+
+bool ILImage::SaveFile(const OSString &filename)
+{
+    Bind();
+    ilEnable(IL_FILE_OVERWRITE);
+
+    return ilSaveImage(filename.c_str());
+}
+
 void ILImage::Bind()
 {
     ilBindImage(il_index);
@@ -86,6 +113,12 @@ bool ILImage::Convert(ILuint format,ILuint type)
 bool ILImage::LoadFile(const OSString &filename)
 {
     Bind();
+
+    if(!filesystem::FileExist(filename))
+    {
+        LOG_INFO(OS_TEXT("Can't find filename: ")+filename);
+        return(false);
+    }
 
     if(!ilLoadImage(filename.c_str()))
         return(false);
@@ -137,6 +170,18 @@ bool ILImage::LoadFile(const OSString &filename)
         channel_count=0;
 
     return(true);    
+}
+
+void ILImage::ToRGB(ILuint type)
+{
+    if(il_format!=IL_RGB)
+        Convert(IL_RGB,type);
+}
+
+void ILImage::ToGray(ILuint type)
+{
+    if(il_format!=IL_LUMINANCE)
+        Convert(IL_LUMINANCE,type);
 }
 
 void *ILImage::GetR(ILuint type)

@@ -8,11 +8,6 @@ using namespace hgl::filesystem;
 
 namespace hgl
 {
-    void RGB2YUV(uint8 *y,uint8 *u,uint8 *v,const uint8 *rgb,const uint w,const uint h);
-    void YUV2RGB(uint8 *rgb,const uint8 *y,const uint8 *u,const uint8 *v,const uint w,const uint h);
-
-    void InitYUV2RGBDecode();
-    
     void normal_compress(uint8 *x,uint8 *y,const uint8 *rgb,const uint count);
     void normal_decompress(uint8 *rgb,const uint8 *x,const uint8 *y,const uint count);
 }
@@ -30,8 +25,6 @@ int main(int argc,char **argv)
     if(argc<1)
         return 0;
 
-    InitYUV2RGBDecode();
-    
     ilInit();
 
     ILImage rgb_image;
@@ -47,18 +40,16 @@ int main(int argc,char **argv)
     const uint pixels=rgb_image.pixel_total();
 
     uint8 *y=new uint8[pixels];
-    uint8 *u=new uint8[pixels/4];
-    uint8 *v=new uint8[pixels/4];
+    uint8 *x=new uint8[pixels];
 
-    RGB2YUV(y,u,v,rgb,rgb_image.width(),rgb_image.height());
-    
-    YUV2RGB(rgb,y,u,v,rgb_image.width(),rgb_image.height());
+    normal_compress(x,y,rgb,pixels);
+    normal_decompress(rgb,x,y,pixels);
 
     OSString filename;
 
     filename=ClipFileMainname<os_char>(argv[1]);
 
-    filename+=OS_TEXT("_YUV.png");
+    filename+=OS_TEXT("_XY.png");
 
     if(rgb_image.SaveFile(filename))
         std_cout<<OS_TEXT("Save To ")<<filename.c_str()<<OS_TEXT(" successed!")<<std::endl;
