@@ -3,6 +3,7 @@
 #include<ILImage.h>
 #include<hgl/type/DataType.h>
 #include<hgl/util/cmd/CmdParse.h>
+#include<hgl/type/Smart.h>
 
 using namespace hgl;
 using namespace hgl::util;
@@ -93,9 +94,40 @@ namespace hgl
 
         uint8 *GetRGB(){return (uint8 *)img.GetRGB(IL_UNSIGNED_BYTE);}
         uint8 *GetLum(){return (uint8 *)img.GetLum(IL_UNSIGNED_BYTE);}
-
-        bool SaveFile(const OSString &fn){return img.SaveFile(fn);}
     };//class PBRComponent
+        
+    bool SaveRGBAFile(const OSString &filename,const uint w,const uint h,const uint8 *r,const uint8 *g,const uint8 *b,const uint8 *a,const OSString &flag)
+    {
+        const OSString out_filename=OSString(filename)+OS_TEXT("_")+flag+OS_TEXT(".png");
+
+        AutoDeleteArray<uint8> pixels=new uint8[w*h*3];
+
+        MixRGBA<uint8>(pixels,r,g,b,a,w*h);
+        
+        if(SaveImageToFile(out_filename,w,h,4,IL_UNSIGNED_BYTE,pixels))
+        {
+            std_cout<<OS_TEXT("Output ")+flag+OS_TEXT(": ")<<out_filename.c_str()<<std::endl;
+            return(true);
+        }
+
+        return(false);    
+    }
+    bool SaveRGBFile(const OSString &filename,const uint w,const uint h,const uint8 *r,const uint8 *g,const uint8 *b,const OSString &flag)
+    {
+        const OSString out_filename=OSString(filename)+OS_TEXT("_")+flag+OS_TEXT(".png");
+
+        AutoDeleteArray<uint8> pixels=new uint8[w*h*3];
+
+        MixRGB<uint8>(pixels,r,g,b,w*h);
+        
+        if(SaveImageToFile(out_filename,w,h,3,IL_UNSIGNED_BYTE,pixels))
+        {
+            std_cout<<OS_TEXT("Output ")<<flag.c_str()<<OS_TEXT(": ")<<out_filename.c_str()<<std::endl;
+            return(true);
+        }
+
+        return(false);    
+    }
 }//namespace hgl
 
 #if HGL_OS == HGL_OS_Windows
@@ -162,7 +194,7 @@ namespace hgl
         roughness.Resize(half_w,half_h);
     }
 
-    uint8 *y,*u,*v,*nx,*ny;
+    AutoDeleteArray<uint8> y,u,v,nx,ny;
 
     y=new uint8[pixel_total];
     u=new uint8[half_pixel_total];
@@ -170,87 +202,40 @@ namespace hgl
     nx=new uint8[pixel_total];
     ny=new uint8[pixel_total];
 
-    RGB2YUV(y,u,v,color.GetRGB(),w,h);
-    normal_compress(nx,ny,normal.GetRGB(),w*h);
-
     // BaseColor Y + Normal XY
     {
-        ILImage img;
-        const OSString out_filename=OSString(argv[1])+OS_TEXT("_YN.png");
+        RGB2YUV(y,u,v,color.GetRGB(),w,h);
+        normal_compress(nx,ny,normal.GetRGB(),w*h);
 
-        uint8 *pixels=new uint8[pixel_total*3];
-
-        MixRGB<uint8>(pixels,y,nx,ny,pixel_total);
-
-        img.Create(w,h,3,IL_UNSIGNED_BYTE,pixels);
-
-        delete[] pixels;
-        
-        if(img.SaveFile(out_filename))
-            std_cout<<OS_TEXT("Output 1: ")<<out_filename.c_str()<<std::endl;
+        SaveRGBFile( argv[1],
+                        w,h,
+                        y,nx,ny,
+                        OS_TEXT("YN"));
     }
 
     if(metallic.isHas()&&roughness.isHas())
     {
-        ILImage img;
-        const OSString out_filename=OSString(argv[1])+OS_TEXT("_UVMR.png");
-
-        const uint8 *m=metallic.GetLum();
-        const uint8 *r=roughness.GetLum();
-
-        uint8 *pixels=new uint8[half_pixel_total*4];
-
-        MixRGBA<uint8>(pixels,u,v,m,r,half_pixel_total);
-
-        img.Create(half_w,half_h,4,IL_UNSIGNED_BYTE,pixels);
-
-        delete[] pixels;
-        
-        if(img.SaveFile(out_filename))
-            std_cout<<OS_TEXT("Output 2: ")<<out_filename.c_str()<<std::endl;        
+        SaveRGBAFile(argv[1],
+                        half_w,half_h,
+                        u,v,metallic.GetLum(),roughness.GetLum(),
+                        OS_TEXT("UVMR"));
     }
     else
     if(metallic.isHas())
     {
-        ILImage img;
-        const OSString out_filename=OSString(argv[1])+OS_TEXT("_UVM.png");
-
-        uint8 *pixels=new uint8[half_pixel_total*3];
-        const uint8 *m=metallic.GetLum();
-
-        MixRGB<uint8>(pixels,u,v,m,half_pixel_total);
-
-        img.Create(half_w,half_h,3,IL_UNSIGNED_BYTE,pixels);
-
-        delete[] pixels;
-        
-        if(img.SaveFile(out_filename))
-            std_cout<<OS_TEXT("Output 2: ")<<out_filename.c_str()<<std::endl;
+        SaveRGBFile( argv[1],
+                        half_w,half_h,
+                        u,v,metallic.GetLum(),
+                        OS_TEXT("UVM"));
     }
     else
     if(roughness.isHas())
     {
-        ILImage img;
-        const OSString out_filename=OSString(argv[1])+OS_TEXT("_UVR.png");
-
-        uint8 *pixels=new uint8[half_pixel_total*3];
-        const uint8 *r=roughness.GetLum();
-
-        MixRGB<uint8>(pixels,u,v,r,half_pixel_total);
-
-        img.Create(half_w,half_h,3,IL_UNSIGNED_BYTE,pixels);
-
-        delete[] pixels;
-        
-        if(img.SaveFile(out_filename))
-            std_cout<<OS_TEXT("Output 2: ")<<out_filename.c_str()<<std::endl;
+        SaveRGBFile( argv[1],
+                        half_w,half_h,
+                        u,v,roughness.GetLum(),
+                        OS_TEXT("UVR"));
     }
-
-    delete[] y;
-    delete[] u;
-    delete[] v;
-    delete[] nx;
-    delete[] ny;
 
     ilShutDown();
     return 0;

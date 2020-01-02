@@ -57,10 +57,9 @@ int main(int argc,char **argv)
     OSString filename;
 
     filename=ClipFileMainname<os_char>(argv[1]);
-
     filename+=OS_TEXT("_YUV.png");
 
-    if(rgb_image.SaveFile(filename))
+    if(SaveImageToFile(filename,rgb_image.width(),rgb_image.height(),3,IL_UNSIGNED_BYTE,rgb))
         std_cout<<OS_TEXT("Save To ")<<filename.c_str()<<OS_TEXT(" successed!")<<std::endl;
 
     ilShutDown();

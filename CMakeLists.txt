@@ -57,7 +57,7 @@ add_executable(MicroPBR MicroPBR.cpp YUV.cpp SpheremapNormal.cpp ${ILIMAGE_SOURC
 target_link_libraries(MicroPBR PRIVATE CMCore CMPlatform CMUtil DevIL ILU MathGeoLib)
 
 add_executable(YUVTest YUVTest.cpp YUV.cpp SpheremapNormal.cpp ${ILIMAGE_SOURCE})
-target_link_libraries(YUVTest PRIVATE CMCore CMPlatform CMUtil DevIL ILU)
+target_link_libraries(YUVTest PRIVATE CMCore CMPlatform CMUtil DevIL ILU MathGeoLib)
 
 add_executable(NormalTest NormalTest.cpp SpheremapNormal.cpp ${ILIMAGE_SOURCE})
 target_link_libraries(NormalTest PRIVATE CMCore CMPlatform CMUtil DevIL ILU MathGeoLib)
