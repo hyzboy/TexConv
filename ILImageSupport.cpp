@@ -57,33 +57,37 @@ ILImage::~ILImage()
     ilDeleteImages(1,&il_index);
 }
 
-bool ILImage::Create(ILuint w,ILuint h,ILuint c,ILuint t,void *data)
+constexpr ILenum format_by_channel[]=
 {
-    const ILenum format_list[]=
-	{
-		IL_LUMINANCE,
-		IL_LUMINANCE_ALPHA,
-		IL_RGB,
-		IL_RGBA,
-	};
+	IL_LUMINANCE,
+	IL_LUMINANCE_ALPHA,
+	IL_RGB,
+	IL_RGBA,
+};
 
+bool SaveImageToFile(const OSString &filename,ILuint w,ILuint h,ILuint c,ILuint t,void *data)
+{
+    if(filename.IsEmpty())return(false);
+    if(w<=0||h<=1)return(false);
     if(c<1||c>4)return(false);
+    if(!data)return(false);
 
-    Bind();
+    ILuint il_index;
 
-    if(!ilTexImage(w,h,1,c,format_list[c-1],t,data))
+    ilGenImages(1,&il_index);
+    ilBindImage(il_index);
+
+    if(!ilTexImage(w,h,1,c,format_by_channel[c-1],t,data))
         return(false);
 
     iluFlipImage();
-    return(true);
-}
-
-bool ILImage::SaveFile(const OSString &filename)
-{
-    Bind();
     ilEnable(IL_FILE_OVERWRITE);
 
-    return ilSaveImage(filename.c_str());
+    const bool result=ilSaveImage(filename.c_str());
+
+    ilDeleteImages(1,&il_index);
+
+    return result;
 }
 
 void ILImage::Bind()

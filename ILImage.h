@@ -39,9 +39,6 @@ public:
     ~ILImage();
 
     bool LoadFile(const OSString &);
-    bool SaveFile(const OSString &);
-
-    bool Create(ILuint w,ILuint h,ILuint c,ILuint t,void *);
 
     void Bind();
 
@@ -60,3 +57,5 @@ public:
 
     void *GetLum(ILuint type){return GetData(IL_LUMINANCE,type);}
 };//class ILImage
+
+bool SaveImageToFile(const OSString &filename,ILuint w,ILuint h,ILuint c,ILuint t,void *data);
