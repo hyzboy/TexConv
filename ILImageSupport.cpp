@@ -65,7 +65,7 @@ constexpr ILenum format_by_channel[]=
 	IL_RGBA,
 };
 
-bool SaveImageToFile(const OSString &filename,ILuint w,ILuint h,ILuint c,ILuint t,void *data)
+bool SaveImageToFile(const OSString &filename,ILuint w,ILuint h,const float scale,ILuint c,ILuint t,void *data)
 {
     if(filename.IsEmpty())return(false);
     if(w<=0||h<=1)return(false);
@@ -79,6 +79,8 @@ bool SaveImageToFile(const OSString &filename,ILuint w,ILuint h,ILuint c,ILuint 
 
     if(!ilTexImage(w,h,1,c,format_by_channel[c-1],t,data))
         return(false);
+
+    iluScale(w*scale,h*scale,1);
 
     iluFlipImage();
     ilEnable(IL_FILE_OVERWRITE);
@@ -187,16 +189,20 @@ bool ILImage::LoadFile(const OSString &filename)
     return(true);    
 }
 
-void ILImage::ToRGB(ILuint type)
+void *ILImage::ToRGB(ILuint type)
 {
     if(il_format!=IL_RGB)
         Convert(IL_RGB,type);
+
+    return ilGetData();
 }
 
-void ILImage::ToGray(ILuint type)
+void *ILImage::ToGray(ILuint type)
 {
     if(il_format!=IL_LUMINANCE)
         Convert(IL_LUMINANCE,type);
+
+    return ilGetData();
 }
 
 void *ILImage::GetR(ILuint type)

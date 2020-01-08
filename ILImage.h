@@ -44,8 +44,8 @@ public:
 
     bool Resize(uint,uint);
 
-    void ToRGB(ILuint type=IL_UNSIGNED_BYTE);
-    void ToGray(ILuint type=IL_UNSIGNED_BYTE);
+    void *ToRGB(ILuint type=IL_UNSIGNED_BYTE);
+    void *ToGray(ILuint type=IL_UNSIGNED_BYTE);
     
     void *GetR(ILuint type);
 
@@ -58,4 +58,4 @@ public:
     void *GetLum(ILuint type){return GetData(IL_LUMINANCE,type);}
 };//class ILImage
 
-bool SaveImageToFile(const OSString &filename,ILuint w,ILuint h,ILuint c,ILuint t,void *data);
+bool SaveImageToFile(const OSString &filename,ILuint w,ILuint h,const float scale,ILuint c,ILuint t,void *data);
