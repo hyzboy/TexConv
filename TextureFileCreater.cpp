@@ -1,4 +1,4 @@
-#include"TextureFileCreater.h"
+﻿#include"TextureFileCreater.h"
 #include<hgl/filesystem/FileSystem.h>
 
 namespace

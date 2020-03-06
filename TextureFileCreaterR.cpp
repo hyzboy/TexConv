@@ -1,4 +1,4 @@
-#include"TextureFileCreater.h"
+﻿#include"TextureFileCreater.h"
 #include"ILImage.h"
 
 class TextureFileCreaterR:public TextureFileCreater

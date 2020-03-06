@@ -55,9 +55,7 @@ void ParseParamColorKey(const CmdParse &cmd)
 
     if(!cmd.GetString(OS_TEXT("/ColorKey:"),ckstr))return;
 
-    char rgbstr[6];
-
-    hgl_cpy(rgbstr,ckstr.c_str(),6);		//注意：hgl_cpy是跨类型复制的，不要替换成strcpy或memcpy
+    const os_char *rgbstr=ckstr.c_str();
 
     ParseHexStr(color_key[0],rgbstr+0);
     ParseHexStr(color_key[1],rgbstr+2);
