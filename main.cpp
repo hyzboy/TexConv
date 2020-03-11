@@ -93,7 +93,7 @@ int main(int argc,char **argv)
     if(argc<=1)
     {
         std::cout<< "Command format:\n"
-                    "\tTexConv [/R:][/RG:][/RGB:][/RGBA:] [/s] [/mip] <filename or pathname>\n"
+                    "\tTexConv [/R:][/RG:][/RGB:][/RGBA:] [/s] [/mip] <pathname>\n"
                     "\n"
                     "Params:\n"
                     "\t/s : proc sub-directory\n"
