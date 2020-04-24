@@ -127,8 +127,8 @@ int main(int argc,char **argv)
 
     end_time=GetTime();
 
-    LOG_INFO(OS_TEXT("总计转换图片")+OSString(eci.GetConvertCount())
-            +OS_TEXT("张，总计耗时")+OSString(end_time-start_time)+OS_TEXT("秒"));
+    LOG_INFO(OS_TEXT("总计转换图片")+OSString::valueOf(eci.GetConvertCount())
+            +OS_TEXT("张，总计耗时")+OSString::valueOf(end_time-start_time)+OS_TEXT("秒"));
 
 	ilShutDown();
     return 0;
