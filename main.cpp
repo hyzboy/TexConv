@@ -82,11 +82,7 @@ public:
     const uint GetConvertCount()const{return convert_count;}
 };//class EnumConvertImage:public EnumFile
 
-#if HGL_OS == HGL_OS_Windows
-int wmain(int argc,wchar_t **argv)
-#else
-int main(int argc,char **argv)
-#endif//
+int os_main(int argc,os_char **argv)
 {
     std::cout<<"Image to Texture Convert tools 1.1"<<std::endl<<std::endl;
 
@@ -109,7 +105,7 @@ int main(int argc,char **argv)
     if(cp.Find(OS_TEXT("/mip"))!=-1)gen_mipmaps=true;				//检测是否生成mipmaps
     
     ParseParamColorKey(cp);
-    ParseParamFormat(cp);								    //检测推荐格式
+    ParseParamFormat(cp);								            //检测推荐格式
    
     ilInit();
 

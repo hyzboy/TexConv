@@ -1,0 +1,207 @@
+#include<iostream>
+#include<hgl/type/DataType.h>
+#include<hgl/filesystem/FileSystem.h>
+#include"ILImage.h"
+
+namespace df
+{
+    struct Point
+    {
+        uint32 col,row;
+
+    public:
+
+        const uint DistSq()const{return col*col+row*row;}
+    };//struct Point;
+
+    static Point inside_point{0,0};
+    static Point empty_point{9999,9999};
+
+    class Grid
+    {
+        int width,height;
+        Point *data;
+
+    public:
+
+        Grid(const int w,const int h)
+        {
+            data=new Point[w*h];
+
+            width=w;
+            height=h;
+        }
+
+        ~Grid()
+        {
+            delete[] data;
+        }
+
+        const uint Distance(const int col,const int row)const
+        {
+            return sqrt(data[col+row*width].DistSq());
+        }
+
+        const Point &Get(const int col,const int row)
+        {
+            if(col<0||col>=width
+             ||row<0||row>=height)
+            return empty_point;
+
+            return data[col+row*width];
+        }
+
+        bool Put(const int col,const int row,const Point &p)
+        {
+            if(col<0||col>=width
+             ||row<0||row>=height)
+             return(false);
+
+            data[col+row*width]=p;
+            return(true);
+        }
+
+        void Compare(Point &p,int col,int row,int offset_col,int offset_row)
+        {
+            Point other=Get(col+offset_col,row+offset_row);
+
+            other.col+=offset_col;
+            other.row+=offset_row;
+
+            if(other.DistSq()<p.DistSq())
+                p=other;
+        }
+
+        void GenerateSDF()
+        {
+            Point p;
+
+            // pass 0
+            for(int row=0;row<height;row++)
+            {
+                for(int col=0;col<width;col++)
+                {
+                    p=Get(col,row);
+
+                    Compare(p,col,row,-1, 0);
+                    Compare(p,col,row, 0,-1);
+                    Compare(p,col,row,-1,-1);
+                    Compare(p,col,row, 1,-1);
+
+                    Put(col,row,p);
+                }
+
+                for(int col=width-1;col>=0;col--)
+                {
+                    p=Get(col,row);
+                    Compare(p,col,row,1,0);
+                    Put(col,row,p);
+                }
+            }
+
+            //pass 1
+            for(int row=height-1;row>=0;row--)
+            {
+                for(int col=width-1;col>=0;col--)
+                {
+                    p=Get(col,row);
+                    Compare(p,col,row, 1, 0);
+                    Compare(p,col,row, 0, 1);
+                    Compare(p,col,row,-1, 1);
+                    Compare(p,col,row, 1, 1);
+                    Put(col,row,p);
+                }
+
+                for(int col=0;col<width;col++)
+                {
+                    p=Get(col,row);
+                    Compare(p,col,row,-1,0);
+                    Put(col,row,p);
+                }
+            }
+        }
+    };//class Grid
+}//namespace df
+
+int os_main(int argc,os_char **argv)
+{
+    std::cout<<"Distance Field Generater v1.0"<<std::endl<<std::endl;
+
+    if(argc<2)
+    {
+        std::cout<<"example: DFGen 1.png"<<std::endl<<std::endl;
+        return 0;
+    }
+
+    ilInit();
+
+    ILImage img;    
+
+    if(!img.LoadFile(argv[1]))
+    {
+        std::cerr<<"open file failed."<<std::endl;
+        return -1;
+    }
+
+    const uint8 *op=(const uint8 *)img.ToGray();
+
+    AutoDelete<df::Grid> grid1=new df::Grid(img.width(),img.height());
+    AutoDelete<df::Grid> grid2=new df::Grid(img.width(),img.height());
+
+    df::empty_point.col=img.width();
+    df::empty_point.row=img.height();
+
+    for(int row=0;row<img.height();row++)
+    {
+        for(int col=0;col<img.width();col++)
+        {
+            if(*op<128)
+            {
+                grid1->Put(col,row,df::inside_point);
+                grid2->Put(col,row,df::empty_point);
+            }
+            else
+            {
+                grid2->Put(col,row,df::inside_point);
+                grid1->Put(col,row,df::empty_point);
+            }
+
+            ++op;
+        }
+    }
+
+    grid1->GenerateSDF();
+    grid2->GenerateSDF();
+
+    AutoDeleteArray<uint8> df_bitmap=new uint8[img.pixel_total()];
+    uint8 *tp=df_bitmap;
+
+    uint32 dist;
+    int c;
+
+    for(int row=0;row<img.height();row++)
+    {
+        for(int col=0;col<img.width();col++)
+        {
+            dist=grid1->Distance(col,row)-grid2->Distance(col,row);
+
+            c=dist*3+128;
+
+            if(c<0)c=0;
+            if(c>255)c=255;
+
+            *tp++=c;
+        }
+    }
+
+    OSString filename=hgl::filesystem::ClipFileMainname(OSString(argv[1]));
+
+    filename+=OS_TEXT("_df.png");
+
+    os_out<<OS_TEXT("output: ")<<filename.c_str()<<std::endl;
+
+    SaveImageToFile(filename,img.width(),img.height(),1,1,IL_UNSIGNED_BYTE,df_bitmap);
+
+	ilShutDown();
+    return(0);
+}

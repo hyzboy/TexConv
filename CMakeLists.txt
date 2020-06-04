@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+﻿cmake_minimum_required(VERSION 3.0)
 
 project(TexConv)
 
@@ -61,3 +61,6 @@ target_link_libraries(ComboTexture PRIVATE CMCore CMPlatform CMUtil DevIL ILU Ma
 
 #add_executable(NormalTest NormalTest.cpp SpheremapNormal.cpp ${ILIMAGE_SOURCE})
 #target_link_libraries(NormalTest PRIVATE CMCore CMPlatform CMUtil DevIL ILU MathGeoLib)
+
+add_executable(DFGen DistanceFieldGenerater.cpp ILImage.h ILImageSupport.cpp)
+target_link_libraries(DFGen PRIVATE CMCore CMPlatform CMUtil DevIL ILU MathGeoLib)
