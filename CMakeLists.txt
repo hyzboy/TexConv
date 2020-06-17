@@ -53,7 +53,7 @@ target_link_libraries(TexConv PRIVATE	CMCore CMPlatform CMUtil
 										Qt5::Core Qt5::Gui Qt5::Widgets
 										DevIL ILU)
 
-add_executable(ComboTexture ComboTexture.cpp YUV.cpp ${ILIMAGE_SOURCE})
+add_executable(ComboTexture ComboTexture.cpp ${ILIMAGE_SOURCE})
 target_link_libraries(ComboTexture PRIVATE CMCore CMPlatform CMUtil DevIL ILU MathGeoLib)
 
 #add_executable(YUVTest YUVTest.cpp YUV.cpp SpheremapNormal.cpp ${ILIMAGE_SOURCE})

@@ -152,10 +152,10 @@ bool ILImage::LoadFile(const OSString &filename)
     if(ilGetInteger(IL_IMAGE_ORIGIN)==IL_ORIGIN_LOWER_LEFT)
         iluFlipImage();
 
-    LOG_INFO(OS_TEXT("\t width: ")+OSString(il_width));
-    LOG_INFO(OS_TEXT("\theight: ")+OSString(il_height));
-    LOG_INFO(OS_TEXT("\t depth: ")+OSString(il_depth));
-    LOG_INFO(OS_TEXT("\t   bit: ")+OSString(il_bit));
+    LOG_INFO(OS_TEXT("\t width: ")+OSString::valueOf(il_width));
+    LOG_INFO(OS_TEXT("\theight: ")+OSString::valueOf(il_height));
+    LOG_INFO(OS_TEXT("\t depth: ")+OSString::valueOf(il_depth));
+    LOG_INFO(OS_TEXT("\t   bit: ")+OSString::valueOf(il_bit));
     LOG_INFO(OS_TEXT("\tformat: ")+GetILFormatName(il_format));
     LOG_INFO(OS_TEXT("\t  type: ")+GetILTypeName(il_type));
 
