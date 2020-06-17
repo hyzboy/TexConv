@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+﻿cmake_minimum_required(VERSION 3.0)
 
 project(TexConv)
 
@@ -31,27 +31,13 @@ SOURCE_GROUP("Texture File Creater" FILES ${TEXTURE_FILE_CREATER_SOURCE})
 
 add_executable(TexConv ${SOURCE_FILE} ${ILIMAGE_SOURCE} ${PIXEL_FORMAT_SOURCE} ${TEXTURE_FILE_CREATER_SOURCE})
 
-target_link_libraries(TexConv PRIVATE DevIL)
+target_link_libraries(TexConv PRIVATE CMCore CMPlatform CMUtil DevIL ILU)
 
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-set(CMAKE_AUTOUIC ON)
+IF(CM_BUILD_GUI_TOOLS)
+    set(IDENTIFIER "com.hyzgame.texconv")
 
-set(QT_MIN_VERSION "5.8.0")
-find_package(Qt5 ${QT_MIN_VERSION} CONFIG REQUIRED COMPONENTS Core Gui Widgets)
-
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-include(QtCommon)
-
-# Set additional project information
-set(COMPANY "hyzgame.com")
-set(COPYRIGHT "Copyright (c) 1997-2019 hyzgame.com. All rights reserved.")
-set(IDENTIFIER "com.hyzgame.texconv")
-
-target_link_libraries(TexConv PRIVATE	CMCore CMPlatform CMUtil
-										Qt5::Core Qt5::Gui Qt5::Widgets
-										DevIL ILU)
+    target_link_libraries(TexConv PRIVATE Qt5::Core Qt5::Gui Qt5::Widgets)
+ENDIF(CM_BUILD_GUI_TOOLS)
 
 add_executable(ComboTexture ComboTexture.cpp ${ILIMAGE_SOURCE})
 target_link_libraries(ComboTexture PRIVATE CMCore CMPlatform CMUtil DevIL ILU MathGeoLib)
@@ -61,3 +47,6 @@ target_link_libraries(ComboTexture PRIVATE CMCore CMPlatform CMUtil DevIL ILU Ma
 
 #add_executable(NormalTest NormalTest.cpp SpheremapNormal.cpp ${ILIMAGE_SOURCE})
 #target_link_libraries(NormalTest PRIVATE CMCore CMPlatform CMUtil DevIL ILU MathGeoLib)
+
+add_executable(DFGen DistanceFieldGenerater.cpp ILImage.h ILImageSupport.cpp)
+target_link_libraries(DFGen PRIVATE CMCore CMPlatform CMUtil DevIL ILU MathGeoLib)

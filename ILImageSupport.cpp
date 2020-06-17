@@ -167,11 +167,19 @@ bool ILImage::LoadFile(const OSString &filename)
          ||il_pattle==IL_PAL_RGB32||il_pattle==IL_PAL_BGR32)
         {
             channel_count=3;
+            il_format=IL_RGB;
+            il_type=IL_UNSIGNED_BYTE;
+            ilConvertImage(il_format,il_type);
+            return(true);
         }
         else
         if(il_pattle==IL_PAL_RGBA32||il_pattle==IL_PAL_BGRA32)
         {
             channel_count=4;
+            il_format=IL_RGBA;
+            il_type=IL_UNSIGNED_BYTE;
+            ilConvertImage(il_format,il_type);
+            return(true);
         }
         else
         {
