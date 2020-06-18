@@ -7,15 +7,15 @@ namespace df
 {
     struct Point
     {
-        uint32 col,row;
+        uint32 x_offset,y_offset;
 
     public:
 
-        const uint DistSq()const{return col*col+row*row;}
+        const uint DistSq()const{return x_offset*x_offset+y_offset*y_offset;}
     };//struct Point;
 
     static Point inside_point{0,0};
-    static Point empty_point{9999,9999};
+    static Point outside_point{9999,9999};
 
     class Grid
     {
@@ -46,7 +46,7 @@ namespace df
         {
             if(col<0||col>=width
              ||row<0||row>=height)
-            return empty_point;
+            return outside_point;
 
             return data[col+row*width];
         }
@@ -65,8 +65,8 @@ namespace df
         {
             Point other=Get(col+offset_col,row+offset_row);
 
-            other.col+=offset_col;
-            other.row+=offset_row;
+            other.x_offset+=offset_col;
+            other.y_offset+=offset_row;
 
             if(other.DistSq()<p.DistSq())
                 p=other;
@@ -148,8 +148,8 @@ int os_main(int argc,os_char **argv)
     AutoDelete<df::Grid> grid1=new df::Grid(img.width(),img.height());
     AutoDelete<df::Grid> grid2=new df::Grid(img.width(),img.height());
 
-    df::empty_point.col=img.width();
-    df::empty_point.row=img.height();
+    df::outside_point.x_offset=img.width();
+    df::outside_point.y_offset=img.height();
 
     for(int row=0;row<img.height();row++)
     {
@@ -158,12 +158,12 @@ int os_main(int argc,os_char **argv)
             if(*op<128)
             {
                 grid1->Put(col,row,df::inside_point);
-                grid2->Put(col,row,df::empty_point);
+                grid2->Put(col,row,df::outside_point);
             }
             else
             {
                 grid2->Put(col,row,df::inside_point);
-                grid1->Put(col,row,df::empty_point);
+                grid1->Put(col,row,df::outside_point);
             }
 
             ++op;
