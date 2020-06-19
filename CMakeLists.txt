@@ -4,8 +4,10 @@ project(TexConv)
 
 add_definitions(-DUNICODE -D_UNICODE)
 
-include_directories("DevIL Windows SDK/include")
-link_directories("DevIL Windows SDK/lib/x64/unicode/Release")
+if(WIN32)
+    include_directories("DevIL Windows SDK/include")
+    link_directories("DevIL Windows SDK/lib/x64/unicode/Release")
+endif(WIN32)
 
 SET(ILIMAGE_SOURCE  ILImage.h
                     ILImageSupport.cpp)

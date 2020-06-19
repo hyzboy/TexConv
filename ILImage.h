@@ -59,3 +59,13 @@ public:
 };//class ILImage
 
 bool SaveImageToFile(const OSString &filename,ILuint w,ILuint h,const float scale,ILuint c,ILuint t,void *data);
+
+inline bool SaveImageToFile(const OSString &filename,ILuint w,ILuint h,ILuint c,ILuint t,void *data)
+{
+    return SaveImageToFile(filename,w,h,1.0,c,t,data);
+}
+
+inline bool SaveImageToFile(const OSString &filename,ILuint w,ILuint h,ILuint c,void *data)
+{
+    return SaveImageToFile(filename,w,h,1.0,c,IL_UNSIGNED_BYTE,data);
+}
