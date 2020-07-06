@@ -4,6 +4,7 @@
 #include<hgl/type/DataType.h>
 #include<hgl/util/cmd/CmdParse.h>
 #include<hgl/type/Smart.h>
+#include<hgl/graph/ColorSpace.h>
 
 using namespace hgl;
 using namespace hgl::util;
@@ -16,6 +17,20 @@ using namespace hgl::util;
 
 namespace hgl
 {
+    template<typename T>
+    const T clamp(const T &in,const T min_v,const T max_v)
+    {
+        if(in<min_v)return min_v;
+        if(in>max_v)return max_v;
+
+        return in;
+    }
+
+    const double clamp(const double &in)
+    {
+        return clamp<double>(in,0.0f,1.0f);
+    }
+
 	constexpr double clamp_u=0.436*255.0;
 	constexpr double clamp_v=0.615*255.0;
 		
@@ -198,14 +213,14 @@ namespace hgl
                         w,h,1.0,
                         (uint8 *)normal.GetRGB(IL_UNSIGNED_BYTE),
                         y,
-                        OS_TEXT("YN"));
+                        OS_TEXT("NormalLuma"));
 
         SaveRGBAFile(   argv[1],
                         w,h,0.5,
                         u,v,
                         (uint8 *)metallic.GetLum(IL_UNSIGNED_BYTE),
                         (uint8 *)roughness.GetLum(IL_UNSIGNED_BYTE),
-                        OS_TEXT("UVMR"));
+                        OS_TEXT("CbCrMR"));
     }
     else
     if(stricmp(argv[2],"4RGB")==0)
@@ -246,17 +261,17 @@ namespace hgl
         SaveRGBAFile(   argv[1],
                         w,h,1.0,
                         y[0],y[1],y[2],y[3],
-                        OS_TEXT("Y4"));
+                        OS_TEXT("4Luma"));
 
-        SaveRGBAFile(   argv[2],
+        SaveRGBAFile(   argv[1],
                         w,h,0.5,
                         u[0],u[1],u[2],u[3],
-                        OS_TEXT("U4"));
+                        OS_TEXT("4Cb"));
 
-        SaveRGBAFile(   argv[2],
+        SaveRGBAFile(   argv[1],
                         w,h,0.5,
                         v[0],v[1],v[2],v[3],
-                        OS_TEXT("V4"));
+                        OS_TEXT("4Cr"));
     }
     else
     if(stricmp(argv[2],"2CN")==0)
@@ -299,19 +314,19 @@ namespace hgl
                         w,h,1.0,
                         (uint8 *)normal[0].GetRGB(IL_UNSIGNED_BYTE),
                         y[0],
-                        OS_TEXT("YN1"));
+                        OS_TEXT("NormalLuma1"));
 
         SaveRGBAFile(   argv[1],
                         w,h,1.0,
                         (uint8 *)normal[1].GetRGB(IL_UNSIGNED_BYTE),
                         y[1],
-                        OS_TEXT("YN2"));
+                        OS_TEXT("NormalLuma2"));
 
         SaveRGBAFile(   argv[1],
                         w,h,0.5,
                         u[0],v[0],
                         u[1],v[1],
-                        OS_TEXT("2UV"));
+                        OS_TEXT("2CbCr"));
     }
 
     ilShutDown();
