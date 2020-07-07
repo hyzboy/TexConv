@@ -17,6 +17,8 @@ using namespace hgl::util;
 
 namespace hgl
 {
+    constexpr double TWO_SQRT=1.414213562373095;        //2的开方，unreal用的这个
+
     template<typename T>
     const T clamp(const T &in,const T min_v,const T max_v)
     {
@@ -34,7 +36,7 @@ namespace hgl
 	constexpr double clamp_u=0.436*255.0;
 	constexpr double clamp_v=0.615*255.0;
 		
-	void RGB2YUV(uint8 *y,uint8 *u,uint8 *v,const uint8 *rgb,const uint count)
+	void RGB2YUV(uint8 *y,uint8 *u,uint8 *v,const uint8 *rgb,const uint count,const double gamma)
 	{
 		uint8 r,g,b;
 
@@ -44,9 +46,12 @@ namespace hgl
 			g=*rgb++;
 			b=*rgb++;
 
-			*y++=				  0.299		* r	+ 0.587 	* g + 0.114 	* b;
+			*y  =				  0.299		* r	+ 0.587 	* g + 0.114 	* b;
 			*u++=(clamp_u		- 0.14713 	* r	- 0.28886 	* g	+ 0.436 	* b) / 0.872;
 			*v++=(clamp_v		+ 0.615 	* r	- 0.51499 	* g	- 0.10001 	* b) / 1.230;
+
+            *y=clamp(pow((*y)/255.0f,gamma))*255;
+            ++y;
 		}
 	}
 
@@ -137,11 +142,22 @@ namespace hgl
     }
 }//namespace hgl
 
-#if HGL_OS == HGL_OS_Windows
-    int wmain(int argc,wchar_t **argv)
-#else
-    int main(int argc,char **argv)
-#endif//
+double GetArgGamma(const os_char *param)
+{
+    if(!param||!*param)return 1.0f;
+
+    if(hgl::stricmp(param,"/gamma:",7))
+        return 1.0f;
+
+    double result;
+
+    if(stof(param+7,result))
+        return result;
+
+    return 1.0f;
+}
+
+int os_main(int argc,os_char **argv)
 {
     std::cout<<"Combo Texture Compression"<<std::endl<<std::endl;
 
@@ -149,17 +165,17 @@ namespace hgl
     {
         // FullTexture: Y+Normal
         // HalfTexture: U+V+M+R
-        std::cout<<"Example: ComboTexture <output name> MPBR Color.png Normal.png Metallic.png Roughness.png"<<std::endl;
+        std::cout<<"Example: ComboTexture <output name> MPBR Color.png Normal.png Metallic.png Roughness.png [/gamma:2.2]"<<std::endl;
 
         // FullTexture: Y1+Y2+Y3+Y4
         // HalfTexture: U1+U2+U3+U4
         // HalfTexture: V1+V2+V3+V4
-        std::cout<<"Example: ComboTexture <output name> 4RGB Color1.png Color2.png Color3.png Color4.png"<<std::endl;
+        std::cout<<"Example: ComboTexture <output name> 4RGB Color1.png Color2.png Color3.png Color4.png [/gamma:2.2]"<<std::endl;
 
         // FullTexture: Y1+Normal1
         // FullTexture: Y2+Normal2
         // HalfTexture: U1+V1+U2+V2
-        std::cout<<"Example: ComboTexture <output name> 2CN Color1.png Normal1.png Color2.png Normal2.png"<<std::endl;
+        std::cout<<"Example: ComboTexture <output name> 2CN Color1.png Normal1.png Color2.png Normal2.png [/gamma:2.2]"<<std::endl;
 
         //// FullTexture: Y1+Y2+G
         //// HalfTexture: U1+V1+U2+V2
@@ -189,6 +205,8 @@ namespace hgl
         if(!metallic.LoadFile(argv[5]))return(1);
         if(!roughness.LoadFile(argv[6]))return(1);
 
+        double gamma=(argc>7?GetArgGamma(argv[7]):1.0f);
+
         color.ToRGB();
         normal.ToRGB();
         metallic.ToGray();
@@ -207,7 +225,7 @@ namespace hgl
         AutoDeleteArray<uint8> u=new uint8[pixel_total];
         AutoDeleteArray<uint8> v=new uint8[pixel_total];
 
-        RGB2YUV(y,u,v,(uint8 *)color.GetRGB(IL_UNSIGNED_BYTE),pixel_total);
+        RGB2YUV(y,u,v,(uint8 *)color.GetRGB(IL_UNSIGNED_BYTE),pixel_total,gamma);
 
         SaveRGBAFile(   argv[1],
                         w,h,1.0,
@@ -234,6 +252,8 @@ namespace hgl
         if(!rgb[2].LoadFile(argv[5]))return 1;
         if(!rgb[3].LoadFile(argv[6]))return 1;
 
+        double gamma=(argc>7?GetArgGamma(argv[7]):1.0f);
+
         rgb[0].ToRGB();
         rgb[1].ToRGB();
         rgb[2].ToRGB();
@@ -255,7 +275,7 @@ namespace hgl
             u[i]=new uint8[pixel_total];
             v[i]=new uint8[pixel_total];
 
-            RGB2YUV(y[i],u[i],v[i],(uint8 *)rgb[i].GetRGB(IL_UNSIGNED_BYTE),pixel_total);
+            RGB2YUV(y[i],u[i],v[i],(uint8 *)rgb[i].GetRGB(IL_UNSIGNED_BYTE),pixel_total,gamma);
         }
 
         SaveRGBAFile(   argv[1],
@@ -285,6 +305,8 @@ namespace hgl
         if(!color[1].LoadFile(argv[5]))return(1);
         if(!normal[1].LoadFile(argv[6]))return(1);
 
+        double gamma=(argc>7?GetArgGamma(argv[7]):1.0f);
+
         color[0].ToRGB();
         normal[0].ToRGB();
         color[1].ToRGB();
@@ -307,7 +329,7 @@ namespace hgl
             u[i]=new uint8[pixel_total];
             v[i]=new uint8[pixel_total];
 
-            RGB2YUV(y[i],u[i],v[i],(uint8 *)color[i].GetRGB(IL_UNSIGNED_BYTE),pixel_total);
+            RGB2YUV(y[i],u[i],v[i],(uint8 *)color[i].GetRGB(IL_UNSIGNED_BYTE),pixel_total,gamma);
         }
 
         SaveRGBAFile(   argv[1],
