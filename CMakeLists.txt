@@ -9,6 +9,8 @@ if(WIN32)
     link_directories("DevIL Windows SDK/lib/x64/unicode/Release")
 endif(WIN32)
 
+add_subdirectory(CMP_CompressonatorLib)
+
 SET(ILIMAGE_SOURCE  ILImage.h
                     ILImageSupport.cpp)
 
@@ -25,15 +27,13 @@ SET(TEXTURE_FILE_CREATER_SOURCE TextureFileCreater.h
 set(SOURCE_FILE main.cpp
                 ConvertImage.cpp)
 
-set(HEADER_FILE )
-
 SOURCE_GROUP("Image File" FILES ${ILIMAGE_SOURCE})
 SOURCE_GROUP("Pixel Format" FILES ${PIXEL_FORMAT_SOURCE})
 SOURCE_GROUP("Texture File Creater" FILES ${TEXTURE_FILE_CREATER_SOURCE})
 
 add_executable(TexConv ${SOURCE_FILE} ${ILIMAGE_SOURCE} ${PIXEL_FORMAT_SOURCE} ${TEXTURE_FILE_CREATER_SOURCE})
 
-target_link_libraries(TexConv PRIVATE CMCore CMPlatform CMUtil DevIL ILU)
+target_link_libraries(TexConv PRIVATE CMCore CMPlatform CMUtil DevIL ILU Compressonator)
 
 IF(CM_BUILD_GUI_TOOLS)
     set(IDENTIFIER "com.hyzgame.texconv")
