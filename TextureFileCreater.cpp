@@ -96,10 +96,16 @@ bool TextureFileCreater::WriteFileHeader(const OSString &old_filename)
     dos->WriteUint32(image->width());
     dos->WriteUint32(image->height());
 
+    return(true);
+}
+
+bool TextureFileCreater::Write(void *data)
+{
     if(fmt->format>ColorFormat::COMPRESS)
     {
         dos->WriteUint8(0);
         dos->WriteUint16(uint(fmt->format)-uint(ColorFormat::COMPRESS));
+        dos->WriteUint32(total_bytes);
     }
     else
     {
@@ -109,11 +115,6 @@ bool TextureFileCreater::WriteFileHeader(const OSString &old_filename)
         dos->WriteUint8((uint8)fmt->type);                  //数据类型
     }
 
-    return(true);
-}
-
-bool TextureFileCreater::Write(void *data)
-{
     return(dos->Write(data,total_bytes)==total_bytes);
 }
 
