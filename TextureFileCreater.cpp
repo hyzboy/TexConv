@@ -92,13 +92,22 @@ bool TextureFileCreater::WriteFileHeader(const OSString &old_filename)
 
     dos->Write("Tex2D\x1A",6);
     dos->WriteUint8(2);                                 //版本
-    dos->WriteBool(false);                              //是否有mipmaps
+    dos->WriteUint8(0);                                 //mipmaps级数
     dos->WriteUint32(image->width());
     dos->WriteUint32(image->height());
-    dos->WriteUint8(fmt->channels);                     //颜色通道数
-    dos->WriteUint8((uint8 *)fmt->color,4);             //颜色标记
-    dos->WriteUint8(fmt->bits,4);                       //颜色位数
-    dos->WriteUint8((uint8)fmt->type);                  //数据类型
+
+    if(fmt->format>ColorFormat::COMPRESS)
+    {
+        dos->WriteUint8(0);
+        dos->WriteUint16(uint(fmt->format)-uint(ColorFormat::COMPRESS));
+    }
+    else
+    {
+        dos->WriteUint8(fmt->channels);                     //颜色通道数
+        dos->WriteUint8((uint8 *)fmt->color,4);             //颜色标记
+        dos->WriteUint8(fmt->bits,4);                       //颜色位数
+        dos->WriteUint8((uint8)fmt->type);                  //数据类型
+    }
 
     return(true);
 }

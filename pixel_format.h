@@ -35,6 +35,18 @@ enum class ColorFormat
     RGBA32F,
     B10GR11UF,
 
+    COMPRESS,
+
+    BC1RGB,
+    BC1RGBA,
+    BC2,
+    BC3,
+    BC4,
+    BC5,
+    BC6H,
+    BC6H_SF,
+    BC7,
+
     END
 };//enum class ColorFormat
 
@@ -75,7 +87,7 @@ struct PixelFormat
 public:
 
     const uint GetPixelBytes()const{return (bits[0]+bits[1]+bits[2]+bits[3])>>3;}                   ///<获取单个象素所需字节数
-};//
+};//struct PixelFormat
 
 const PixelFormat *GetPixelFormat(ColorFormat);                                                     ///<根据获取获取象素格式类型
 const PixelFormat *GetPixelFormat(const os_char *name);                                             ///<根据名称获取象素格式类型

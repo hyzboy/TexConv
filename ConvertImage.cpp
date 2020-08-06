@@ -7,6 +7,12 @@ TextureFileCreater *CreateTextureFileCreaterRG(const PixelFormat *,ILImage *);
 TextureFileCreater *CreateTextureFileCreaterRGB(const PixelFormat *,ILImage *);
 TextureFileCreater *CreateTextureFileCreaterRGBA(const PixelFormat *,ILImage *);
 
+TextureFileCreater *CreateTextureFileCreaterCompress(const PixelFormat *,ILImage *);
+
+using CTFC_FUNC=TextureFileCreater *(*)(const PixelFormat *,ILImage *);
+
+static CTFC_FUNC CreateTFC[4]={CreateTextureFileCreaterR,CreateTextureFileCreaterRG,CreateTextureFileCreaterRGB,CreateTextureFileCreaterRGBA};
+
 bool ConvertImage(const OSString &filename,const PixelFormat **pf)
 {
     ILImage image;
@@ -18,16 +24,19 @@ bool ConvertImage(const OSString &filename,const PixelFormat **pf)
 
     const uint channels=image.channels();
 
-    TextureFileCreater *tex_file_creater;
-
-    if(channels==1)tex_file_creater=CreateTextureFileCreaterR(pf[0],&image);else
-    if(channels==2)tex_file_creater=CreateTextureFileCreaterRG(pf[1],&image);else
-    if(channels==3)tex_file_creater=CreateTextureFileCreaterRGB(pf[2],&image);else
-    if(channels==4)tex_file_creater=CreateTextureFileCreaterRGBA(pf[3],&image);else
+    if(channels<0||channels>4)
     {
         LOG_ERROR(OS_TEXT("image format don't support "));
         return(false);
     }
+
+    TextureFileCreater *tex_file_creater;
+    const PixelFormat *fmt=pf[channels-1];
+
+    if(fmt->format<ColorFormat::COMPRESS)
+        tex_file_creater=CreateTFC[channels-1](fmt,&image);
+    else
+        tex_file_creater=CreateTextureFileCreaterCompress(fmt,&image);
 
     if(!tex_file_creater->WriteFileHeader(filename))
     {

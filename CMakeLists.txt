@@ -9,7 +9,28 @@ if(WIN32)
     link_directories("DevIL Windows SDK/lib/x64/unicode/Release")
 endif(WIN32)
 
+include_directories(CMP_CompressonatorLib)
+include_directories(CMP_Framework/Common)
+include_directories(CMP_Framework/Common/half)
+
 add_subdirectory(CMP_CompressonatorLib)
+add_subdirectory(CMP_Framework)
+add_subdirectory(CMP_Core)
+
+SET(INTEL_TC_SOURCE IntelTextureCompression/ispc_texcomp.cpp
+					IntelTextureCompression/ispc_texcomp.h
+					IntelTextureCompression/kernel_ispc.h
+					IntelTextureCompression/kernel_ispc.obj
+					IntelTextureCompression/kernel_ispc_avx.h
+					IntelTextureCompression/kernel_ispc_avx.obj
+					IntelTextureCompression/kernel_ispc_avx2.h
+					IntelTextureCompression/kernel_ispc_avx2.obj
+					IntelTextureCompression/kernel_ispc_sse2.h
+					IntelTextureCompression/kernel_ispc_sse2.obj
+					IntelTextureCompression/kernel_ispc_sse4.h
+					IntelTextureCompression/kernel_ispc_sse4.obj)
+
+SOURCE_GROUP("Intel Texture Compression" FILES ${INTEL_TC_SOURCE})
 
 SET(ILIMAGE_SOURCE  ILImage.h
                     ILImageSupport.cpp)
@@ -22,7 +43,8 @@ SET(TEXTURE_FILE_CREATER_SOURCE TextureFileCreater.h
                                 TextureFileCreaterR.cpp
                                 TextureFileCreaterRG.cpp
                                 TextureFileCreaterRGB.cpp
-                                TextureFileCreaterRGBA.cpp)
+                                TextureFileCreaterRGBA.cpp
+                                TextureFileCreaterCompress.cpp)
 
 set(SOURCE_FILE main.cpp
                 ConvertImage.cpp)
@@ -33,7 +55,7 @@ SOURCE_GROUP("Texture File Creater" FILES ${TEXTURE_FILE_CREATER_SOURCE})
 
 add_executable(TexConv ${SOURCE_FILE} ${ILIMAGE_SOURCE} ${PIXEL_FORMAT_SOURCE} ${TEXTURE_FILE_CREATER_SOURCE})
 
-target_link_libraries(TexConv PRIVATE CMCore CMPlatform CMUtil DevIL ILU Compressonator)
+target_link_libraries(TexConv PRIVATE CMCore CMPlatform CMUtil DevIL ILU Compressonator CMP_Framework CMP_Core)
 
 IF(CM_BUILD_GUI_TOOLS)
     set(IDENTIFIER "com.hyzgame.texconv")

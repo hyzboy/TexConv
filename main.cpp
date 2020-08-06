@@ -7,6 +7,8 @@
 #include<hgl/filesystem/EnumFile.h>
 #include<hgl/log/LogInfo.h>
 #include"pixel_format.h"
+#include"IntelTextureCompression/ispc_texcomp.h"
+#include"CMP_CompressonatorLib/Compressonator.h"
 
 using namespace hgl;
 using namespace hgl::filesystem;

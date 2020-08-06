@@ -1,1 +1,1 @@
-ispc -O2 intel_texture_compression.ispc -o intel_texture_compression.obj -h intel_texture_compression.h --arch=x86-64 --target=sse2,sse4,avx,avx2 --opt=fast-math
+ispc -O2 "%1.ispc" -o "%2.obj" -h "%2.h" --arch=x86-64 --dllexport --target=sse2,sse4,avx,avx2 --opt=fast-math

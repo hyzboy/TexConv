@@ -42,6 +42,8 @@ file(GLOB_RECURSE CMP_SRCS
      "../CMP_Framework/Common/*.cpp"
      "../CMP_Framework/Common/half/*.h"
      "../CMP_Framework/Common/half/*.cpp"
+     "../Applications/_Plugins/Common/ATIFormats.cpp"
+     "../Applications/_Plugins/Common/ATIFormats.h"
      )
 
 target_sources(Compressonator
@@ -67,4 +69,5 @@ target_include_directories(Compressonator
                            GT
                            Common
                            ../CMP_Framework/Common
-                           ../CMP_Framework/Common/half)
+                           ../CMP_Framework/Common/half
+                           ../Applications/_Plugins/Common)

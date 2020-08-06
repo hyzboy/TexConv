@@ -15,7 +15,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "ispc_texcomp.h"
-#include "intel_texture_compression.h"
+#include "kernel_ispc.h"
 
 void GetProfile_ultrafast(bc7_enc_settings* settings)
 {
@@ -86,7 +86,7 @@ void GetProfile_veryfast(bc7_enc_settings* settings)
 }
 
 void GetProfile_fast(bc7_enc_settings* settings)
-{	
+{
     settings->channels = 3;
 
 	// mode02
@@ -120,7 +120,7 @@ void GetProfile_fast(bc7_enc_settings* settings)
 }
 
 void GetProfile_basic(bc7_enc_settings* settings)
-{	
+{
     settings->channels = 3;
 
 	// mode02
@@ -154,7 +154,7 @@ void GetProfile_basic(bc7_enc_settings* settings)
 }
 
 void GetProfile_slow(bc7_enc_settings* settings)
-{	
+{
     settings->channels = 3;
 
 	int moreRefine = 2;
@@ -189,7 +189,7 @@ void GetProfile_slow(bc7_enc_settings* settings)
 }
 
 void GetProfile_alpha_ultrafast(bc7_enc_settings* settings)
-{	
+{
     settings->channels = 4;
 
     // mode02
@@ -211,7 +211,7 @@ void GetProfile_alpha_ultrafast(bc7_enc_settings* settings)
 
 	// mode45
 	settings->mode_selection[2] = true;
-    
+
     settings->mode45_channel0 = 3;
     settings->refineIterations_channel = 1;
 	settings->refineIterations[4] = 1;
@@ -224,7 +224,7 @@ void GetProfile_alpha_ultrafast(bc7_enc_settings* settings)
 }
 
 void GetProfile_alpha_veryfast(bc7_enc_settings* settings)
-{	
+{
     settings->channels = 4;
 
     // mode02
@@ -246,7 +246,7 @@ void GetProfile_alpha_veryfast(bc7_enc_settings* settings)
 
 	// mode45
 	settings->mode_selection[2] = true;
-    
+
     settings->mode45_channel0 = 3;
     settings->refineIterations_channel = 2;
 	settings->refineIterations[4] = 2;
@@ -259,7 +259,7 @@ void GetProfile_alpha_veryfast(bc7_enc_settings* settings)
 }
 
 void GetProfile_alpha_fast(bc7_enc_settings* settings)
-{	
+{
     settings->channels = 4;
 
     // mode02
@@ -281,7 +281,7 @@ void GetProfile_alpha_fast(bc7_enc_settings* settings)
 
 	// mode45
 	settings->mode_selection[2] = true;
-    
+
     settings->mode45_channel0 = 3;
     settings->refineIterations_channel = 2;
 	settings->refineIterations[4] = 2;
@@ -294,7 +294,7 @@ void GetProfile_alpha_fast(bc7_enc_settings* settings)
 }
 
 void GetProfile_alpha_basic(bc7_enc_settings* settings)
-{	
+{
     settings->channels = 4;
 
     // mode02
@@ -316,7 +316,7 @@ void GetProfile_alpha_basic(bc7_enc_settings* settings)
 
 	// mode45
 	settings->mode_selection[2] = true;
-    
+
     settings->mode45_channel0 = 0;
     settings->refineIterations_channel = 2;
 	settings->refineIterations[4] = 2;
@@ -329,7 +329,7 @@ void GetProfile_alpha_basic(bc7_enc_settings* settings)
 }
 
 void GetProfile_alpha_slow(bc7_enc_settings* settings)
-{	
+{
     settings->channels = 4;
 
 	int moreRefine = 2;
