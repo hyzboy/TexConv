@@ -140,7 +140,7 @@ bool ILImage::LoadFile(const OSString &filename)
     if(!ilLoadImage(filename.c_str()))
         return(false);
 
-    LOG_INFO(OS_TEXT("File: ")+filename);
+    LOG_INFO(OS_TEXT("\nFile: ")+filename);
 
     il_width	=ilGetInteger(IL_IMAGE_WIDTH);
     il_height	=ilGetInteger(IL_IMAGE_HEIGHT);

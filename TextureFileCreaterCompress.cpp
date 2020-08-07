@@ -158,21 +158,38 @@ public:
             CMP_FORMAT_BC6H_SF, //ColorFormat::BC6H_SF
             CMP_FORMAT_BC7,     //ColorFormat::BC7
         };
+
+        constexpr char fmt_name_list[][8]=
+        {
+            "BC1RGB",
+            "BC1RGBA",
+            "BC2",
+            "BC3",
+            "BC4",
+            "BC5",
+            "BC6H",
+            "BC6H_SF",
+            "BC7"
+        };
+
+        const int fmt_index=size_t(fmt->format)-size_t(ColorFormat::BC1RGB);
             
         kernel_options.height       =image->height();
         kernel_options.width        =image->width();
         kernel_options.fquality     =1.0f;        
-        kernel_options.format       =fmt_list[size_t(fmt->format)-size_t(ColorFormat::BC1RGB)];
+        kernel_options.format       =fmt_list[fmt_index];
         kernel_options.encodeWith   =CMP_HPC;
         kernel_options.threads      =4;
         kernel_options.getPerfStats =false;
         kernel_options.getDeviceInfo=false;
+
+        std::cout<<"CompressFormat: "<<fmt_name_list[fmt_index]<<std::endl;
     }
 
     static bool CMP_API CMP_Feedback_Proc(CMP_FLOAT fProgress, CMP_DWORD_PTR pUser1, CMP_DWORD_PTR pUser2)
     {
-        std::cout<<"progress: "<<fProgress<<std::endl;
-        return(true);
+        putchar('.');
+        return(false);
     }
  
     bool Write() override
