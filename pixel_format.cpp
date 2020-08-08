@@ -51,7 +51,8 @@ namespace hgl
         
         {ColorFormat::COMPRESS, "COMPRESS", 0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},ColorDataType::NONE},
 
-        {ColorFormat::BC1,      "BC1",      0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},ColorDataType::NONE},
+        {ColorFormat::BC1RGB,   "BC1RGB",   0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},ColorDataType::NONE},
+        {ColorFormat::BC1RGBA,  "BC1RGBA",  0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},ColorDataType::NONE},
         {ColorFormat::BC2,      "BC2",      0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},ColorDataType::NONE},
         {ColorFormat::BC3,      "BC3",      0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},ColorDataType::NONE},
         {ColorFormat::BC4,      "BC4",      0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},ColorDataType::NONE},
@@ -70,7 +71,7 @@ void PrintFormatList()
 
     for(uint i=0;i<PixelFormatCount;i++)
     {
-        std::cout<<pf->channels<<": "<<std::setw(10)<<pf->name<<" "<<std::setw(3)<<pf->GetPixelBytes()<<" bits "<<ColorDataName[(uint)(pf->type)]<<std::endl;
+        std::cout<<int(pf->channels)<<": "<<std::setw(10)<<pf->name<<" "<<std::setw(3)<<pf->GetPixelBytes()<<" bits "<<ColorDataName[(uint)(pf->type)]<<std::endl;
 
         ++pf;
     }

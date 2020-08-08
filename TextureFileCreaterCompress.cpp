@@ -149,6 +149,7 @@ public:
         constexpr CMP_FORMAT fmt_list[]=
         {
             CMP_FORMAT_BC1,     //ColorFormat::BC1
+            CMP_FORMAT_BC1,     //ColorFormat::BC1
             CMP_FORMAT_BC2,     //ColorFormat::BC2
             CMP_FORMAT_BC3,     //ColorFormat::BC3
             CMP_FORMAT_BC4,     //ColorFormat::BC4
@@ -160,7 +161,8 @@ public:
 
         constexpr char fmt_name_list[][8]=
         {
-            "BC1",
+            "BC1RGB",
+            "BC1RGBA",
             "BC2",
             "BC3",
             "BC4",
@@ -170,7 +172,7 @@ public:
             "BC7"
         };
 
-        const int fmt_index=size_t(fmt->format)-size_t(ColorFormat::BC1);
+        const int fmt_index=size_t(fmt->format)-size_t(ColorFormat::BC1RGB);
             
         kernel_options.height       =image->height();
         kernel_options.width        =image->width();
