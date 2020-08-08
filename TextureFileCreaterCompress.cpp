@@ -1,8 +1,8 @@
 #include"TextureFileCreater.h"
 #include"ILImage.h"
 #include<hgl/log/LogInfo.h>
-#include<CMP_CompressonatorLib/Common.h>
-#include<CMP_CompressonatorLib/Compressonator.h>
+#include"CMP_CompressonatorLib/Common.h"
+#include"CMP_CompressonatorLib/Compressonator.h"
 
 void CMP_RegisterHostPlugins();
 CMP_ERROR CMP_API CMP_DestroyComputeLibrary(bool forceclose = false);
@@ -25,7 +25,7 @@ public:
         const int channels=image->channels();
         const int type=image->type();
         
-        memset(&MipSetIn, 0, sizeof(MipSet));
+        hgl_zero(MipSetIn);
 
         CMP_ChannelFormat cf;
         CMP_TextureDataType tdt;
@@ -126,7 +126,7 @@ public:
         }
 
         MipSetIn.m_nMipLevels = 1;
-        MipSetIn.m_format     = CMP_FORMAT_RGBA_8888;
+        MipSetIn.m_format     = fmt;
 
         CMP_BYTE* pData = CMips.GetMipLevel(&MipSetIn,0)->m_pbData;
 
@@ -144,12 +144,11 @@ public:
 
     void InitOption()
     {
-        memset(&kernel_options,0,sizeof(KernelOptions));
+        hgl_zero(kernel_options);
 
         constexpr CMP_FORMAT fmt_list[]=
         {
-            CMP_FORMAT_BC1,     //ColorFormat::BC1RGB
-            CMP_FORMAT_BC1,     //ColorFormat::BC1RGBA
+            CMP_FORMAT_BC1,     //ColorFormat::BC1
             CMP_FORMAT_BC2,     //ColorFormat::BC2
             CMP_FORMAT_BC3,     //ColorFormat::BC3
             CMP_FORMAT_BC4,     //ColorFormat::BC4
@@ -161,8 +160,7 @@ public:
 
         constexpr char fmt_name_list[][8]=
         {
-            "BC1RGB",
-            "BC1RGBA",
+            "BC1",
             "BC2",
             "BC3",
             "BC4",
@@ -172,14 +170,14 @@ public:
             "BC7"
         };
 
-        const int fmt_index=size_t(fmt->format)-size_t(ColorFormat::BC1RGB);
+        const int fmt_index=size_t(fmt->format)-size_t(ColorFormat::BC1);
             
         kernel_options.height       =image->height();
         kernel_options.width        =image->width();
         kernel_options.fquality     =1.0f;        
         kernel_options.format       =fmt_list[fmt_index];
         kernel_options.encodeWith   =CMP_HPC;
-        kernel_options.threads      =4;
+        kernel_options.threads      =8;
         kernel_options.getPerfStats =false;
         kernel_options.getDeviceInfo=false;
 
@@ -199,7 +197,7 @@ public:
         CMP_RegisterHostPlugins();
         CMP_InitializeBCLibrary();
 
-        memset(&MipSetOut,0,sizeof(MipSet));
+        hgl_zero(MipSetOut);
 
         CMP_ProcessTexture(&MipSetIn,&MipSetOut,kernel_options,&TextureFileCreaterCompress::CMP_Feedback_Proc);
 

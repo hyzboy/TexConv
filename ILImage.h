@@ -51,9 +51,7 @@ public:
 
     void *GetRG(ILuint type){return GetData(IL_LUMINANCE_ALPHA,type);}
     void *GetRGB(ILuint type){return GetData(IL_RGB,type);}
-//    void *GetBGR(ILuint type){return GetData(IL_BGR,type);}
-    void *GetRGBA(ILuint type){return GetData(IL_RGBA,type);}
-//    void *GetBGRA(ILuint type){return GetData(IL_BGRA,type);}
+    void *GetRGBA(ILuint type);
 
     void *GetLum(ILuint type){return GetData(IL_LUMINANCE,type);}
 };//class ILImage

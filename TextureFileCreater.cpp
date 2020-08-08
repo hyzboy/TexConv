@@ -104,7 +104,7 @@ bool TextureFileCreater::Write(void *data)
     if(fmt->format>ColorFormat::COMPRESS)
     {
         dos->WriteUint8(0);
-        dos->WriteUint16(uint(fmt->format)-uint(ColorFormat::COMPRESS));
+        dos->WriteUint32(uint(fmt->format)-uint(ColorFormat::COMPRESS));
         dos->WriteUint32(total_bytes);
     }
     else

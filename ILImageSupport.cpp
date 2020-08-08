@@ -240,3 +240,30 @@ void *ILImage::GetData(ILuint format,ILuint type)
 
     return ilGetData();
 }
+
+template<typename T> void MixRGBA(T *rgba,T *alpha,int size)
+{
+	int i;
+
+    for(i=0;i<size;i++)
+    {
+    	rgba+=3;
+        *rgba++=*alpha++;
+    }
+}
+
+void *ILImage::GetRGBA(ILuint type)
+{
+    void *data=GetData(IL_RGBA,type);
+    void *alpha=ilGetAlpha(type);
+
+    const int size=il_width*il_height;
+
+    if(type==IL_UNSIGNED_BYTE   ||type==IL_BYTE                 )MixRGBA<uint8 >((uint8  *)data,(uint8  *)alpha,size);else
+    if(type==IL_UNSIGNED_SHORT  ||type==IL_SHORT||type==IL_HALF )MixRGBA<uint16>((uint16 *)data,(uint16 *)alpha,size);else
+    if(type==IL_UNSIGNED_INT    ||type==IL_INT  ||type==IL_FLOAT)MixRGBA<uint32>((uint32 *)data,(uint32 *)alpha,size);else
+    if(type==IL_DOUBLE                                          )MixRGBA<uint64>((uint64 *)data,(uint64 *)alpha,size);else
+    return(nullptr);
+
+    return data;
+}

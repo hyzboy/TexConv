@@ -37,8 +37,7 @@ enum class ColorFormat
 
     COMPRESS,
 
-    BC1RGB,
-    BC1RGBA,
+    BC1,
     BC2,
     BC3,
     BC4,
