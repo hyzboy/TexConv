@@ -71,7 +71,13 @@ void PrintFormatList()
 
     for(uint i=0;i<PixelFormatCount;i++)
     {
-        std::cout<<int(pf->channels)<<": "<<std::setw(10)<<pf->name<<" "<<std::setw(3)<<pf->GetPixelBytes()<<" bits "<<ColorDataName[(uint)(pf->type)]<<std::endl;
+        if(pf->format<ColorFormat::COMPRESS)
+            std::cout<<int(pf->channels)<<": "<<std::setw(10)<<pf->name<<" "<<std::setw(3)<<pf->GetPixelBytes()<<" bits "<<ColorDataName[(uint)(pf->type)]<<std::endl;
+        else
+        if(pf->format>ColorFormat::COMPRESS)
+            std::cout<<std::setw(13)<<pf->name<<" Compress Format"<<std::endl;
+        else
+            std::cout<<std::endl;
 
         ++pf;
     }
