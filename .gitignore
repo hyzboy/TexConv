@@ -1,0 +1,10 @@
+/IntelTextureCompression/kernel_ispc.h
+/IntelTextureCompression/kernel_ispc.obj
+/IntelTextureCompression/kernel_ispc_avx.h
+/IntelTextureCompression/kernel_ispc_avx.obj
+/IntelTextureCompression/kernel_ispc_avx2.h
+/IntelTextureCompression/kernel_ispc_avx2.obj
+/IntelTextureCompression/kernel_ispc_sse2.h
+/IntelTextureCompression/kernel_ispc_sse2.obj
+/IntelTextureCompression/kernel_ispc_sse4.h
+/IntelTextureCompression/kernel_ispc_sse4.obj
