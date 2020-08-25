@@ -202,6 +202,6 @@ int os_main(int argc,os_char **argv)
 
     SaveImageToFile(filename,img.width(),img.height(),1,1,IL_UNSIGNED_BYTE,df_bitmap);
 
-	ilShutDown();
+    ilShutDown();
     return(0);
 }

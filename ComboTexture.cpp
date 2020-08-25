@@ -1,6 +1,6 @@
 ﻿#include<iostream>
 #include<iomanip>
-#include<ILImage.h>
+#include"ILImage.h"
 #include<hgl/type/DataType.h>
 #include<hgl/util/cmd/CmdParse.h>
 #include<hgl/type/Smart.h>
@@ -33,27 +33,27 @@ namespace hgl
         return clamp<double>(in,0.0f,1.0f);
     }
 
-	constexpr double clamp_u=0.436*255.0;
-	constexpr double clamp_v=0.615*255.0;
-		
-	void RGB2YUV(uint8 *y,uint8 *u,uint8 *v,const uint8 *rgb,const uint count,const double gamma)
-	{
-		uint8 r,g,b;
+    constexpr double clamp_u=0.436*255.0;
+    constexpr double clamp_v=0.615*255.0;
+        
+    void RGB2YUV(uint8 *y,uint8 *u,uint8 *v,const uint8 *rgb,const uint count,const double gamma)
+    {
+        uint8 r,g,b;
 
-		for(uint i=0;i<count;i++)
-		{
-			r=*rgb++;
-			g=*rgb++;
-			b=*rgb++;
+        for(uint i=0;i<count;i++)
+        {
+            r=*rgb++;
+            g=*rgb++;
+            b=*rgb++;
 
-			*y  =				  0.299		* r	+ 0.587 	* g + 0.114 	* b;
-			*u++=(clamp_u		- 0.14713 	* r	- 0.28886 	* g	+ 0.436 	* b) / 0.872;
-			*v++=(clamp_v		+ 0.615 	* r	- 0.51499 	* g	- 0.10001 	* b) / 1.230;
+            *y  =				  0.299		* r	+ 0.587 	* g + 0.114 	* b;
+            *u++=(clamp_u		- 0.14713 	* r	- 0.28886 	* g	+ 0.436 	* b) / 0.872;
+            *v++=(clamp_v		+ 0.615 	* r	- 0.51499 	* g	- 0.10001 	* b) / 1.230;
 
             *y=clamp(pow((*y)/255.0f,gamma))*255;
             ++y;
-		}
-	}
+        }
+    }
 
     template<typename T>
     void MixRGB(T *rgb,const T *r,const T *g,const T *b,const uint count)
