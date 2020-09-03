@@ -10,7 +10,7 @@ namespace
     * @param fullname 拆分前的完整路径文件名
     */
     template<typename T>
-    inline bool SplitFilename(BaseString<T> &pathname,BaseString<T> &filename,const BaseString<T> &fullname)
+    inline bool SplitFilename(String<T> &pathname,String<T> &filename,const String<T> &fullname)
     {
         if(fullname.Length()<=1)
             return false;
@@ -29,17 +29,17 @@ namespace
     }
 
     template<typename T>
-    inline BaseString<T> ReplaceExtName(const BaseString<T> &old_name,const BaseString<T> &new_extname,const T split_char='.')
+    inline String<T> ReplaceExtName(const String<T> &old_name,const String<T> &new_extname,const T split_char='.')
     {
         if(old_name.Length()<=1)
-            return(BaseString<T>::charOf(split_char)+new_extname);
+            return(String<T>::charOf(split_char)+new_extname);
 
         const int pos=old_name.FindRightChar(split_char);
 
         if(pos!=-1)
             return old_name.SubString(0,pos)+new_extname;
         else
-            return old_name+BaseString<T>::charOf(split_char)+new_extname;
+            return old_name+String<T>::charOf(split_char)+new_extname;
     }
 }//namespace
 

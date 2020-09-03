@@ -1,6 +1,6 @@
 #pragma once
 #include<IL/il.h>
-#include<hgl/type/BaseString.h>
+#include<hgl/type/String.h>
 
 using namespace hgl;
 
