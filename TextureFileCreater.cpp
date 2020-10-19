@@ -17,7 +17,7 @@ namespace
 
         const T spear_char[] = { '/','\\' };
 
-        const int pos=fullname.FindRightChar(spear_char);
+        const int pos=fullname.FindRightChars(spear_char);
 
         if(pos==-1)
             return(false);
