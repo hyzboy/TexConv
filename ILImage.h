@@ -20,14 +20,14 @@ private:
 
 public:
 
-    const ILuint width  ()const{return il_width;}
-    const ILuint height ()const{return il_height;}
-    const ILuint depth  ()const{return il_depth;}
+    const ILuint width  ()const{return ilGetInteger(IL_IMAGE_WIDTH);}
+    const ILuint height ()const{return ilGetInteger(IL_IMAGE_HEIGHT);}
+    const ILuint depth  ()const{return ilGetInteger(IL_IMAGE_DEPTH);}
     const ILuint bit    ()const{return il_bit;}
     const ILuint format ()const{return il_format;}
     const ILuint type   ()const{return il_type;}
 
-    const ILuint pixel_total()const{return il_width*il_height*il_depth;}
+    const ILuint pixel_total()const{return width()*height()*depth();}
 
 public:
 
@@ -44,6 +44,10 @@ public:
 
     bool Resize(uint,uint);
 
+    bool GenMipmaps();
+     int GetMipLevel();
+    bool ActiveMipmap(ILuint mip);
+
     void *ToRGB(ILuint type=IL_UNSIGNED_BYTE);
     void *ToGray(ILuint type=IL_UNSIGNED_BYTE);
     
@@ -54,6 +58,12 @@ public:
     void *GetRGBA(ILuint type);
 
     void *GetLum(ILuint type){return GetData(IL_LUMINANCE,type);}
+
+    bool ConvertToR(ILuint type){return (il_format==IL_LUMINANCE?Convert(IL_LUMINANCE,type):Convert(IL_ALPHA,type));}
+    bool ConvertToRG(ILuint type){return Convert(IL_LUMINANCE_ALPHA,type);}
+    bool ConvertToRGB(ILuint type){return Convert(IL_RGB,type);}
+    bool ConvertToRGBA(ILuint type){return Convert(IL_RGBA,type);}
+    bool ConvertToLum(ILuint type){return Convert(IL_LUMINANCE,type);}
 };//class ILImage
 
 bool SaveImageToFile(const OSString &filename,ILuint w,ILuint h,const float scale,ILuint c,ILuint t,void *data);

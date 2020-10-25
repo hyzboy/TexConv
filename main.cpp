@@ -22,7 +22,9 @@ bool					gen_mipmaps	    =false;								    //是否产生mipmaps
 bool					use_color_key   =false;							        //是否使用ColorKey
 uint8					color_key[3];									        //ColorKey颜色
 
-bool ConvertImage(const OSString &filename,const PixelFormat **pf);
+void CMP_RegisterHostPlugins();
+
+bool ConvertImage(const OSString &filename,const PixelFormat **pf,const bool mipmap);
 
 const PixelFormat *ParseParamFormat(const CmdParse &cmd,const os_char *flag,const PixelFormat *default_format)
 {
@@ -76,7 +78,7 @@ protected:
 
     void ProcFile(EnumFileConfig *efc,FileInfo &fi) override
     {
-        ConvertImage(fi.fullname,pixel_fmt);
+        ConvertImage(fi.fullname,pixel_fmt,gen_mipmaps);
     }
 
 public:
@@ -110,6 +112,9 @@ int os_main(int argc,os_char **argv)
     ParseParamFormat(cp);								            //检测推荐格式
    
     ilInit();
+    
+    CMP_RegisterHostPlugins();
+    CMP_InitializeBCLibrary();
 
     double start_time=GetMicroTime();
     double end_time;
@@ -127,7 +132,8 @@ int os_main(int argc,os_char **argv)
 
     LOG_INFO(OS_TEXT("总计转换图片")+OSString::valueOf(eci.GetConvertCount())
             +OS_TEXT("张，总计耗时")+OSString::valueOf(end_time-start_time)+OS_TEXT("秒"));
-
+            
+    CMP_ShutdownBCLibrary();
 	ilShutDown();
     return 0;
 }

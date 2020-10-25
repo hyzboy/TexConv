@@ -88,11 +88,8 @@ struct PixelFormat
     uint8           channels;   //颜色通道数
     char            color[4];
     uint8           bits[4];
+    uint            total_bits; //每象素总位数
     ColorDataType   type;
-
-public:
-
-    const uint GetPixelBytes()const{return (bits[0]+bits[1]+bits[2]+bits[3])>>3;}                   ///<获取单个象素所需字节数
 };//struct PixelFormat
 
 const PixelFormat *GetPixelFormat(ColorFormat);                                                     ///<根据获取获取象素格式类型

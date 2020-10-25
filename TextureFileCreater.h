@@ -13,13 +13,9 @@ class TextureFileCreater
 {
 protected:
 
-    const PixelFormat *fmt;
+    const PixelFormat *pixel_format;
 
     ILImage *image;
-
-    uint pixel_bytes;       //单像素字节数
-    uint pixel_total;       //象素总量=width*height
-    uint total_bytes;       //总字节数
 
 protected:
 
@@ -28,16 +24,17 @@ protected:
     io::FileOutputStream fos;
     io::DataOutputStream *dos;
 
-    bool Write(void *);
+    uint32 Write(void *,const uint);
 
 public:
 
     TextureFileCreater(const PixelFormat *pf,ILImage *);
     virtual ~TextureFileCreater();
 
-    virtual bool WriteFileHeader(const OSString &);
+    virtual bool WriteFileHeader(const OSString &,const uint);
     
-    virtual bool Write()=0;
+    virtual bool InitFormat()=0;
+    virtual uint32 Write()=0;
 
     virtual void Close();
     virtual void Delete();

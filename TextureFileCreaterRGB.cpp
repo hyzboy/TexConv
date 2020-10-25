@@ -4,9 +4,39 @@
 
 class TextureFileCreaterRGB:public TextureFileCreater
 {
+    ILuint type;
+
 public:
 
     using TextureFileCreater::TextureFileCreater;
+
+public:
+
+    bool InitFormat() override
+    {
+        if(pixel_format->format==ColorFormat::RGB32U
+         ||pixel_format->format==ColorFormat::RGB32I
+         ||pixel_format->format==ColorFormat::RGB32F)
+        {
+            if(!ToILType(type,pixel_format->bits[0],pixel_format->type))
+                return(false);
+        }
+        else if(pixel_format->format==ColorFormat::RGB565)
+        {
+            type=IL_UNSIGNED_BYTE;
+        }
+        else if(pixel_format->format==ColorFormat::B10GR11UF)
+        {
+            type=IL_HALF;
+        }
+        else
+        {
+            LOG_ERROR(OS_TEXT("Don't support this RGB format"));
+            return(false);
+        }
+
+        return image->ConvertToRGB(type);
+    }
 
     void RGB8toRGB565(uint16 *target,uint8 *src,uint size)
     {
@@ -42,45 +72,44 @@ public:
 
 public:
  
-    bool Write() override
+    uint32 Write() override
     {
-        if(fmt->format==ColorFormat::RGB32U
-         ||fmt->format==ColorFormat::RGB32I
-         ||fmt->format==ColorFormat::RGB32F)
+        const uint total_bytes=(pixel_format->total_bits*image->pixel_total())>>3;
+        
+        std::cout<<"Convert Image To: "<<image->width()<<"x"<<image->height()<<" "<<total_bytes<<" bytes."<<std::endl;
+
+        if(pixel_format->format==ColorFormat::RGB32U
+         ||pixel_format->format==ColorFormat::RGB32I
+         ||pixel_format->format==ColorFormat::RGB32F)
         {
-            ILuint type;
-
-            if(!ToILType(type,fmt->bits[0],fmt->type))
-                return(nullptr);
-
             void *origin_rgb=image->GetRGB(type);
 
-            return TextureFileCreater::Write(origin_rgb);   
+            return TextureFileCreater::Write(origin_rgb,total_bytes);
         }
-        else if(fmt->format==ColorFormat::RGB565)
+        else if(pixel_format->format==ColorFormat::RGB565)
         {
             void *origin_rgb=image->GetRGB(IL_UNSIGNED_BYTE);
 
-            AutoDelete<uint16> rgb565=new uint16[image->pixel_total()];
+            AutoDeleteArray<uint16> rgb565(image->pixel_total());
 
             RGB8toRGB565(rgb565,(uint8 *)origin_rgb,image->pixel_total());
 
-            return TextureFileCreater::Write(rgb565);
+            return TextureFileCreater::Write(rgb565,total_bytes);
         }
-        else if(fmt->format==ColorFormat::B10GR11UF)
+        else if(pixel_format->format==ColorFormat::B10GR11UF)
         {
             void *origin_rgb=image->GetRGB(IL_HALF);
 
-            AutoDelete<uint32> b10gr11=new uint32[image->pixel_total()];
+            AutoDeleteArray<uint32> b10gr11(image->pixel_total());
 
             RGB16FtoB10GR11UF(b10gr11,(uint16 *)origin_rgb,image->pixel_total());
 
-            return TextureFileCreater::Write(b10gr11);
+            return TextureFileCreater::Write(b10gr11,total_bytes);
         }
         else
         {
             LOG_ERROR(OS_TEXT("Don't support this RGB format"));
-            return(false);
+            return(0);
         }
     }
 };//class TextureFileCreaterRGB:public TextureFileCreater

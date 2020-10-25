@@ -13,15 +13,18 @@ using CTFC_FUNC=TextureFileCreater *(*)(const PixelFormat *,ILImage *);
 
 static CTFC_FUNC CreateTFC[4]={CreateTextureFileCreaterR,CreateTextureFileCreaterRG,CreateTextureFileCreaterRGB,CreateTextureFileCreaterRGBA};
 
-bool ConvertImage(const OSString &filename,const PixelFormat **pf)
+bool ConvertImage(const OSString &filename,const PixelFormat **pf,const bool mipmaps)
 {
     ILImage image;
 
     if(!image.LoadFile(filename))
         return(false);
+ 
+    int miplevel=1;
 
-    image.Bind();
-
+    if(mipmaps)
+        miplevel=hgl::GetMipLevel(image.width(),image.height());
+    
     const uint channels=image.channels();
 
     if(channels<0||channels>4)
@@ -38,18 +41,42 @@ bool ConvertImage(const OSString &filename,const PixelFormat **pf)
     else
         tex_file_creater=CreateTextureFileCreaterCompress(fmt,&image);
 
-    if(!tex_file_creater->WriteFileHeader(filename))
+    if(!tex_file_creater->WriteFileHeader(filename,miplevel))
     {
         tex_file_creater->Delete();
         LOG_ERROR(OS_TEXT("Write file header failed."));
         return(false);
     }
 
-    if(!tex_file_creater->Write())
+    tex_file_creater->InitFormat();
+
+    uint width=image.width();
+    uint height=image.height();
+    uint total=0;
+    uint bytes=0;
+
+    for(int i=0;i<miplevel;i++)
     {
-        tex_file_creater->Delete();
-        return(false);
+        bytes=tex_file_creater->Write();
+
+        if(bytes<=0)
+        {
+            tex_file_creater->Delete();
+            return(false);
+        }
+
+        total+=bytes;
+
+        if(i<miplevel)
+        {
+            if(width>1)width>>=1;
+            if(height>1)height>>=1;
+
+            image.Resize(width,height);
+        }
     }
+
+    LOG_INFO(OS_TEXT("pixel total length: ")+OSString::valueOf(total)+OS_TEXT(" bytes."));
 
     tex_file_creater->Close();
 

@@ -102,8 +102,6 @@ bool ILImage::Resize(uint nw,uint nh)
     if(nw==il_width&&nh==il_height)return(true);
     if(nw==0||nh==0)return(false);
 
-    Bind();
-
     if(!iluScale(nw,nh,il_depth))
         return(false);
 
@@ -113,12 +111,26 @@ bool ILImage::Resize(uint nw,uint nh)
     return(true);
 }
 
+bool ILImage::GenMipmaps()
+{
+    return iluBuildMipmaps();
+}
+
+bool ILImage::ActiveMipmap(ILuint mip)
+{
+    return ilActiveMipmap(mip);
+}
+
+int ILImage::GetMipLevel()
+{
+    return ilGetInteger(IL_NUM_MIPMAPS);
+}
+
 bool ILImage::Convert(ILuint format,ILuint type)
 {
     if(il_format==format
      &&il_type==type)return(true);
 
-    Bind();
     if(!ilConvertImage(format,type))
         return(false);
     
@@ -215,8 +227,6 @@ void *ILImage::ToGray(ILuint type)
 
 void *ILImage::GetR(ILuint type)
 {
-    Bind();
-
     if(il_format==IL_ALPHA)return ilGetAlpha(type);
     if(il_format==IL_LUMINANCE)
     {
@@ -232,8 +242,6 @@ void *ILImage::GetR(ILuint type)
 
 void *ILImage::GetData(ILuint format,ILuint type)
 {
-    Bind();
-
     if(il_format!=format||il_type!=type)
     if(!Convert(format,type))
         return nullptr;
@@ -257,7 +265,7 @@ void *ILImage::GetRGBA(ILuint type)
     void *data=GetData(IL_RGBA,type);
     void *alpha=ilGetAlpha(type);
 
-    const int size=il_width*il_height;
+    const int size=width()*height();
 
     if(type==IL_UNSIGNED_BYTE   ||type==IL_BYTE                 )MixRGBA<uint8 >((uint8  *)data,(uint8  *)alpha,size);else
     if(type==IL_UNSIGNED_SHORT  ||type==IL_SHORT||type==IL_HALF )MixRGBA<uint16>((uint16 *)data,(uint16 *)alpha,size);else

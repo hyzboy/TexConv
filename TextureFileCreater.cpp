@@ -63,21 +63,18 @@ bool ToILType(ILuint &type,const uint8 bits,const ColorDataType cdt)
 
 TextureFileCreater::TextureFileCreater(const PixelFormat *pf,ILImage *img)
 {
-    fmt=pf;
+    pixel_format=pf;
     image=img;
-
-    pixel_total=image->pixel_total();
-    pixel_bytes=pf->GetPixelBytes();
-    total_bytes=pixel_total*pixel_bytes;
 
     dos=nullptr;
 }
+
 TextureFileCreater::~TextureFileCreater()
 {
     SAFE_CLEAR(dos);
 }
 
-bool TextureFileCreater::WriteFileHeader(const OSString &old_filename)
+bool TextureFileCreater::WriteFileHeader(const OSString &old_filename,const uint mip_level)
 {
     OSString pn,fn;
 
@@ -91,31 +88,43 @@ bool TextureFileCreater::WriteFileHeader(const OSString &old_filename)
     dos=new io::LEDataOutputStream(&fos);
 
     dos->Write("Tex2D\x1A",6);
-    dos->WriteUint8(2);                                 //版本
-    dos->WriteUint8(0);                                 //mipmaps级数
+    dos->WriteUint8(3);                                 //版本
+    dos->WriteUint8(mip_level);                         //mipmaps级数
     dos->WriteUint32(image->width());
     dos->WriteUint32(image->height());
+    
+    if(pixel_format->format>ColorFormat::COMPRESS)
+    {
+        dos->WriteUint8(0);
+        dos->WriteUint16(uint(pixel_format->format)-uint(ColorFormat::COMPRESS));
+    }
+    else
+    {
+        dos->WriteUint8(pixel_format->channels);                     //颜色通道数
+        dos->WriteUint8((uint8 *)pixel_format->color,4);             //颜色标记
+        dos->WriteUint8(pixel_format->bits,4);                       //颜色位数
+        dos->WriteUint8((uint8)pixel_format->type);                  //数据类型
+    }
 
     return(true);
 }
 
-bool TextureFileCreater::Write(void *data)
+uint32 TextureFileCreater::Write(void *data,const uint total_bytes)
 {
-    if(fmt->format>ColorFormat::COMPRESS)
+    const uint64 space=0;
+
+    if(dos->Write(data,total_bytes)!=total_bytes)
+        return(0);
+
+    if(total_bytes<8)    
     {
-        dos->WriteUint8(0);
-        dos->WriteUint16(uint(fmt->format)-uint(ColorFormat::COMPRESS));
-        dos->WriteUint32(total_bytes);
-    }
-    else
-    {
-        dos->WriteUint8(fmt->channels);                     //颜色通道数
-        dos->WriteUint8((uint8 *)fmt->color,4);             //颜色标记
-        dos->WriteUint8(fmt->bits,4);                       //颜色位数
-        dos->WriteUint8((uint8)fmt->type);                  //数据类型
+        if(dos->Write(&space,8-total_bytes)!=8-total_bytes)
+            return(0);
+
+        return 8;
     }
 
-    return(dos->Write(data,total_bytes)==total_bytes);
+    return total_bytes;
 }
 
 void TextureFileCreater::Close()
