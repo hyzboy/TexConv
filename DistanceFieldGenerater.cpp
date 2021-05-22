@@ -135,12 +135,16 @@ int os_main(int argc,os_char **argv)
 
     ilInit();
 
-    ILImage img;    
+    ILImage img;
 
     if(!img.LoadFile(argv[1]))
     {
         std::cerr<<"open file failed."<<std::endl;
         return -1;
+    }
+
+    if(img.channels()==1)
+    {
     }
 
     const uint8 *op=(const uint8 *)img.ToGray();
@@ -173,7 +177,7 @@ int os_main(int argc,os_char **argv)
     grid1->GenerateSDF();
     grid2->GenerateSDF();
 
-    AutoDeleteArray<uint8> df_bitmap=new uint8[img.pixel_total()];
+    AutoDeleteArray<uint8> df_bitmap(img.pixel_total());
     uint8 *tp=df_bitmap;
 
     uint32 dist;
