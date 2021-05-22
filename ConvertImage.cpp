@@ -1,4 +1,5 @@
 #include<hgl/log/LogInfo.h>
+#include<IL/ilu.h>
 #include"ILImage.h"
 #include"TextureFileCreater.h"
 

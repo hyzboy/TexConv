@@ -12,6 +12,8 @@ class ILImage
 
     uint channel_count;
 
+    void Refresh();
+
 private:
 
     bool Convert(ILuint,ILuint);
@@ -36,11 +38,13 @@ public:
 public:
 
     ILImage();
+    ILImage(ILImage *);
     ~ILImage();
 
     bool LoadFile(const OSString &);
 
     void Bind();
+    void Copy(ILImage *);
 
     bool Resize(uint,uint);
 
