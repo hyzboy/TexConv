@@ -9,10 +9,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -27,9 +27,9 @@
 //
 //////////////////////////////////////////////////////////////////////////////
 //// etcpack v2.74
-//// 
-//// NO WARRANTY 
-//// 
+////
+//// NO WARRANTY
+////
 //// BECAUSE THE PROGRAM IS LICENSED FREE OF CHARGE THE PROGRAM IS PROVIDED
 //// "AS IS". ERICSSON MAKES NO REPRESENTATIONS OF ANY KIND, EXTENDS NO
 //// WARRANTIES OR CONDITIONS OF ANY KIND; EITHER EXPRESS, IMPLIED OR
@@ -46,7 +46,7 @@
 //// TO YOUR SOLE RESPONSIBILITY TO MAKE SUCH DETERMINATION AND ACQUIRE
 //// SUCH LICENSES AS MAY BE NECESSARY WITH RESPECT TO PATENTS, COPYRIGHT
 //// AND OTHER INTELLECTUAL PROPERTY OF THIRD PARTIES.
-//// 
+////
 //// FOR THE AVOIDANCE OF DOUBT THE PROGRAM (I) IS NOT LICENSED FOR; (II)
 //// IS NOT DESIGNED FOR OR INTENDED FOR; AND (III) MAY NOT BE USED FOR;
 //// ANY MISSION CRITICAL APPLICATIONS SUCH AS, BUT NOT LIMITED TO
@@ -58,7 +58,7 @@
 //// DAMAGE. YOUR RIGHTS UNDER THIS LICENSE WILL TERMINATE AUTOMATICALLY
 //// AND IMMEDIATELY WITHOUT NOTICE IF YOU FAIL TO COMPLY WITH THIS
 //// PARAGRAPH.
-//// 
+////
 //// IN NO EVENT WILL ERICSSON, BE LIABLE FOR ANY DAMAGES WHATSOEVER,
 //// INCLUDING BUT NOT LIMITED TO PERSONAL INJURY, ANY GENERAL, SPECIAL,
 //// INDIRECT, INCIDENTAL OR CONSEQUENTIAL DAMAGES ARISING OUT OF OR IN
@@ -69,17 +69,17 @@
 //// THE PROGRAM TO OPERATE WITH ANY OTHER PROGRAMS) REGARDLESS OF THE
 //// THEORY OF LIABILITY (CONTRACT, TORT OR OTHERWISE), EVEN IF SUCH HOLDER
 //// OR OTHER PARTY HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
-//// 
+////
 //// (C) Ericsson AB 2005-2013. All Rights Reserved.
-//// 
+////
 
 #ifndef _CODEC_ETC2_H_INCLUDED_
 #define _CODEC_ETC2_H_INCLUDED_
 
-#include "Common.h"
-#include "Codec_Block_4x4.h"
-#include "Compressonator_tc.h"
-#include "CompressonatorXCodec.h"
+#include "common.h"
+#include "codec_block_4x4.h"
+#include "compressonator_tc.h"
+#include "compressonatorxcodec.h"
 
 #define ATC_OFFSET_ALPHA 0
 #define ATC_OFFSET_RGB 2
@@ -135,13 +135,12 @@ enum IMG_DATA_FORMAT {
 };
 
 
-class CCodec_ETC2 : public CCodec_Block_4x4  
-{
-public:
+class CCodec_ETC2 : public CCodec_Block_4x4 {
+  public:
     CCodec_ETC2(CodecType codecType);
     virtual ~CCodec_ETC2();
 
-protected:
+  protected:
     bool m_fast = true;
 
     CodecError  CompressRGBBlock(CMP_BYTE rgbBlock[BLOCK_SIZE_4X4X4], CMP_DWORD compressedBlock[2]);

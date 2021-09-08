@@ -8,10 +8,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -22,9 +22,11 @@
 //
 #pragma once
 
-#include "QtGui\qopenglextrafunctions.h"
-#include "QtCore\qobject.h"
-#include "imgui\imgui.h"
+
+#include "imgui/imgui.h"
+
+#include <QtGui/qopenglextrafunctions.h>
+#include <QtCore/qobject.h>
 
 #include <memory>
 
@@ -33,9 +35,8 @@ class QWheelEvent;
 class QKeyEvent;
 
 
-class QImGUI_OpenGLWindowWrapper
-{
-public:
+class QImGUI_OpenGLWindowWrapper {
+  public:
     virtual ~QImGUI_OpenGLWindowWrapper() {}
     virtual void installEventFilter(QObject *object) = 0;
     virtual QSize size() const = 0;
@@ -44,10 +45,9 @@ public:
     virtual QPoint mapFromGlobal(const QPoint &p) const = 0;
 };
 
-class ImGuiRenderer : public QObject, QOpenGLExtraFunctions 
-{
+class ImGuiRenderer : public QObject, QOpenGLExtraFunctions {
     Q_OBJECT
-public:
+  public:
     ImGuiRenderer() {}
 
     void Draw();
@@ -55,7 +55,7 @@ public:
     void newFrame();
     bool eventFilter(QObject *watched, QEvent *event);
 
-private:
+  private:
     void renderDrawList(ImDrawData *draw_data);
 
     void onMousePressedChange(QMouseEvent *event);

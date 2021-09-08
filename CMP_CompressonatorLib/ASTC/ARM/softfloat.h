@@ -1,4 +1,4 @@
-/*----------------------------------------------------------------------------*/  
+/*----------------------------------------------------------------------------*/
 /**
  *    This confidential and proprietary software may be used only as
  *    authorised by a licensing agreement from ARM Limited
@@ -10,8 +10,8 @@
  *    by a licensing agreement from ARM Limited.
  *
  *    @brief    Soft IEEE-754 floating point library.
- */ 
-/*----------------------------------------------------------------------------*/ 
+ */
+/*----------------------------------------------------------------------------*/
 
 #ifndef SOFTFLOAT_H_INCLUDED
 
@@ -25,9 +25,9 @@ extern "C"
 #if defined __cplusplus && !defined(_MSC_VER)
 
     /* if compiling as C++, we need to define these macros in order to obtain all the macros in stdint.h . */
-    #define __STDC_LIMIT_MACROS
-    #define __STDC_CONSTANT_MACROS
-    #include <stdint.h>
+#define __STDC_LIMIT_MACROS
+#define __STDC_CONSTANT_MACROS
+#include <stdint.h>
 
 #else
 
@@ -41,24 +41,24 @@ extern "C"
 #endif
 
 
-uint32_t clz32(uint32_t p);
+    uint32_t clz32(uint32_t p);
 
 
-/* targets that don't have UINT32_C probably don't have the rest of C99s stdint.h */
+    /* targets that don't have UINT32_C probably don't have the rest of C99s stdint.h */
 #ifndef UINT32_C
 
-    #define PASTE(a) a
-    #define UINT64_C(a) PASTE(a##ULL)
-    #define UINT32_C(a) PASTE(a##U)
-    #define INT64_C(a) PASTE(a##LL)
-    #define INT32_C(a) (int32_t)a
-    
-    #define PRIX32 "X"
-    #define PRId32 "d"
-    #define PRIu32 "u"
-    #define PRIX64 "LX"
-    #define PRId64 "Ld"
-    #define PRIu64 "Lu"
+#define PASTE(a) a
+#define UINT64_C(a) PASTE(a##ULL)
+#define UINT32_C(a) PASTE(a##U)
+#define INT64_C(a) PASTE(a##LL)
+#define INT32_C(a) (int32_t)a
+
+#define PRIX32 "X"
+#define PRId32 "d"
+#define PRIu32 "u"
+#define PRIX64 "LX"
+#define PRId64 "Ld"
+#define PRIu64 "Lu"
 
 #endif
 
@@ -69,8 +69,7 @@ uint32_t clz32(uint32_t p);
     typedef uint32_t sf32;
 
     /* the five rounding modes that IEEE-754r defines */
-    typedef enum
-    {
+    typedef enum {
         SF_UP = 0,                /* round towards positive infinity */
         SF_DOWN = 1,            /* round towards negative infinity */
         SF_TOZERO = 2,            /* round towards zero */

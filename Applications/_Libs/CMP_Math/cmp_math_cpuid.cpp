@@ -7,10 +7,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -25,39 +25,39 @@
 #include "cmp_math_common.h"
 #include "cmp_math_cpuid.h"
 
+#ifdef _WIN32
+#include<intrin.h>
+#endif//_WIN32
+
 #ifndef ASPM_GPU
 
-void cmp_cpuid(int cpuInfo[4], int function_id)
-{
+void cmp_cpuid(int cpuInfo[4], int function_id) {
     // subfunction_id = 0
-    #ifdef _WIN32
-    __cpuidex(cpuInfo, function_id, 0);
+#ifdef _WIN32
+    __cpuidex(cpuInfo, function_id, 0); // defined in intrin.h
 #else
     // To Do
     //__cpuid_count(0, function_id, cpuInfo[0], cpuInfo[1], cpuInfo[2], cpuInfo[3]);
 #endif
 }
 
-cmp_cpufeatures cmp_get_cpufeatures()
-{
+cmp_cpufeatures cmp_get_cpufeatures() {
     unsigned int maxInfoType;
     cmp_cpufeatures cpu;
     int cpuInfo[4], i;
 
     // Clear the feature list
-    for (i = 0; i<SSP_SSE_COUNT; ++i)
-    {
+    for (i = 0; i<SSP_SSE_COUNT; ++i) {
         cpu.feature[i] = 0;
     }
 
-#ifndef _LINUX
+#ifndef __linux__
     cmp_cpuid(cpuInfo,0);
     int nIds = cpuInfo[0];
 
-    if (nIds >= 0x00000001)
-    {
+    if (nIds >= 0x00000001) {
         cmp_cpuid(cpuInfo, 0x00000001);
-        cpu.feature[SSP_SSE3]   = (cpuInfo[2] & CMP_CPU_SSE3); 
+        cpu.feature[SSP_SSE3]   = (cpuInfo[2] & CMP_CPU_SSE3);
         cpu.feature[SSP_SSSE3]  = (cpuInfo[2] & CMP_CPU_SSSE3);
         cpu.feature[SSP_SSE4_1] = (cpuInfo[2] & CMP_CPU_SSE41);
         cpu.feature[SSP_SSE4_2] = (cpuInfo[2] & CMP_CPU_SSE42);
@@ -97,8 +97,7 @@ cmp_cpufeatures cmp_get_cpufeatures()
 
     cmp_cpuid(cpuInfo,0x80000000);
     maxInfoType = cpuInfo[0];
-    if (maxInfoType >= 0x80000001)
-    {
+    if (maxInfoType >= 0x80000001) {
         cmp_cpuid(cpuInfo, 0x80000001);
         cpu.feature[SSP_SSE4a] = (cpuInfo[2] & CMP_CPU_SSE4a);
         cpu.feature[SSP_SSE5]  = (cpuInfo[2] & CMP_CPU_XOP);
@@ -112,43 +111,39 @@ cmp_cpufeatures cmp_get_cpufeatures()
     return cpu;
 }
 
-void cmp_autodected_cpufeatures(CMP_MATH_BYTE set)
-{
+void cmp_autodected_cpufeatures(CMP_MATH_BYTE set) {
     // Determine which features are available
     cmp_cpufeatures cpu = cmp_get_cpufeatures();
 
-    // Default: features always set to CPU 
+    // Default: features always set to CPU
     cmp_set_cpu_features();
 
     // User requested to use only CPU
     if ((set & CMP_MATH_USE_CPU) > 0) return;
 
 
-#ifndef _LINUX
+#ifdef CMP_USE_XMMINTRIN
+#ifndef __linux__
     // Auto detect CPU features to enable
-    for (int i = 0; i<SSP_SSE_COUNT; i++)
-    {
-        if (cpu.feature[i] > 0)
-        {
-            switch (i)
-            {
-                // Enable SSE features
-                case SSP_SSE2:
-                case SSP_SSE:
-                {
-                    if ((set == CMP_MATH_USE_AUTO) || (set == CMP_MATH_USE_HPC))
-                        cmp_set_sse2_features();
-                    break;
-                }
-                case SSP_FMA3:
-                {
-                    if ((set == CMP_MATH_USE_AUTO) || (set == CMP_MATH_USE_HPC))
-                        cmp_set_fma3_features();
-                    break;
-                }
+    for (int i = 0; i<SSP_SSE_COUNT; i++) {
+        if (cpu.feature[i] > 0) {
+            switch (i) {
+            // Enable SSE features
+            case SSP_SSE2:
+            case SSP_SSE: {
+                if ((set == CMP_MATH_USE_AUTO) || (set == CMP_MATH_USE_HPC))
+                    cmp_set_sse2_features();
+                break;
+            }
+            case SSP_FMA3: {
+                if ((set == CMP_MATH_USE_AUTO) || (set == CMP_MATH_USE_HPC))
+                    cmp_set_fma3_features();
+                break;
+            }
             }
         }
     }
+#endif
 #endif
 
 }

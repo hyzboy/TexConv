@@ -7,10 +7,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -22,45 +22,41 @@
 //=====================================================================
 #include <stdio.h>
 #include <stdlib.h>
-#include "TC_PluginAPI.h"
-#include "TC_PluginInternal.h"
-#include "Compressonator.h"
-#include "CCPU_HPC.h"
+#include "tc_pluginapi.h"
+#include "tc_plugininternal.h"
+#include "compressonator.h"
+#include "ccpu_hpc.h"
 
 CMIPS *CMips = NULL;
-
-//#define BUILD_AS_PLUGIN_DLL
 
 #ifdef BUILD_AS_PLUGIN_DLL
 DECLARE_PLUGIN(Plugin_CCPU_HPC)
 SET_PLUGIN_TYPE("PIPELINE")
 SET_PLUGIN_NAME("HPC")
 #else
-void *make_Plugin_HPC() { return new Plugin_CCPU_HPC; }
+void *make_Plugin_HPC() {
+    return new Plugin_CCPU_HPC;
+}
 #endif
 
-Plugin_CCPU_HPC::Plugin_CCPU_HPC()
-{
+Plugin_CCPU_HPC::Plugin_CCPU_HPC() {
     m_pComputeBase = NULL;
 }
 
-Plugin_CCPU_HPC::~Plugin_CCPU_HPC()
-{
+Plugin_CCPU_HPC::~Plugin_CCPU_HPC() {
     if (m_pComputeBase)
-            delete m_pComputeBase;
+        delete m_pComputeBase;
 }
 
-int Plugin_CCPU_HPC::TC_PluginSetSharedIO(void* Shared)
-{
+int Plugin_CCPU_HPC::TC_PluginSetSharedIO(void* Shared) {
     CMips = reinterpret_cast<CMIPS *> (Shared);
     return 0;
 }
 
-int Plugin_CCPU_HPC::TC_PluginGetVersion(TC_PluginVersion* pPluginVersion)
-{
-    #ifdef _WIN32
+int Plugin_CCPU_HPC::TC_PluginGetVersion(TC_PluginVersion* pPluginVersion) {
+#ifdef _WIN32
     pPluginVersion->guid                    = g_GUID_CPU_HPC;
-    #endif
+#endif
     pPluginVersion->dwAPIVersionMajor       = TC_API_VERSION_MAJOR;
     pPluginVersion->dwAPIVersionMinor       = TC_API_VERSION_MINOR;
     pPluginVersion->dwPluginVersionMajor    = TC_PLUGIN_VERSION_MAJOR;
@@ -68,8 +64,7 @@ int Plugin_CCPU_HPC::TC_PluginGetVersion(TC_PluginVersion* pPluginVersion)
     return 0;
 }
 
-int Plugin_CCPU_HPC::TC_Init(void  *kernel_options)
-{
+int Plugin_CCPU_HPC::TC_Init(void  *kernel_options) {
     m_pComputeBase = (ComputeBase *) new CCPU_HPC(kernel_options);
     if (m_pComputeBase == NULL)
         return -1;
@@ -78,35 +73,31 @@ int Plugin_CCPU_HPC::TC_Init(void  *kernel_options)
 
 CMP_ERROR Plugin_CCPU_HPC::TC_GetPerformanceStats(void* pPerfStats) {
     CMP_ERROR result = CMP_ERR_NOPERFSTATS;
-    if (m_pComputeBase)
-    {
-       KernelPerformanceStats *PerfStats =  reinterpret_cast<KernelPerformanceStats *>(pPerfStats);
-       PerfStats->m_num_blocks  = m_pComputeBase->GetBlockSize();
-       PerfStats->m_computeShaderElapsedMS = m_pComputeBase->GetProcessElapsedTimeMS();
-       PerfStats->m_CmpMTxPerSec  = m_pComputeBase->GetMTxPerSec();
-       result = CMP_OK;
+    if (m_pComputeBase) {
+        KernelPerformanceStats *PerfStats =  reinterpret_cast<KernelPerformanceStats *>(pPerfStats);
+        PerfStats->m_num_blocks  = m_pComputeBase->GetBlockSize();
+        PerfStats->m_computeShaderElapsedMS = m_pComputeBase->GetProcessElapsedTimeMS();
+        PerfStats->m_CmpMTxPerSec  = m_pComputeBase->GetMTxPerSec();
+        result = CMP_OK;
     }
     return result;
 }
 
 CMP_ERROR Plugin_CCPU_HPC::TC_GetDeviceInfo(void* pDeviceInfo) {
     CMP_ERROR result = CMP_ERR_NOPERFSTATS;
-    if (m_pComputeBase)
-    {
-       KernelDeviceInfo *DeviceInfo =  reinterpret_cast<KernelDeviceInfo *>(pDeviceInfo);
-       snprintf(DeviceInfo->m_deviceName,sizeof(DeviceInfo->m_deviceName),"%s",m_pComputeBase->GetDeviceName());
-       snprintf(DeviceInfo->m_version,sizeof(DeviceInfo->m_version),"%s",m_pComputeBase->GetVersion());
-       DeviceInfo->m_maxUCores      = m_pComputeBase->GetMaxUCores();
-       result = CMP_OK;
+    if (m_pComputeBase) {
+        KernelDeviceInfo *DeviceInfo =  reinterpret_cast<KernelDeviceInfo *>(pDeviceInfo);
+        snprintf(DeviceInfo->m_deviceName,sizeof(DeviceInfo->m_deviceName),"%s",m_pComputeBase->GetDeviceName());
+        snprintf(DeviceInfo->m_version,sizeof(DeviceInfo->m_version),"%s",m_pComputeBase->GetVersion());
+        DeviceInfo->m_maxUCores      = m_pComputeBase->GetMaxUCores();
+        result = CMP_OK;
     }
     return result;
 }
 
 #ifdef ENABLE_MAKE_COMPATIBLE_API
-bool Plugin_CCPU_HPC::IsFloatFormat(CMP_FORMAT InFormat)
-{
-    switch (InFormat)
-    {
+bool Plugin_CCPU_HPC::IsFloatFormat(CMP_FORMAT InFormat) {
+    switch (InFormat) {
     case CMP_FORMAT_ARGB_16F:
     case CMP_FORMAT_ABGR_16F:
     case CMP_FORMAT_RGBA_16F:
@@ -123,8 +114,7 @@ bool Plugin_CCPU_HPC::IsFloatFormat(CMP_FORMAT InFormat)
     case CMP_FORMAT_R_32F:
     case CMP_FORMAT_BC6H:
     case CMP_FORMAT_BC6H_SF:
-    case CMP_FORMAT_RGBE_32F:
-    {
+    case CMP_FORMAT_RGBE_32F: {
         return true;
     }
     break;
@@ -135,18 +125,15 @@ bool Plugin_CCPU_HPC::IsFloatFormat(CMP_FORMAT InFormat)
     return false;
 }
 
-inline float clamp(float a, float l, float h)
-{
+inline float clamp(float a, float l, float h) {
     return (a < l) ? l : ((a > h) ? h : a);
 }
 
-inline float knee(double x, double f)
-{
+inline float knee(double x, double f) {
     return float(log(x * f + 1.f) / f);
 }
 
-float Plugin_CCPU_HPC::findKneeValueHPC(float x, float y)
-{
+float Plugin_CCPU_HPC::findKneeValueHPC(float x, float y) {
     float f0 = 0;
     float f1 = 1.f;
 
@@ -161,8 +148,7 @@ float Plugin_CCPU_HPC::findKneeValueHPC(float x, float y)
 
         if (y2 < y) {
             f1 = f2;
-        }
-        else {
+        } else {
             f0 = f2;
         }
     }
@@ -170,15 +156,12 @@ float Plugin_CCPU_HPC::findKneeValueHPC(float x, float y)
     return (f0 + f1) / 2.f;
 }
 
-CMP_ERROR Plugin_CCPU_HPC::CF_16BitTo8Bit(CMP_WORD* sBlock, CMP_BYTE* cBlock, CMP_DWORD dwBlockSize)
-{
+CMP_ERROR Plugin_CCPU_HPC::CF_16BitTo8Bit(CMP_WORD* sBlock, CMP_BYTE* cBlock, CMP_DWORD dwBlockSize) {
     assert(sBlock);
     assert(cBlock);
     assert(dwBlockSize);
-    if (sBlock && cBlock && dwBlockSize)
-    {
-        for (CMP_DWORD i = 0; i < dwBlockSize; i++)
-        {
+    if (sBlock && cBlock && dwBlockSize) {
+        for (CMP_DWORD i = 0; i < dwBlockSize; i++) {
             cBlock[i] =  (CMP_BYTE)(sBlock[i] / 257);
         }
     }
@@ -186,15 +169,12 @@ CMP_ERROR Plugin_CCPU_HPC::CF_16BitTo8Bit(CMP_WORD* sBlock, CMP_BYTE* cBlock, CM
     return CMP_OK;
 }
 
-CMP_ERROR Plugin_CCPU_HPC::Byte2HalfShort(CMP_HALFSHORT* hfsBlock, CMP_BYTE* cBlock, CMP_DWORD dwBlockSize)
-{
+CMP_ERROR Plugin_CCPU_HPC::Byte2HalfShort(CMP_HALFSHORT* hfsBlock, CMP_BYTE* cBlock, CMP_DWORD dwBlockSize) {
     assert(hfsBlock);
     assert(cBlock);
     assert(dwBlockSize);
-    if (hfsBlock && cBlock && dwBlockSize)
-    {
-        for (CMP_DWORD i = 0; i < dwBlockSize; i++)
-        {
+    if (hfsBlock && cBlock && dwBlockSize) {
+        for (CMP_DWORD i = 0; i < dwBlockSize; i++) {
             hfsBlock[i] = CMP_HALF(float(cBlock[i] / 255.0f)).bits();
         }
     }
@@ -202,14 +182,12 @@ CMP_ERROR Plugin_CCPU_HPC::Byte2HalfShort(CMP_HALFSHORT* hfsBlock, CMP_BYTE* cBl
     return CMP_OK;
 }
 
-CMP_ERROR Plugin_CCPU_HPC::Float2Byte(CMP_BYTE cBlock[], CMP_FLOAT* fBlock, MipSet  &srcTexture, const CMP_CompressOptions* pOptions)
-{
+CMP_ERROR Plugin_CCPU_HPC::Float2Byte(CMP_BYTE cBlock[], CMP_FLOAT* fBlock, MipSet  &srcTexture, const CMP_CompressOptions* pOptions) {
     assert(cBlock);
     assert(fBlock);
     assert(&srcTexture);
 
-    if (cBlock && fBlock)
-    {
+    if (cBlock && fBlock) {
         CMP_HALF* hfData = (CMP_HALF*)fBlock;
         float r = 0, g = 0, b = 0, a = 0;
 
@@ -231,8 +209,7 @@ CMP_ERROR Plugin_CCPU_HPC::Float2Byte(CMP_BYTE cBlock[], CMP_FLOAT* fBlock, MipS
                     hfData++;
                     a = (float)(*hfData);
                     hfData++;
-                }
-                else if (srcTexture.m_ChannelFormat == CF_Float32) {
+                } else if (srcTexture.m_ChannelFormat == CF_Float32) {
                     r = (float)(*fBlock);
                     fBlock++;
                     g = (float)(*fBlock);
@@ -249,8 +226,7 @@ CMP_ERROR Plugin_CCPU_HPC::Float2Byte(CMP_BYTE cBlock[], CMP_FLOAT* fBlock, MipS
                 //  1) Compensate for fogging by subtracting defog
                 //     from the raw pixel values.
                 // We assume a defog of 0
-                if (pOptions->fInputDefog > 0.0)
-                {
+                if (pOptions->fInputDefog > 0.0) {
                     r = r - pOptions->fInputDefog;
                     g = g - pOptions->fInputDefog;
                     b = b - pOptions->fInputDefog;
@@ -303,7 +279,7 @@ CMP_ERROR Plugin_CCPU_HPC::Float2Byte(CMP_BYTE cBlock[], CMP_FLOAT* fBlock, MipS
 
                 //  6) Scale the values such that middle gray pixels are
                 //     mapped to a frame buffer value that is 3.5 f-stops
-                //     below the display's maximum intensity. 
+                //     below the display's maximum intensity.
                 r *= scale;
                 g *= scale;
                 b *= scale;
@@ -331,8 +307,7 @@ CMP_ERROR Plugin_CCPU_HPC::Float2Byte(CMP_BYTE cBlock[], CMP_FLOAT* fBlock, MipS
 }
 #endif
 
-CMP_ERROR Plugin_CCPU_HPC::TC_Compress(void *Options, MipSet  &SrcTexture, MipSet  &destTexture,CMP_Feedback_Proc pFeedback)
-{
+CMP_ERROR Plugin_CCPU_HPC::TC_Compress(void *Options, MipSet  &SrcTexture, MipSet  &destTexture,CMP_Feedback_Proc pFeedback) {
     CMP_ERROR result = CMP_OK;
 
 #ifdef ENABLE_MAKE_COMPATIBLE_API
@@ -354,8 +329,7 @@ CMP_ERROR Plugin_CCPU_HPC::TC_Compress(void *Options, MipSet  &SrcTexture, MipSe
     CMP_DWORD   hold_dwDataSize = 0;
     CMP_FORMAT  hold_format = CMP_FORMAT_Unknown;
 
-    if (srcFloat && !destFloat)
-    {
+    if (srcFloat && !destFloat) {
         hold_pData      = SrcTexture.pData;
         hold_format     = SrcTexture.m_format;
         hold_dwDataSize = SrcTexture.dwDataSize;
@@ -381,8 +355,7 @@ CMP_ERROR Plugin_CCPU_HPC::TC_Compress(void *Options, MipSet  &SrcTexture, MipSe
         newBuffer = true;
     }
 
-    else if (!srcFloat && destFloat)
-    {
+    else if (!srcFloat && destFloat) {
         // Process the current mip level data
         hold_pData      = SrcTexture.pData;
         hold_format     = SrcTexture.m_format;
@@ -397,12 +370,9 @@ CMP_ERROR Plugin_CCPU_HPC::TC_Compress(void *Options, MipSet  &SrcTexture, MipSe
         SrcTexture.m_format     = CMP_FORMAT_ARGB_16F;
         SrcTexture.dwDataSize   = size * 4 * 2;
         newBuffer = true;
-    }
-    else // both src & dest are of type int
-    {
+    } else { // both src & dest are of type int
         // check if src format is 8 bit and dest is 8 bit if not convert src to match dest
-        if ((SrcTexture.m_ChannelFormat == CF_16bit) && (destTexture.m_ChannelFormat == CF_Compressed))
-        {
+        if ((SrcTexture.m_ChannelFormat == CF_16bit) && (destTexture.m_ChannelFormat == CF_Compressed)) {
             hold_pData      = SrcTexture.pData;
             hold_format     = SrcTexture.m_format;
             hold_dwDataSize = SrcTexture.dwDataSize;
@@ -424,15 +394,13 @@ CMP_ERROR Plugin_CCPU_HPC::TC_Compress(void *Options, MipSet  &SrcTexture, MipSe
 
 #endif
 
-    if (m_pComputeBase)
-    {
+    if (m_pComputeBase) {
         result = m_pComputeBase->Compress((KernelOptions *)Options, SrcTexture,destTexture,pFeedback);
     }
 
 #ifdef ENABLE_MAKE_COMPATIBLE_API
 
-    if (newBuffer) 
-    {
+    if (newBuffer) {
         // remove the new data
         free(SrcTexture.pData);
         // restore original data
@@ -445,21 +413,17 @@ CMP_ERROR Plugin_CCPU_HPC::TC_Compress(void *Options, MipSet  &SrcTexture, MipSe
     return result;
 }
 
-void Plugin_CCPU_HPC::TC_SetComputeOptions(void *options)
-{
+void Plugin_CCPU_HPC::TC_SetComputeOptions(void *options) {
     if (m_pComputeBase)
         m_pComputeBase->SetComputeOptions((ComputeOptions *)options);
 }
 
-char *Plugin_CCPU_HPC::TC_ComputeSourceFile()
-{
+char *Plugin_CCPU_HPC::TC_ComputeSourceFile() {
     return NULL;
 }
 
-int Plugin_CCPU_HPC::TC_Close()
-{
-    if (m_pComputeBase)
-    {
+int Plugin_CCPU_HPC::TC_Close() {
+    if (m_pComputeBase) {
         delete m_pComputeBase;
         m_pComputeBase = NULL;
     }

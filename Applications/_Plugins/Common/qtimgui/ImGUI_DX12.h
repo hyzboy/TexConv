@@ -8,10 +8,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -23,28 +23,24 @@
 #ifndef  QTIMGUI_H
 #define  QTIMGUI_H
 
-#include "ImGui_DX12Renderer.h"
+#include "imgui_dx12renderer.h"
 #include "QtWidgets/qwidget.h"
 
 class QWidget;
 
-class QImGUI_WidgetWindowWrapper_DX12 : public QImGUI_WindowWrapper_DX12
-{
-public:
+class QImGUI_WidgetWindowWrapper_DX12 : public QImGUI_WindowWrapper_DX12 {
+  public:
     QImGUI_WidgetWindowWrapper_DX12(QWidget *w) : w(w) {}
 
-    void installEventFilter(QObject *object) override
-    {
+    void installEventFilter(QObject *object) override {
         return w->installEventFilter(object);
     }
 
-    QSize size() const override
-    {
+    QSize size() const override {
         return w->size();
     }
 
-    qreal devicePixelRatio() const override
-    {
+    qreal devicePixelRatio() const override {
         return w->devicePixelRatioF();
     }
 
@@ -52,12 +48,11 @@ public:
         return w->isActiveWindow();
     }
 
-    QPoint mapFromGlobal(const QPoint &p) const override
-    {
+    QPoint mapFromGlobal(const QPoint &p) const override {
         return w->mapFromGlobal(p);
     }
 
-private:
+  private:
     QWidget *w;
 };
 

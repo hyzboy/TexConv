@@ -24,12 +24,13 @@
 #ifndef cEXR_HEADER
 #define cEXR_HEADER
 
-#include "namespaceAlias.h"
+#include <namespacealias.h>
 
 #pragma warning(push)
 #pragma warning(disable : 4100)
 #pragma warning(disable : 4800)
-
+#pragma warning(disable : 5040) // dynamic exception specifications are valid only in C++14 and earlier; 
+ 
 #include "ImfArray.h"
 #include "ImfRgba.h"
 #include <ImathBox.h>
@@ -39,26 +40,25 @@
 
 #include <string.h>
 
-#include "Common.h"
-#include "Compressonator.h"
+#include "common.h"
+#include "compressonator.h"
 
 using namespace IMF;
 using namespace IMATH;
 
-#include "CMP_FileIO.h"
+#include "cmp_fileio.h"
 
 #pragma warning(disable : 4201)
 typedef unsigned int uint;
 
-class Exr
-{
-public:
-	Exr(){};
-	~Exr(){};
+class Exr {
+  public:
+    Exr() {};
+    ~Exr() {};
 
-	static void fileinfo(const string inf, int &width, int &height);
-	static void readRgba(const string inf, Array2D<Rgba> &pix, int &w, int &h);
-	static void writeRgba(const string outf, const Array2D<Rgba> &pix, int w, int h);
+    static void fileinfo(const string inf, int &width, int &height);
+    static void readRgba(const string inf, Array2D<Rgba> &pix, int &w, int &h);
+    static void writeRgba(const string outf, const Array2D<Rgba> &pix, int w, int h);
 };
 
 extern void Rgba2Texture(Array2D<Rgba> &pixels, CMP_HALFSHORT *data, int w, int h);

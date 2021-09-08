@@ -9,10 +9,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -24,7 +24,7 @@
 #ifndef _BC7_DEFINITIONS_H_
 #define _BC7_DEFINITIONS_H_
 
-#include "Compressonator.h"
+#include "compressonator.h"
 
 #include "3dquant_constants.h"
 
@@ -45,7 +45,7 @@
 
 // Maximum number of index bits
 #define MAX_INDEX_BITS          4
- 
+
 // Maximum number of partition types
 #define MAX_PARTITIONS          64
 
@@ -61,15 +61,14 @@
 
 // If this is defined, ramp calculation is done via math floor and division.
 // Otherwise, ramp calculation is done by bit shifting
-#define USE_HIGH_PRECISION_INTERPOLATION_BC7 
+#define USE_HIGH_PRECISION_INTERPOLATION_BC7
 
-#define MAX_PARTITIONS_TABLE (1+64+64)
+#define MAX_PARTITIONS_TABLE (1+64+64) //cpu
 
 #define MAX_ENTRIES_QUANT_TRACE     16
 #define MAX_CLUSTERS_QUANT_TRACE    8
 
-typedef enum _COMPONENT
-{
+typedef enum _COMPONENT {
     COMP_RED   = 0,
     COMP_GREEN = 1,
     COMP_BLUE =  2,
@@ -77,40 +76,37 @@ typedef enum _COMPONENT
 } COMPONENT;
 
 // Block component encoding
-typedef enum
-{
+typedef enum {
     NO_ALPHA,
     COMBINED_ALPHA,
     SEPARATE_ALPHA
-} CMP_BCE;
+} CMP_BCE_cpu;              // cpu
 
 // Endpoint encoding type
-typedef enum
-{
+typedef enum {
     NO_PBIT,
     ONE_PBIT,
     TWO_PBIT,
     THREE_PBIT,
     FOUR_PBIT,
     FIVE_PBIT
-} CMP_PBIT; 
+} CMP_PBIT_cpu;     // cpu
 
 // Descriptor structure for block encodings
-typedef struct
-{
-    CMP_BCE encodingType;           // Type of block
+typedef struct {
+    CMP_BCE_cpu encodingType;           // Type of block
     CMP_DWORD   partitionBits;          // Number of bits for partition data
     CMP_DWORD   rotationBits;           // Number of bits for component rotation
     CMP_DWORD   indexModeBits;          // Number of bits for index selection
     CMP_DWORD   scalarBits;             // Number of bits for one scalar endpoint
     CMP_DWORD   vectorBits;             // Number of bits for one vector endpoint(excluding P bits)
-    CMP_PBIT  pBitType;               // Type of P-bit encoding
+    CMP_PBIT_cpu  pBitType;               // Type of P-bit encoding
     CMP_DWORD   subsetCount;            // Number of subsets
     CMP_DWORD   indexBits[2];           // Number of bits per index in each index set
 } CMP_BTI;
 
-extern CMP_BTI bti[NUM_BLOCK_TYPES];
+extern CMP_BTI bti_cpu[NUM_BLOCK_TYPES];        // cpu
 
-#include "MathMacros.h"
+#include "mathmacros.h"
 
 #endif

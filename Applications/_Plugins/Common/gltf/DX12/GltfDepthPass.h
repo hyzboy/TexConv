@@ -1,5 +1,5 @@
 // AMD AMDUtils code
-// 
+//
 // Copyright(c) 2017 Advanced Micro Devices, Inc.All rights reserved.
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
@@ -18,43 +18,38 @@
 // THE SOFTWARE.
 #pragma once
 
-#include "GltfCommon.h"
-#include "GltfTechnique.h"
+#include "gltfcommon.h"
+#include "gltftechnique.h"
 
 #include <d3d12.h>
 #include <wrl.h>
 
 // This class takes a GltfCommon class (that holds all the non-GPU specific data) as an input and loads all the GPU specific data
 //
-struct DepthMaterial
-{
+struct DepthMaterial {
     CBV_SRV_UAV *m_pTransparency = NULL;
     std::map<std::string, std::string> m_defines;
 };
 
-struct DepthPrimitives
-{
+struct DepthPrimitives {
     UINT m_NumIndices;
     D3D12_INDEX_BUFFER_VIEW m_IBV;
     std::vector<D3D12_VERTEX_BUFFER_VIEW> m_VBV;
 
     DepthMaterial *m_pMaterial = NULL;
 
-    Microsoft::WRL::ComPtr<ID3D12RootSignature>	m_RootSignature;
-    Microsoft::WRL::ComPtr<ID3D12PipelineState>	m_PipelineRender;
+    Microsoft::WRL::ComPtr<ID3D12RootSignature>    m_RootSignature;
+    Microsoft::WRL::ComPtr<ID3D12PipelineState>    m_PipelineRender;
     SAMPLER                                    *m_sampler;
 };
 
-struct DepthMesh
-{
+struct DepthMesh {
     std::vector<DepthPrimitives> m_pPrimitives;
 };
 
-class GltfDepthPass : public GltfTechnique
-{
-public:
-    struct per_batch
-    {
+class GltfDepthPass : public GltfTechnique {
+  public:
+    struct per_batch {
         DirectX::XMMATRIX mViewProj;
     };
 
@@ -69,12 +64,12 @@ public:
     void OnDestroy();
     GltfDepthPass::per_batch *SetPerBatchConstants();
 
-private:
+  private:
     std::vector<TextureDX12> m_textures;
     std::vector<DepthMesh> m_meshes;
 
     SAMPLER m_sampler;
-    
+
     D3D12_GPU_DESCRIPTOR_HANDLE m_perBatchDesc;
     void DrawMesh(ID3D12GraphicsCommandList* pCommandList, int meshIndex, DirectX::XMMATRIX worldMatrix);
     bool CreateGeometry(tfAccessor indexBuffer, std::vector<tfAccessor> vertexBuffers, DepthPrimitives *pPrimitive);

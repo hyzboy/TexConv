@@ -7,10 +7,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -64,8 +64,7 @@
 #define CMP_CPU_XOP          ((int)1 << 11)    // 0x00000800
 
 // List of features that are to be auto dectected and enabled
-typedef enum 
-{
+typedef enum {
     SSP_MMX,
     SSP_REF,
     SSP_SSE,
@@ -78,13 +77,12 @@ typedef enum
     SSP_SSE5,
     SSP_FMA3,
     SSP_SSE_COUNT
-}cmp_cpu_feature;
+} cmp_cpu_feature;
 
-typedef struct
-{
+typedef struct {
     int  feature[SSP_SSE_COUNT];
     bool x64;
-}cmp_cpufeatures;
+} cmp_cpufeatures;
 
 //}
 

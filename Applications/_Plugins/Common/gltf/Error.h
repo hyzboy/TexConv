@@ -25,8 +25,7 @@
 
 void ShowErrorMessageBox(int result);
 
-inline void ThrowIfFailed(int result)
-{
+inline void ThrowIfFailed(int result) {
 #ifdef _WIN32
     if (FAILED(result))
 #else

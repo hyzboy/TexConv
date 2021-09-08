@@ -1,5 +1,5 @@
 //=============================================================================
-// Copyright 2020 (c), Advanced Micro Devices, Inc. All rights reserved.
+// Copyright 2021 (c), Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
@@ -24,9 +24,9 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
-#include <TestReport.h>
+#include <testreport.h>
 
-#include <Compressonator.h>
+#include <compressonator.h>
 
 #include <opencv2/opencv.hpp>
 

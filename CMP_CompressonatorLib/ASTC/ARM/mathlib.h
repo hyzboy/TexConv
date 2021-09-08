@@ -1,4 +1,4 @@
-/*----------------------------------------------------------------------------*/  
+/*----------------------------------------------------------------------------*/
 /**
  *    This confidential and proprietary software may be used only as
  *    authorised by a licensing agreement from ARM Limited
@@ -10,8 +10,8 @@
  *    by a licensing agreement from ARM Limited.
  *
  *    @brief    Internal math library declarations for ASTC codec.
- */ 
-/*----------------------------------------------------------------------------*/ 
+ */
+/*----------------------------------------------------------------------------*/
 
 #ifndef MATHLIB_H_INCLUDED
 
@@ -36,22 +36,19 @@ float2 fmin(float2 p, float2 q);
 float3 fmin(float3 p, float3 q);
 float4 fmin(float4 p, float4 q);
 
-/* 
+/*
     float dot( float2 p, float2 q );
     float dot( float3 p, float3 q );
     float dot( float4 p, float4 q );
 */
 
-static inline float dot(float2 p, float2 q)
-{
+static inline float dot(float2 p, float2 q) {
     return p.x * q.x + p.y * q.y;
 }
-static inline float dot(float3 p, float3 q)
-{
+static inline float dot(float3 p, float3 q) {
     return p.x * q.x + p.y * q.y + p.z * q.z;
 }
-static inline float dot(float4 p, float4 q)
-{
+static inline float dot(float4 p, float4 q) {
     return p.x * q.x + p.y * q.y + p.z * q.z + p.w * q.w;
 }
 
@@ -85,16 +82,13 @@ float4 normalize(float4 p);
 
 float4 gcross(float4 p, float4 q, float4 r);
 
-struct mat2
-{
+struct mat2 {
     float2 v[2];
 };
-struct mat3
-{
+struct mat3 {
     float3 v[3];
 };
-struct mat4
-{
+struct mat4 {
     float4 v[4];
 };
 
@@ -141,34 +135,29 @@ mat4 operator *(mat4 a, mat4 b);
 
 
 // parametric line, 2D: The line is given by line = a + b*t.
-struct line2
-{
+struct line2 {
     float2 a;
     float2 b;
 };
 
 // paramtric line, 3D
-struct line3
-{
+struct line3 {
     float3 a;
     float3 b;
 };
 
-struct line4
-{
+struct line4 {
     float4 a;
     float4 b;
 };
 
 // plane/hyperplane defined by a point and a normal vector
-struct plane_3d
-{
+struct plane_3d {
     float3 root_point;
     float3 normal;                // normalized
 };
 
-struct hyperplane_4d
-{
+struct hyperplane_4d {
     float4 root_point;
     float4 normal;                // normalized
 };

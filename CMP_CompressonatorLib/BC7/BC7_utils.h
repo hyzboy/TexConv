@@ -9,10 +9,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -24,20 +24,20 @@
 #ifndef _BC7_UTILS_H_
 #define _BC7_UTILS_H_
 
-#include "BC7_Definitions.h"
+#include "bc7_definitions.h"
 
 extern void    WriteBit(CMP_BYTE   *base,
-                    int  offset,
-                    CMP_BYTE   bitVal);
+                        int  offset,
+                        CMP_BYTE   bitVal);
 
 extern void GetRamp(CMP_DWORD endpoint[][MAX_DIMENSION_BIG],
-                double ramp[MAX_DIMENSION_BIG][(1<<MAX_INDEX_BITS)],
-                CMP_DWORD clusters[2],
-                CMP_DWORD componentBits[MAX_DIMENSION_BIG]);
+                    double ramp[MAX_DIMENSION_BIG][(1<<MAX_INDEX_BITS)],
+                    CMP_DWORD clusters[2],
+                    CMP_DWORD componentBits[MAX_DIMENSION_BIG]);
 
 extern void DecodeEndPoints(CMP_DWORD endpoint[][MAX_DIMENSION_BIG],
-                CMP_DWORD componentBits[MAX_DIMENSION_BIG],
-                float ep[][MAX_DIMENSION_BIG]);
+                            CMP_DWORD componentBits[MAX_DIMENSION_BIG],
+                            float ep[][MAX_DIMENSION_BIG]);
 
 extern const double  rampLerpWeights[5][1<<MAX_INDEX_BITS];
 

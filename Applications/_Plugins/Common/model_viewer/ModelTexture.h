@@ -1,5 +1,5 @@
 // AMD AMDUtils code
-// 
+//
 // Copyright(c) 2017 Advanced Micro Devices, Inc.All rights reserved.
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
@@ -20,24 +20,22 @@
 #ifndef MODELTEXTURE_E467CD76_2A95_402D_B989_A39D10E969E1_H
 #define MODELTEXTURE_E467CD76_2A95_402D_B989_A39D10E969E1_H
 
-#include "Compressonator.h"
-#include "Common.h"
-#include "Texture.h"
-#include "PluginInterface.h"
-#include "TextureIO.h"
+#include <compressonator.h>
+#include <common.h>
+
+#include <cstdint>
 
 // This class provides functionality to create a 2D-texture
 // Helper functions to translate Compressonator Formats types to GLTF 2.0 specification standard is also provided
 
-class ModelTexture
-{
-public:
-     ModelTexture();
+class ModelTexture {
+  public:
+    ModelTexture();
     ~ModelTexture();
 
     void CleanMipSet();
     void setCMIPS(CMIPS *cmips);
-    INT32  LoadImageMipSetFromFile(const WCHAR *szFilename, void *pluginManager);
+    int32_t  LoadImageMipSetFromFile(const wchar_t *szFilename, void *pluginManager);
 
     MipSet                *pMipSet;
     CMIPS                 *m_CMIPS;

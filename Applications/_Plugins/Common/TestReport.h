@@ -3,8 +3,7 @@
 #include <cstring>
 #include <iostream>
 
-typedef struct
-{
+typedef struct {
     int DataSize;
 
     float TotalError;
@@ -69,15 +68,12 @@ typedef struct
 
 } REPORT_DATA;
 
-class MY_REPORT_DATA
-{
-public:
-    MY_REPORT_DATA()
-    {
+class MY_REPORT_DATA {
+  public:
+    MY_REPORT_DATA() {
         memset(&data, 0, sizeof(REPORT_DATA));
     };
-    friend std::ostream &operator<<(std::ostream &os, const MY_REPORT_DATA &dt)
-    {
+    friend std::ostream &operator<<(std::ostream &os, const MY_REPORT_DATA &dt) {
         REPORT_DATA my_data = dt.data;
         //os << "Absolute Error: \t"        << my_data.AbsError << "\n";
         os /*<< "MSE: \t"            */ << my_data.MSE << "\n";

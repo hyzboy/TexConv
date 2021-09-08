@@ -7,10 +7,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -24,16 +24,14 @@
 #define _JML_VEC2_H_
 
 
-namespace JML
-{
+namespace JML {
 /// \brief A template class for two-component vectors.
 /**
     The template argument must be a numeric type
 */
 template<class T>
-class Vec2
-{
-public:
+class Vec2 {
+  public:
 
     T x;
     T y;
@@ -60,63 +58,102 @@ public:
     // *****************************************
 
     /// cast to T*
-    operator const T* () const { return (const T*)this; };
+    operator const T* () const {
+        return (const T*)this;
+    };
 
     /// cast to T*
-    operator T* () { return (T*)this; };
+    operator T* () {
+        return (T*)this;
+    };
 
     /// Indexing
-    const T& operator[](int i) const { return ((const T*)this)[i]; };
-    T& operator[](int i) { return ((T*)this)[i]; };
+    const T& operator[](int i) const {
+        return ((const T*)this)[i];
+    };
+    T& operator[](int i) {
+        return ((T*)this)[i];
+    };
 
     /// Assignment
-    const Vec2<T>& operator=(const Vec2<T>& rhs)  { x = rhs.x; y = rhs.y; return *this; };
+    const Vec2<T>& operator=(const Vec2<T>& rhs)  {
+        x = rhs.x;
+        y = rhs.y;
+        return *this;
+    };
 
     // *****************************************
     //    Comparison
     // *****************************************
 
     /// Equality comparison
-    bool operator==(const Vec2<T>& rhs) const { return (x == rhs.x && y == rhs.y); };
+    bool operator==(const Vec2<T>& rhs) const {
+        return (x == rhs.x && y == rhs.y);
+    };
 
     /// Inequality comparision
-    bool operator!=(const Vec2<T>& rhs) const { return (x != rhs.x || y != rhs.y); };
+    bool operator!=(const Vec2<T>& rhs) const {
+        return (x != rhs.x || y != rhs.y);
+    };
 
     // *****************************************
     //    Arithmetic
     // *****************************************
 
     /// Addition
-    const Vec2<T> operator+(const Vec2<T>& rhs) const { return Vec2<T>(x + rhs.x, y + rhs.y); };
+    const Vec2<T> operator+(const Vec2<T>& rhs) const {
+        return Vec2<T>(x + rhs.x, y + rhs.y);
+    };
 
     /// Subtraction
-    const Vec2<T> operator-(const Vec2<T>& rhs) const { return Vec2<T>(x - rhs.x, y - rhs.y);};
+    const Vec2<T> operator-(const Vec2<T>& rhs) const {
+        return Vec2<T>(x - rhs.x, y - rhs.y);
+    };
 
     /// Multiply by scalar
-    const Vec2<T> operator*(const T& v) const { return Vec2<T>(x * v, y * v); };
+    const Vec2<T> operator*(const T& v) const {
+        return Vec2<T>(x * v, y * v);
+    };
 
     /// Divide by scalar
-    const Vec2<T> operator/(const T& v) const { return Vec2<T>(x / v, y / v); };
+    const Vec2<T> operator/(const T& v) const {
+        return Vec2<T>(x / v, y / v);
+    };
 
     /// Addition in-place
-    Vec2<T>& operator+= (const Vec2<T>& rhs) { x += rhs.x; y += rhs.y; return *this; };
+    Vec2<T>& operator+= (const Vec2<T>& rhs) {
+        x += rhs.x;
+        y += rhs.y;
+        return *this;
+    };
 
     /// Subtract in-place
-    Vec2<T>& operator-= (const Vec2<T>& rhs) { x -= rhs.x; y -= rhs.y; return *this; };
+    Vec2<T>& operator-= (const Vec2<T>& rhs) {
+        x -= rhs.x;
+        y -= rhs.y;
+        return *this;
+    };
 
     /// Scalar multiply in-place
-    Vec2<T>& operator*= (const T& v) { x *= v; y *= v; return *this; };
+    Vec2<T>& operator*= (const T& v) {
+        x *= v;
+        y *= v;
+        return *this;
+    };
 
     /// Scalar divide in-place
-    Vec2<T>& operator/= (const T& v) { x /= v; y /= v; return *this; };
+    Vec2<T>& operator/= (const T& v) {
+        x /= v;
+        y /= v;
+        return *this;
+    };
 
 
 };
 
 /// stream output
 template <class T>
-std::ostream& operator<<(std::ostream& sout, const Vec2<T>& vec)
-{
+std::ostream& operator<<(std::ostream& sout, const Vec2<T>& vec) {
     sout << "<" << vec.x << "," << vec.y << ">";
     return sout;
 };

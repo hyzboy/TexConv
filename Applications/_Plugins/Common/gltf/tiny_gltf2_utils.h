@@ -1,5 +1,5 @@
 // AMD AMDUtils code
-// 
+//
 // Copyright(c) 2017 Advanced Micro Devices, Inc.All rights reserved.
 //
 // Major Code based on Header-only tiny glTF 2.0 loader and serializer.
@@ -29,7 +29,7 @@
 #define TINY_GLTF2_UTILS_H
 
 #include "tiny_gltf2.h"
-#include <json/json.h>
+#include <json/json.hpp>
 
 #ifndef TINYGLTF_NO_STB_IMAGE
 #include "stb_image.h"

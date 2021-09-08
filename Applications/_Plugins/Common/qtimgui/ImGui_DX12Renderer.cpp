@@ -8,10 +8,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -22,16 +22,16 @@
 //
 // Copyright(c) 2014 - 2018 Omar Cornut
 
-#include "ImGui_DX12Renderer.h"
+#include "imgui_dx12renderer.h"
 
 #include <wrl.h>
 
 #include <QtCore/qdatetime.h>
-#include <Qtgui/QGuiApplication.h>
+#include <Qtgui/qguiapplication.h>
 #include <QtGui/qevent.h>
-#include <Qtgui/QClipboard.h>
-#include <Qtgui/QCursor.h>
-#include <QtCore/QDebug.h>
+#include <Qtgui/qclipboard.h>
+#include <Qtgui/qcursor.h>
+#include <QtCore/qdebug.h>
 
 // DirectX
 #include <d3d11.h>
@@ -39,9 +39,8 @@
 #define DIRECTINPUT_VERSION 0x0800
 #include <dinput.h>
 
-
-QHash<int, ImGuiKey> keyMap = 
-{
+namespace qtimgui_dx12 {
+QHash<int, ImGuiKey> keyMap = {
     { Qt::Key_Tab, ImGuiKey_Tab },
     { Qt::Key_Left, ImGuiKey_LeftArrow },
     { Qt::Key_Right, ImGuiKey_RightArrow },
@@ -64,22 +63,24 @@ QHash<int, ImGuiKey> keyMap =
 };
 
 QByteArray g_currentClipboardText;
+}
 
-struct VERTEX_CONSTANT_BUFFER
-{
+using namespace qtimgui_dx12;
+
+
+
+struct VERTEX_CONSTANT_BUFFER {
     float        mvp[4][4];
 };
 
-ImGuiRenderer_DX12::ImGuiRenderer_DX12()
-{
+ImGuiRenderer_DX12::ImGuiRenderer_DX12() {
     m_pDevice = NULL;
     m_pPipelineState = NULL;
     m_pRootSignature = NULL;
     m_pTexture2D = NULL;
 }
 
-ImGuiRenderer_DX12::~ImGuiRenderer_DX12()
-{
+ImGuiRenderer_DX12::~ImGuiRenderer_DX12() {
     if (!m_pDevice)
         return;
 
@@ -88,13 +89,12 @@ ImGuiRenderer_DX12::~ImGuiRenderer_DX12()
     if (m_pTexture2D) m_pTexture2D->Release();
 }
 
-void ImGuiRenderer_DX12::OnCreate(  ID3D12Device* pDevice, 
-                                    UploadHeapDX12 *pUploadHeap, 
-                                    ResourceViewHeapsDX12 *pHeaps, 
-                                    DynamicBufferRingDX12 *pConstantBufferRing, 
-                                    UINT node, 
-                                    UINT nodemask)
-{
+void ImGuiRenderer_DX12::OnCreate(  ID3D12Device* pDevice,
+                                    UploadHeapDX12 *pUploadHeap,
+                                    ResourceViewHeapsDX12 *pHeaps,
+                                    DynamicBufferRingDX12 *pConstantBufferRing,
+                                    UINT node,
+                                    UINT nodemask) {
     m_pResourceViewHeaps = pHeaps;
     m_pConstBuf = pConstantBufferRing;
     m_pDevice = pDevice;
@@ -168,9 +168,9 @@ void ImGuiRenderer_DX12::OnCreate(  ID3D12Device* pDevice,
         CD3DX12_DESCRIPTOR_RANGE DescRange[3];
         DescRange[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);        // b0 <- per frame
         DescRange[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);        // t0 <- per material
-        DescRange[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0);    // s0 <- static     
+        DescRange[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0);    // s0 <- static
 
-                                                                         // Visibility to all stages allows sharing binding tables
+        // Visibility to all stages allows sharing binding tables
         CD3DX12_ROOT_PARAMETER RTSlot[3];
         RTSlot[0].InitAsDescriptorTable(1, &DescRange[0], D3D12_SHADER_VISIBILITY_ALL);
         RTSlot[1].InitAsDescriptorTable(1, &DescRange[1], D3D12_SHADER_VISIBILITY_ALL);
@@ -185,10 +185,10 @@ void ImGuiRenderer_DX12::OnCreate(  ID3D12Device* pDevice,
 
         // deny uneccessary access to certain pipeline stages
         descRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_NONE
-            | D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT
-            | D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS
-            | D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS
-            | D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
+                                  | D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT
+                                  | D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS
+                                  | D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS
+                                  | D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
 
         HRESULT hr = D3D12SerializeRootSignature(&descRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &pOutBlob, &pErrorBlob);
         m_pDevice->CreateRootSignature(
@@ -293,8 +293,7 @@ void ImGuiRenderer_DX12::OnCreate(  ID3D12Device* pDevice,
     }
 
     // copy upload texture to texture heap
-    for (UINT mip = 0; mip < 1; ++mip)
-    {
+    for (UINT mip = 0; mip < 1; ++mip) {
         D3D12_RESOURCE_DESC texDesc = m_pTexture2D->GetDesc();
         CD3DX12_TEXTURE_COPY_LOCATION Dst(m_pTexture2D, mip);
         CD3DX12_TEXTURE_COPY_LOCATION Src(pUploadHeap->GetResource(), placedTex2D[mip]);
@@ -326,30 +325,26 @@ void ImGuiRenderer_DX12::OnCreate(  ID3D12Device* pDevice,
 }
 
 void ImGuiRenderer_DX12::initialize(
-                                    QImGUI_WindowWrapper_DX12 *window,
-                                    ID3D12Device* pDevice,
-                                    UploadHeapDX12 *pUploadHeap,
-                                    ResourceViewHeapsDX12 *pHeaps,
-                                    DynamicBufferRingDX12 *pConstantBufferRing,
-                                    UINT node,
-                                    UINT nodemask)
-{
+    QImGUI_WindowWrapper_DX12 *window,
+    ID3D12Device* pDevice,
+    UploadHeapDX12 *pUploadHeap,
+    ResourceViewHeapsDX12 *pHeaps,
+    DynamicBufferRingDX12 *pConstantBufferRing,
+    UINT node,
+    UINT nodemask) {
     m_window.reset(window);
 
     ImGuiIO &io = ImGui::GetIO();
-    for (ImGuiKey key : keyMap.values()) 
-    {
+    for (ImGuiKey key : keyMap.values()) {
         io.KeyMap[key] = key;
     }
 
-    io.SetClipboardTextFn = [](void *user_data, const char *text) 
-    {
+    io.SetClipboardTextFn = [](void *user_data, const char *text) {
         Q_UNUSED(user_data);
         QGuiApplication::clipboard()->setText(text);
     };
 
-    io.GetClipboardTextFn = [](void *user_data) 
-    {
+    io.GetClipboardTextFn = [](void *user_data) {
         Q_UNUSED(user_data);
         g_currentClipboardText = QGuiApplication::clipboard()->text().toUtf8();
         return (const char *)g_currentClipboardText.data();
@@ -360,8 +355,7 @@ void ImGuiRenderer_DX12::initialize(
     OnCreate(pDevice,pUploadHeap,pHeaps, pConstantBufferRing, node,nodemask);
 }
 
-void ImGuiRenderer_DX12::newFrame()
-{
+void ImGuiRenderer_DX12::newFrame() {
     ImGuiIO& io = ImGui::GetIO();
 
     // Setup display size (every frame to accommodate for window resizing)
@@ -375,18 +369,14 @@ void ImGuiRenderer_DX12::newFrame()
 
     // Setup inputs
     // (we already got mouse wheel, keyboard keys & characters from glfw callbacks polled in glfwPollEvents())
-    if (m_window->isActive())
-    {
+    if (m_window->isActive()) {
         auto pos = m_window->mapFromGlobal(QCursor::pos());
         io.MousePos = ImVec2(pos.x(), pos.y());   // Mouse position in screen coordinates (set to -1,-1 if no mouse / on another screen, etc.)
-    }
-    else
-    {
+    } else {
         io.MousePos = ImVec2(-1,-1);
     }
 
-    for (int i = 0; i < 3; i++)
-    {
+    for (int i = 0; i < 3; i++) {
         io.MouseDown[i] = g_MousePressed[i];
     }
 
@@ -400,21 +390,18 @@ void ImGuiRenderer_DX12::newFrame()
     ImGui::NewFrame();
 }
 
-void ImGuiRenderer_DX12::onMousePressedChange(QMouseEvent *event)
-{
+void ImGuiRenderer_DX12::onMousePressedChange(QMouseEvent *event) {
     g_MousePressed[0] = event->buttons() & Qt::LeftButton;
     g_MousePressed[1] = event->buttons() & Qt::RightButton;
     g_MousePressed[2] = event->buttons() & Qt::MiddleButton;
 }
 
-void ImGuiRenderer_DX12::onWheel(QWheelEvent *event)
-{
+void ImGuiRenderer_DX12::onWheel(QWheelEvent *event) {
     // 5 lines per unit
     g_MouseWheel += event->pixelDelta().y() / (5.0 * ImGui::GetTextLineHeight());
 }
 
-void ImGuiRenderer_DX12::onKeyPressRelease(QKeyEvent *event)
-{
+void ImGuiRenderer_DX12::onKeyPressRelease(QKeyEvent *event) {
     ImGuiIO& io = ImGui::GetIO();
     if (keyMap.contains(event->key())) {
         io.KeysDown[keyMap[event->key()]] = event->type() == QEvent::KeyPress;
@@ -440,8 +427,7 @@ void ImGuiRenderer_DX12::onKeyPressRelease(QKeyEvent *event)
 #endif
 }
 
-bool ImGuiRenderer_DX12::eventFilter(QObject *watched, QEvent *event)
-{
+bool ImGuiRenderer_DX12::eventFilter(QObject *watched, QEvent *event) {
     switch (event->type()) {
     case QEvent::MouseButtonPress:
     case QEvent::MouseButtonRelease:
@@ -460,8 +446,7 @@ bool ImGuiRenderer_DX12::eventFilter(QObject *watched, QEvent *event)
     return QObject::eventFilter(watched, event);
 }
 
-void ImGuiRenderer_DX12::Draw(ID3D12GraphicsCommandList *pCommandList)
-{
+void ImGuiRenderer_DX12::Draw(ID3D12GraphicsCommandList *pCommandList) {
     ImGui::Render();
     ImDrawData* draw_data = ImGui::GetDrawData();
 
@@ -485,8 +470,7 @@ void ImGuiRenderer_DX12::Draw(ID3D12GraphicsCommandList *pCommandList)
 
     ImDrawVert* vtx_dst = (ImDrawVert*)pVertices;
     ImDrawIdx* idx_dst = (ImDrawIdx*)pIndices;
-    for (int n = 0; n < draw_data->CmdListsCount; n++)
-    {
+    for (int n = 0; n < draw_data->CmdListsCount; n++) {
         const ImDrawList* cmd_list = draw_data->CmdLists[n];
         memcpy(vtx_dst, cmd_list->VtxBuffer.Data, cmd_list->VtxBuffer.Size * sizeof(ImDrawVert));
         memcpy(idx_dst, cmd_list->IdxBuffer.Data, cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx));
@@ -504,8 +488,7 @@ void ImGuiRenderer_DX12::Draw(ID3D12GraphicsCommandList *pCommandList)
         float R = ImGui::GetIO().DisplaySize.x;
         float B = ImGui::GetIO().DisplaySize.y;
         float T = 0.0f;
-        float mvp[4][4] =
-        {
+        float mvp[4][4] = {
             { 2.0f / (R - L),   0.0f,           0.0f,       0.0f },
             { 0.0f,         2.0f / (T - B),     0.0f,       0.0f },
             { 0.0f,         0.0f,           0.5f,       0.0f },
@@ -538,24 +521,19 @@ void ImGuiRenderer_DX12::Draw(ID3D12GraphicsCommandList *pCommandList)
 
     ID3D12DescriptorHeap* pDH[] = { m_pResourceViewHeaps->GetCBV_SRV_UAVHeap(), m_pResourceViewHeaps->GetSamplerHeap() };
     pCommandList->SetDescriptorHeaps(2, &pDH[0]);
-    pCommandList->SetGraphicsRootDescriptorTable(0, ConstantBufferGpuDescriptor); // set CB	
+    pCommandList->SetGraphicsRootDescriptorTable(0, ConstantBufferGpuDescriptor); // set CB
     pCommandList->SetGraphicsRootDescriptorTable(2, m_sampler.GetGPU());
 
     // Render command lists
     int vtx_offset = 0;
     int idx_offset = 0;
-    for (int n = 0; n < draw_data->CmdListsCount; n++)
-    {
+    for (int n = 0; n < draw_data->CmdListsCount; n++) {
         const ImDrawList* cmd_list = draw_data->CmdLists[n];
-        for (int cmd_i = 0; cmd_i < cmd_list->CmdBuffer.Size; cmd_i++)
-        {
+        for (int cmd_i = 0; cmd_i < cmd_list->CmdBuffer.Size; cmd_i++) {
             const ImDrawCmd* pcmd = &cmd_list->CmdBuffer[cmd_i];
-            if (pcmd->UserCallback)
-            {
+            if (pcmd->UserCallback) {
                 pcmd->UserCallback(cmd_list, pcmd);
-            }
-            else
-            {
+            } else {
                 const D3D12_RECT r = { (LONG)pcmd->ClipRect.x, (LONG)pcmd->ClipRect.y, (LONG)pcmd->ClipRect.z, (LONG)pcmd->ClipRect.w };
                 pCommandList->RSSetScissorRects(1, &r);
                 pCommandList->SetGraphicsRootDescriptorTable(1, m_pTextureSRV.GetGPU());

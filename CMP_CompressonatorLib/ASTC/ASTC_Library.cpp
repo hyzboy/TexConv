@@ -9,10 +9,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -22,24 +22,22 @@
 // THE SOFTWARE.
 //
 
-#include "ASTC/ASTC_Definitions.h"
-#include "ASTC/ASTC_Encode.h"
-#include "ASTC/ASTC_Decode.h"
-#include "Compressonator.h"
+#include "astc/astc_definitions.h"
+#include "astc/astc_encode.h"
+#include "astc/astc_decode.h"
+#include "compressonator.h"
 
 
 extern CMP_BOOL g_LibraryInitialized;
 static ASTCBlockDecoder  g_Decoder;
 
-// Need to remove these calls 
-int astc_codec_unlink(const char *filename)
-{
+// Need to remove these calls
+int astc_codec_unlink(const char *filename) {
     int res = remove(filename);
     return res;
 }
 
-void astc_codec_internal_error(const char *filename, int linenum)
-{
+void astc_codec_internal_error(const char *filename, int linenum) {
     printf("Internal error: File=%s Line=%d\n", filename, linenum);
 }
 
@@ -48,19 +46,16 @@ void astc_codec_internal_error(const char *filename, int linenum)
 //
 //
 //
-extern "C" BC_ERROR CMP_DecodeASTCBlock( CMP_BYTE BlockWidth, 
-                                         CMP_BYTE BlockHeight, 
-                                         CMP_BYTE Bitness,
-                                         BYTE *in, 
-                                         float out[][4])
-{
-    if(!g_LibraryInitialized)
-    {
+extern "C" BC_ERROR CMP_DecodeASTCBlock( CMP_BYTE BlockWidth,
+        CMP_BYTE BlockHeight,
+        CMP_BYTE Bitness,
+        BYTE *in,
+        float out[][4]) {
+    if(!g_LibraryInitialized) {
         return BC_ERROR_LIBRARY_NOT_INITIALIZED;
     }
 
-    if( !in || !out )
-    {
+    if( !in || !out ) {
         return BC_ERROR_INVALID_PARAMETERS;
     }
 

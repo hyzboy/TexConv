@@ -1,5 +1,5 @@
 //=====================================================================
-// Copyright 2020 (c), Advanced Micro Devices, Inc. All rights reserved.
+// Copyright 2021 (c), Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
@@ -7,10 +7,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -20,7 +20,7 @@
 // THE SOFTWARE.
 //
 //=====================================================================
- 
+
 #ifdef _DEBUG
 //#include <vld.h>   Enable to check for code leaks
 #endif
@@ -30,51 +30,76 @@
 #endif
 
 #include "cmdline.h"
-#include "PluginManager.h"
-#include "TextureIO.h"
-#include "Version.h"
+#include "pluginmanager.h"
+#include "textureio.h"
+#include "version.h"
+#include "time.h"
 
-#ifdef USE_QT_IMAGELOAD
+// #if defined(WIN32) && !defined(NO_LEGACY_BEHAVIOR)
+// #define OPTION_CMP_QT
+// #endif
+
+#if (OPTION_CMP_QT == 1)
 #include <QtCore/qcoreapplication.h>
 #include <QtCore/qdebug.h>
 #endif
-// Our Static Plugin Interfaces
-#pragma comment(lib, "ASTC.lib")
-#pragma comment(lib, "EXR.lib")
-#pragma comment(lib, "KTX.lib")
-#pragma comment(lib, "TGA.lib")
-#pragma comment(lib, "IMGAnalysis.lib")
+
+// Standard App Static Plugin Interfaces for minimal support
+#pragma comment(lib, "Image_ASTC.lib")
+
+#if (OPTION_BUILD_EXR == 1)
+#pragma comment(lib, "Image_EXR.lib")
+#endif
+
+#pragma comment(lib, "Image_KTX.lib")
+#ifdef _WIN32
+#pragma comment(lib, "Image_KTX2.lib")
+#endif
+#pragma comment(lib, "Image_TGA.lib")
+#pragma comment(lib, "Image_Analysis.lib")
 
 extern void* make_Plugin_ASTC();
 extern void* make_Plugin_EXR();
 extern void* make_Plugin_TGA();
 extern void* make_Plugin_KTX();
-#ifndef __APPLE__
 extern void* make_Plugin_CAnalysis();
+
+#ifdef _WIN32
+extern void* make_Plugin_KTX2();
 #endif
 
 // Setup Static Host Pluging Libs
 extern void CMP_RegisterHostPlugins();
 
-extern bool   CompressionCallback(float fProgress, CMP_DWORD_PTR pUser1, CMP_DWORD_PTR pUser2);
-extern void   LocalPrintF(char* buff);
-extern std::string DefaultDestination(std::string SourceFile, CMP_FORMAT DestFormat, std::string DestFileExt);
+extern bool        CompressionCallback(float fProgress, CMP_DWORD_PTR pUser1, CMP_DWORD_PTR pUser2);
+extern void        LocalPrintF(char* buff);
+extern std::string DefaultDestination(std::string SourceFile, CMP_FORMAT DestFormat, std::string DestFileExt, CMP_BOOL useDestFormat);
 
 extern PluginManager g_pluginManager;
-bool          g_bAbortCompression = false;
-CMIPS*        g_CMIPS;  // Global MIPS functions shared between app and all IMAGE plugins
+bool                 g_bAbortCompression = false;
+CMIPS*               g_CMIPS;  // Global MIPS functions shared between app and all IMAGE plugins
 
 void AboutCompressonator()
 {
+    char year[5] = "2021";
+
+#ifdef USE_AUTODATE
+    time_t now = time(0);
+    auto tm = localtime(&now);
+    int tm_year = 0;
+    if (tm != nullptr) 
+        sprintf_s(year,"%d",tm->tm_year+1900);
+#endif
+
     printf("------------------------------------------------\n");
     // current build release
     if (VERSION_MINOR_MAJOR)
-        printf("CompressonatorCLI V%d.%d.%d Copyright AMD 2020\n", VERSION_MAJOR_MAJOR, VERSION_MAJOR_MINOR, VERSION_MINOR_MAJOR);
+        printf("compressonatorcli V%d.%d.%d Copyright AMD %s\n", VERSION_MAJOR_MAJOR, VERSION_MAJOR_MINOR, VERSION_MINOR_MAJOR,year);
     else
     {
         // Keep track of Customer patches from last release to current
         // This is what is shown when you build the exe outside of the automated Build System (such as Jenkins)
-        printf("CompressonatorCLI V4.0.0 Copyright AMD 2020\n");
+        printf("compressonatorcli V%d.%d.0 Copyright AMD %s\n",VERSION_MAJOR_MAJOR,VERSION_MAJOR_MINOR,year);
     }
     printf("------------------------------------------------\n");
     printf("\n");
@@ -84,29 +109,41 @@ void PrintUsage()
 {
     AboutCompressonator();
 
-    printf("Usage: CompressonatorCLI.exe [options] SourceFile DestFile\n\n");
+    printf("Usage: compressonatorcli.exe [options] SourceFile DestFile\n\n");
     printf("MipMap options:\n\n");
     printf("-nomipmap                 Turns off Mipmap generation\n");
     printf("-mipsize    <size>        The size in pixels used to determine\n");
     printf("                          how many mip levels to generate\n");
     printf("-miplevels  <Level>       Sets Mips Level for output, range is 1 to 20\n");
     printf("                          (mipSize overides this option): default is 1\n");
+#ifdef _WIN32
+    printf("-GenGPUMipMap             When encoding with GPU this flag will enable mipmap level generation\n");
+    printf("                          using GPU HW. Default level is 1 unless miplevels is set\n ");
+    printf("-UseSRGBFrames            When encoding with GPU, GL_FRAMEBUFFER_SRGB will be enabled else it will use GL_FRAMEBUFFER\n");
+#endif
     printf("Compression options:\n\n");
+
+#ifdef CMP_ENABLE_LEGACY_OPTIONS
     printf("-fs <format>    Optionally specifies the source texture format to use\n");
-    printf("-fd <format>    Specifies the destination texture format to use\n");
+#endif
+
+    printf("-fd <format>         Specifies the destination texture format to use\n");
     printf("-decomp <filename>   If the destination  file is compressed optionally\n");
     printf("                     decompress it\n");
     printf("                     to the specified file. Note the destination  must\n");
     printf("                     be compatible \n");
     printf("                     with the sources format,decompress formats are typically\n");
     printf("                     set to ARGB_8888 or ARGB_32F\n");
-    printf("-EncodeWith          Compression with CPU, HPC, OCL or DXC\n");
 #ifdef _WIN32
+    printf("-EncodeWith          Compression with CPU, HPC, GPU, OCL or DXC\n");
+    printf("                     GPU will use GL Compress Extensions, OCL or DXC will use CMP_Core SDK Shaders\n");
     printf("-DecodeWith          GPU based decompression using OpenGL, DirectX or Vulkan\n");
+#else
+    printf("-EncodeWith          Compression with CPU, HPC\n");
 #endif
 #ifdef USE_MESH_DRACO_EXTENSION
     printf("-draco               Enable draco compression. (only support glTF files)\n");
-#ifdef USE_MESH_DRACO_SETTING 
+#ifdef USE_MESH_DRACO_SETTING
     printf("-dracolvl            Draco compression level (0-10), default=5 , -draco has to be enabled.\n");
     printf("-qpos                Draco quantization bits for position attribute (0-30), default=14. -draco has to be enabled.\n");
     printf("-qtexc               Draco quantization bits for texture coordinates attribute (0-30), default=10. -draco has to be enabled.\n");
@@ -117,12 +154,13 @@ void PrintUsage()
     printf("-doswizzle           Swizzle the source images Red and Blue channels\n");
     printf("\n");
     printf("The following is a list of channel formats\n");
-    printf("ARGB_16        ARGB format with 16-bit fixed channels\n");
-    printf("ARGB_16F       ARGB format with 16-bit floating-point channels\n");
-    printf("ARGB_32F       ARGB format with 32-bit floating-point channels\n");
-    printf("ARGB_2101010   ARGB format with 10-bit fixed channels for color\n");
+    printf("ARGB_8888      format with 8-bit fixed channels\n");
+    printf("ARGB_16F       format with 16-bit floating-point channels\n");
+    printf("ARGB_32F       format with 32-bit floating-point channels\n");
+#ifdef CMP_ENABLE_TRANSCODECHANNEL_SUPPORT
+    printf("ARGB_16        format with 16-bit fixed channels\n");
+    printf("ARGB_2101010   format with 10-bit fixed channels for color\n");
     printf("               and a 2-bit fixed channel for alpha\n");
-    printf("ARGB_8888      ARGB format with 8-bit fixed channels\n");
     printf("R_8            Single component format with 8-bit fixed channels\n");
     printf("R_16           Single component format with 16-bit fixed channels\n");
     printf("R_16F          Two component format with 32-bit floating-point channels\n");
@@ -132,6 +170,7 @@ void PrintUsage()
     printf("RG_16F         Two component format with 16-bit floating-point channels\n");
     printf("RG_32F         Two component format with 32-bit floating-point channels\n");
     printf("RGB_888        RGB format with 8-bit fixed channels\n");
+#endif
     printf("\n");
     printf("The following is a list of compression formats\n");
     printf("ASTC           Adaptive Scalable Texture Compression\n");
@@ -154,8 +193,10 @@ void PrintUsage()
     printf("               alpha.  Eight bits per pixel\n");
     printf("BC3            Four component compressed texture format with interpolated\n");
     printf("               alpha.  Eight bits per pixel\n");
-    printf("BC4            Single component compressed texture format for Microsoft\n");
-    printf("BC5            Two component compressed texture format for Microsoft\n");
+    printf("BC4            Single component compressed texture format\n");
+    printf("BC4_S          Signed Single component compressed texture format\n");
+    printf("BC5            Two component compressed texture format\n");
+    printf("BC5_S          Signed Two component compressed texture format\n");
     printf("BC6H           High-Dynamic Range  compression format\n");
     printf("BC7            High-quality compression of RGB and RGBA data\n\n");
     printf("DXT1           An opaque (or 1-bit alpha) DXTC compressed texture format.\n");
@@ -187,6 +228,10 @@ void PrintUsage()
     printf("GTC            Compressed RGB 8:8:8 format \n");
     printf("               This is a preview version for evaluation: subject to changes\n");
 #endif
+#ifdef USE_APC
+    printf("APC            Compressed RGB 8:8:8 format \n");
+    printf("               This is a preview version for evaluation: subject to changes\n");
+#endif
     printf("\n");
     printf("<codec options>: Reference  documentation for range of values\n\n");
     printf("-UseChannelWeighting <value> Use channel weightings\n");
@@ -194,16 +239,19 @@ void PrintUsage()
     printf("-WeightG <value>             The weighting of the Green or Y Channel\n");
     printf("-WeightB <value>             The weighting of the Blue or Z Channel\n");
     printf("-AlphaThreshold <value>      The alpha threshold to use when compressing\n");
-    printf("                             to DXT1 & BC1 with DXT1UseAlpha\n");
+    printf("                             to DXT1 & BC1\n");
     printf("                             Texels with an alpha value less than the threshold\n");
     printf("                             are treated as transparent\n");
-    printf("                             value is in the range of 0 to 255, default is 128\n");
+    printf("                             value is in the range of 1 to 255, 0 sets off\n");
     printf("-BlockRate <value>           ASTC 2D only - sets block size or bit rate\n");
     printf("                             value can be a bit per pixel rate from 0.0 to 9.9\n");
     printf("                             or can be a combination of x and y axes with paired\n");
     printf("                             values of 4,5,6,8,10 or 12 from 4x4 to 12x12\n");
     printf("-DXT1UseAlpha <value>        Encode single-bit alpha data.\n");
-    printf("                             Only valid when compressing to DXT1 & BC1\n");
+    printf("                             This option is deprecated use AlphaThreshold\n");
+    printf("-RefineSteps <value>         Adds extra steps in encoding for BC1\n");
+    printf("                             To improve quality over performance.\n");
+    printf("                             Step values are 1 and 2\n");
     printf("-CompressionSpeed <value>    The trade-off between compression speed & quality\n");
     printf("                             This setting is not used in BC6H and BC7\n");
     printf("-NumThreads <value>          Number of threads to initialize for ASTC,BC6H,BC7\n");
@@ -257,35 +305,40 @@ void PrintUsage()
     printf("-noprogress                  Disables showing of compression progress messages\n");
     printf("\n\n");
     printf("Example compression:\n\n");
-    printf("CompressonatorCLI.exe -fd ASTC image.bmp result.astc \n");
-    printf("CompressonatorCLI.exe -fd ASTC -BlockRate 0.8 image.bmp result.astc\n");
-    printf("CompressonatorCLI.exe -fd ASTC -BlockRate 12x12 image.bmp result.astc\n");
-    printf("CompressonatorCLI.exe -fd BC7  image.bmp result.dds \n");
-    printf("CompressonatorCLI.exe -fd BC7  image.bmp result.bmp\n");
-    printf("CompressonatorCLI.exe -fd BC7  -NumTheads 16 image.bmp result.dds\n");
-    printf("CompressonatorCLI.exe -fd BC7  -ff PNG -fx KTX ./source_dir/ ./dist_dir/\n");
-    printf("CompressonatorCLI.exe -fd BC6H image.exr result.exr\n\n");
-    printf("Example compression using GPU:\n\n");
-    printf("CompressonatorCLI.exe  -fd BC1 -EncodeWith OCL image.bmp result.dds \n");
-    printf("CompressonatorCLI.exe  -fd BC1 -EncodeWith DXC image.bmp result.dds \n");
+    printf("compressonatorcli.exe -fd ASTC image.bmp result.astc \n");
+    printf("compressonatorcli.exe -fd ASTC -BlockRate 0.8 image.bmp result.astc\n");
+    printf("compressonatorcli.exe -fd ASTC -BlockRate 12x12 image.bmp result.astc\n");
+    printf("compressonatorcli.exe -fd BC7  image.bmp result.dds \n");
+    printf("compressonatorcli.exe -fd BC7  image.bmp result.bmp\n");
+    printf("compressonatorcli.exe -fd BC7  -NumTheads 16 image.bmp result.dds\n");
+    printf("compressonatorcli.exe -fd BC7  -ff PNG -fx KTX ./source_dir/ ./dist_dir/\n");
+    printf("compressonatorcli.exe -fd BC6H image.exr result.exr\n\n");
+#ifdef _WIN32
+    printf("Example compression using GPU Hardware or shader code with frameworks like OpenCL or DirectX:\n\n");
+    printf("compressonatorcli.exe  -fd BC1 -EncodeWith GPU image.bmp result.dds \n");
+    printf("compressonatorcli.exe  -fd BC1 -EncodeWith DXC image.bmp result.dds \n");
+    printf("compressonatorcli.exe  -fd BC1 -EncodeWith OCL image.bmp result.dds \n");
+#endif
     printf("Example decompression from compressed image using CPU:\n\n");
-    printf("CompressonatorCLI.exe  result.dds image.bmp\n\n");
+    printf("compressonatorcli.exe  result.dds image.bmp\n\n");
+#ifdef _WIN32
     printf("Example decompression from compressed image using GPU:\n\n");
-    printf("CompressonatorCLI.exe  -UseGPUDecompress result.dds image.bmp\n\n");
+    printf("compressonatorcli.exe  -UseGPUDecompress result.dds image.bmp\n\n");
+#endif
     printf("Example compression with decompressed result (Useful for qualitative analysis):\n\n");
 #ifdef USE_MESH_DRACO_EXTENSION
     printf("Example draco compression usage (support glTF and OBJ file only):\n\n");
-    printf("CompressonatorCLI.exe -draco source.gltf dest.gltf\n");
-    printf("CompressonatorCLI.exe -draco source.obj dest.drc\n");
+    printf("compressonatorcli.exe -draco source.gltf dest.gltf\n");
+    printf("compressonatorcli.exe -draco source.obj dest.drc\n");
     printf("Note: only .obj file produces compressed .drc file. glTF does not produce .drc compressed file.\n");
     printf("Note: You can specify .obj as compressed file format as well, but a new .drc file will be created for this case.\n\n");
-#ifdef USE_MESH_DRACO_SETTING 
+#ifdef USE_MESH_DRACO_SETTING
     printf("Specifies quantization bits settings:\n");
     printf("CompressonatorCLI.exe -draco -dracolvl 7 -qpos 12 -qtexc 8 -qnorm 8 source.gltf dest.gltf\n\n");
 #endif
     printf("Example draco decompression usage (support glTF and drc file only):\n\n");
-    printf("CompressonatorCLI.exe source.gltf dest.gltf\n");
-    printf("CompressonatorCLI.exe source.drc dest.obj\n");
+    printf("compressonatorcli.exe source.gltf dest.gltf\n");
+    printf("compressonatorcli.exe source.drc dest.obj\n");
 #endif
 #ifdef USE_3DMESH_OPTIMIZE
     printf("\n\n");
@@ -298,7 +351,11 @@ void PrintUsage()
     printf("Specifies settings :\n\n");
     printf("CompressonatorCLI.exe -meshopt -optVCacheSize  32 -optOverdrawACMRThres  1.03 -optVFetch 0 source.gltf dest.gltf\n");
 #endif
-    printf("For additional help go to Documents folder and type index.htlm\n");
+#ifdef _WIN32
+    printf("For additional help go to documents folder and type index.html \n");
+#else
+    printf("For additional help go to documents htlm folder and type index.html \n");
+#endif
 }
 
 bool ProgressCallback(float fProgress, CMP_DWORD_PTR pUser1, CMP_DWORD_PTR pUser2)
@@ -306,38 +363,37 @@ bool ProgressCallback(float fProgress, CMP_DWORD_PTR pUser1, CMP_DWORD_PTR pUser
     return CompressionCallback(fProgress, pUser1, pUser2);
 }
 
-
-
 //---------------------------------------------
-// Resrved for future releases::compute codecs 
+// For future releases::compute codecs
 //---------------------------------------------
-PluginInterface_Encoder *g_plugin_EncoderGTC = NULL;
-CMP_Encoder  *g_Codec_GTC = NULL;
+#ifdef USE_GTC
+PluginInterface_Encoder* g_plugin_EncoderGTC = NULL;
+CMP_Encoder*             g_Codec_GTC         = NULL;
 
-extern void(*GTC_DecompressBlock)(void *out, void *in);
-extern void(*GTC_CompressBlock)(void * srcblock, void *dest, void *blockoptions);
+extern void (*GTC_DecompressBlock)(void* out, void* in);
+extern void (*GTC_CompressBlock)(void* srcblock, void* dest, void* blockoptions);
 
-void g_GTC_DecompressBlock(void *in, void *out)
+void g_GTC_DecompressBlock(void* in, void* out)
 {
     if (g_Codec_GTC)
         g_Codec_GTC->DecompressBlock(in, out);
 }
 
-void g_GTC_CompressBlock(void *in, void *out, void *blockoptions)
+void g_GTC_CompressBlock(void* in, void* out, void* blockoptions)
 {
     if (g_Codec_GTC)
         g_Codec_GTC->CompressBlock(in, out, blockoptions);
 }
-
+#endif
 
 //----------------- BASIS: Run Time Encoder ------------------
 #ifdef USE_BASIS
-PluginInterface_Encoder     *g_plugin_EncoderBASIS = NULL;
-CMP_Encoder                 *g_Codec_BASIS = NULL;
-extern int(*BASIS_CompressTexture)(void * in, void *out, void *blockoptions);
-extern int(*BASIS_DecompressTexture)(void * in, void *out, void *blockoptions);
+PluginInterface_Encoder* g_plugin_EncoderBASIS = NULL;
+CMP_Encoder*             g_Codec_BASIS         = NULL;
+extern int (*BASIS_CompressTexture)(void* in, void* out, void* blockoptions);
+extern int (*BASIS_DecompressTexture)(void* in, void* out, void* blockoptions);
 
-int g_BASIS_CompressTexture(void *in, void *out, void *blockoptions)
+int g_BASIS_CompressTexture(void* in, void* out, void* blockoptions)
 {
     if (g_Codec_BASIS)
     {
@@ -346,7 +402,7 @@ int g_BASIS_CompressTexture(void *in, void *out, void *blockoptions)
     return 0;
 }
 
-int g_BASIS_DecompressTexture(void *in, void *out, void *blockoptions)
+int g_BASIS_DecompressTexture(void* in, void* out, void* blockoptions)
 {
     if (g_Codec_BASIS)
     {
@@ -357,21 +413,20 @@ int g_BASIS_DecompressTexture(void *in, void *out, void *blockoptions)
 
 #endif
 
-
 //----------------- APC: Run Time Encoder ------------------
 #ifdef USE_APC
-PluginInterface_Encoder *g_plugin_EncoderAPC = NULL;
-CMP_Encoder  *g_Codec_APC = NULL;
-extern void(*APC_DecompressBlock)(void *out, void *in);
-extern void(*APC_CompressBlock)(void * srcblock, void *dest, void *blockoptions);
+PluginInterface_Encoder* g_plugin_EncoderAPC = NULL;
+CMP_Encoder*             g_Codec_APC         = NULL;
+extern void (*APC_DecompressBlock)(void* out, void* in);
+extern void (*APC_CompressBlock)(void* srcblock, void* dest, void* blockoptions);
 
-void g_APC_DecompressBlock(void *in, void *out)
+void g_APC_DecompressBlock(void* in, void* out)
 {
     if (g_Codec_APC)
         g_Codec_APC->DecompressBlock(in, out);
 }
 
-void g_APC_CompressBlock(void *in, void *out, void *blockoptions)
+void g_APC_CompressBlock(void* in, void* out, void* blockoptions)
 {
     if (g_Codec_APC)
         g_Codec_APC->CompressBlock(in, out, blockoptions);
@@ -379,34 +434,43 @@ void g_APC_CompressBlock(void *in, void *out, void *blockoptions)
 
 #endif
 
-
 int main(int argc, char* argv[])
 {
-#ifdef USE_QT_IMAGELOAD
+    // Check if print status line has been assigned
+    // if not get it a default to printf
+    if (PrintStatusLine == NULL)
+        PrintStatusLine = &LocalPrintF;
+
+#if (OPTION_CMP_QT == 1)
     QCoreApplication app(argc, argv);
 #endif
 
     g_CMIPS = new CMIPS;
 
-    g_pluginManager.registerStaticPlugin("IMAGE", "ASTC",(void*)make_Plugin_ASTC);
+    g_pluginManager.registerStaticPlugin("IMAGE", "ASTC", (void*)make_Plugin_ASTC);
+
+#if (OPTION_BUILD_EXR == 1)
     g_pluginManager.registerStaticPlugin("IMAGE", "EXR", (void*)make_Plugin_EXR);
+#endif
+
     g_pluginManager.registerStaticPlugin("IMAGE", "TGA", (void*)make_Plugin_TGA);  // Use for load only, Qt will be used for Save
     g_pluginManager.registerStaticPlugin("IMAGE", "KTX", (void*)make_Plugin_KTX);
-#ifndef __APPLE__
     g_pluginManager.registerStaticPlugin("IMAGE", "ANALYSIS", (void*)make_Plugin_CAnalysis);
+
+#ifdef _WIN32
+    g_pluginManager.registerStaticPlugin("IMAGE", "KTX2", (void*)make_Plugin_KTX2);
 #endif
+
     g_pluginManager.getPluginList("\\Plugins");
+
     CMP_RegisterHostPlugins();
 
-#ifdef USE_QT_IMAGELOAD
+#if (OPTION_CMP_QT == 1)
     QString dirPath = QCoreApplication::applicationDirPath();
     QCoreApplication::addLibraryPath(dirPath + "./plugins/imageformats");
 #endif
 
-    // Check if print status line has been assigned
-    // if not get it a default to printf
-    if (PrintStatusLine == NULL)
-        PrintStatusLine = &LocalPrintF;
+
 
     //----------------------------------
     // Process user command line parameters
@@ -420,32 +484,42 @@ int main(int argc, char* argv[])
             return -1;
         }
 
-        if (g_CmdPrams.SourceFile.length() == 0)
+         if (g_CmdPrams.SourceFile.length() == 0)
         {
+            printf("Source Texture file was not supplied!\n");
             delete g_CMIPS;
             return -2;
         }
 
+        // Some checks prior to running
         if (!g_CmdPrams.imageprops && (g_CmdPrams.DestFile.length() == 0))
         {
             // Try to patch the detination file
             if ((g_CmdPrams.DestFile.length() == 0) && (g_CmdPrams.SourceFile.length() > 0))
             {
-                g_CmdPrams.DestFile = DefaultDestination(g_CmdPrams.SourceFile, g_CmdPrams.CompressOptions.DestFormat, g_CmdPrams.FileOutExt);
+                g_CmdPrams.DestFile = DefaultDestination(g_CmdPrams.SourceFile, g_CmdPrams.CompressOptions.DestFormat, g_CmdPrams.FileOutExt,true);
                 printf("Destination Texture file was not supplied: Defaulting to %s\n", g_CmdPrams.DestFile.c_str());
             }
             else
             {
+                printf("Image properties not set");
                 delete g_CMIPS;
                 return (-3);
             }
+        }
+
+        if ((g_CmdPrams.CompressOptions.nEncodeWith != CMP_Compute_type::CMP_GPU_HW) &&
+            (g_CmdPrams.CompressOptions.genGPUMipMaps || g_CmdPrams.CompressOptions.useSRGBFrames))
+        {
+            printf("Setup Error: genGPUMipMaps or useSRGBFrames requires EncodeWith GPU\n");
+            return -1;
         }
 
 #ifdef USE_GTC
         //---------------------------------------
         // attempt to load GTC Codec
         //---------------------------------------
-        g_plugin_EncoderGTC = reinterpret_cast<PluginInterface_Encoder *>(g_pluginManager.GetPlugin("ENCODER", "GTC"));
+        g_plugin_EncoderGTC = reinterpret_cast<PluginInterface_Encoder*>(g_pluginManager.GetPlugin("ENCODER", "GTC"));
         // Found GTC Codec
         if (g_plugin_EncoderGTC)
         {
@@ -459,7 +533,7 @@ int main(int argc, char* argv[])
             //------------------------------------------------------------
             if (g_Codec_GTC)
             {
-                GTC_CompressBlock = g_GTC_CompressBlock;
+                GTC_CompressBlock   = g_GTC_CompressBlock;
                 GTC_DecompressBlock = g_GTC_DecompressBlock;
             }
         }
@@ -469,7 +543,7 @@ int main(int argc, char* argv[])
         //---------------------------------------
         // attempt to load compute BASIS Codec
         //---------------------------------------
-        g_plugin_EncoderBASIS = reinterpret_cast<PluginInterface_Encoder *>(g_pluginManager.GetPlugin("ENCODER", "BASIS"));
+        g_plugin_EncoderBASIS = reinterpret_cast<PluginInterface_Encoder*>(g_pluginManager.GetPlugin("ENCODER", "BASIS"));
         // Found BASIS Codec
         if (g_plugin_EncoderBASIS)
         {
@@ -488,7 +562,7 @@ int main(int argc, char* argv[])
 #endif
 
 #ifdef USE_APC
-        g_plugin_EncoderAPC = reinterpret_cast<PluginInterface_Encoder *>(g_pluginManager.GetPlugin("ENCODER", "APC"));
+        g_plugin_EncoderAPC = reinterpret_cast<PluginInterface_Encoder*>(g_pluginManager.GetPlugin("ENCODER", "APC"));
         if (g_plugin_EncoderAPC)
         {
             //-------------------------------
@@ -519,7 +593,7 @@ int main(int argc, char* argv[])
         {
             if (g_Codec_GTC)
                 g_plugin_EncoderGTC->TC_Destroy(g_Codec_GTC);
-            delete  g_plugin_EncoderGTC;
+            delete g_plugin_EncoderGTC;
         }
 #endif
 #ifdef USE_BASIS
@@ -530,7 +604,7 @@ int main(int argc, char* argv[])
         {
             if (g_Codec_BASIS)
                 g_plugin_EncoderBASIS->TC_Destroy(g_Codec_BASIS);
-            delete  g_plugin_EncoderBASIS;
+            delete g_plugin_EncoderBASIS;
         }
 #endif
 #ifdef USE_APC
@@ -541,7 +615,7 @@ int main(int argc, char* argv[])
         {
             if (g_Codec_APC)
                 g_plugin_EncoderAPC->TC_Destroy(g_Codec_APC);
-            delete  g_plugin_EncoderAPC;
+            delete g_plugin_EncoderAPC;
         }
 #endif
 

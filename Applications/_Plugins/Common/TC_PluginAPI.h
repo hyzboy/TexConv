@@ -14,10 +14,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -28,20 +28,20 @@
 //
 
 /// \file
-/// TC_PluginAPI.h declares both the plugin functions exported by The Compressonator & those that your plugin can implement to extend 
+/// TC_PluginAPI.h declares both the plugin functions exported by The Compressonator & those that your plugin can implement to extend
 /// The Compressonator.
 
 #if !defined(_TC_PLUGINAPI_INCLUDED_)
 #define _TC_PLUGINAPI_INCLUDED_
 
 #ifdef _WIN32
-#include <Windows.h>
+#include <windows.h>
 #include <tchar.h>
 #endif
 
 #include <assert.h>
 
-#include "PluginInterface.h"
+#include "plugininterface.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -101,22 +101,19 @@ typedef CMP_DWORD WNDPROC;
 #endif
 
 /// A structure for storing compression parameters specific to each codec.
-typedef struct
-{
+typedef struct {
     void*          pPluginSpecific;  ///< Usually used as a pointer to a user-defined structure that can contain all the necessary codec options.
     const TCHAR*   pszTextParams;    ///< A string containing the command line options for the codec when the app is called from the command line.
 } TC_CompressParams;
 
 /// A structure for storing compression parameters specific to each codec.
-typedef struct
-{
+typedef struct {
     void*          pPluginSpecific;  ///< Usually used as a pointer to a user-defined structure that can contain all the necessary file save options.
     const TCHAR*   pszTextParams;    ///< A string containing the command line options for the file handler when the app is called from the command line.
 } TC_FileSaveParams;
 
 /// A structure for storing mip generation parameters specific to each mipper.
-typedef struct
-{
+typedef struct {
     int            nMinSize;         ///< The size in pixels used to determine how many mip levels to generate. Once all dimensions are less than or equal to nMinSize your mipper should generate no more mip levels.
     void*          pPluginSpecific;  ///< Usually used as a pointer to a user-defined structure that can contain all the necessary mipper options.
     const TCHAR*   pszTextParams;    ///< A string containing the command line options for the mipper when the app is called from the command line.
@@ -127,7 +124,7 @@ typedef struct
 //typedef enum
 //{
 //    PE_OK,            ///< No error - success.
-//    PE_AlreadyLoaded, ///< The plugin is already loaded. 
+//    PE_AlreadyLoaded, ///< The plugin is already loaded.
 //    PE_Unknown,       ///< An error occured.
 //} TC_PluginError;
 
@@ -139,23 +136,21 @@ typedef struct
 //} TC_ErrorLevel;
 
 /// \internal
-typedef enum
-{
+typedef enum {
     ER_OK,
     ER_Cancel,
     ER_Ignore,
 } TC_ErrorResponse;
 
 /// \internal
-typedef enum
-{
+typedef enum {
     TC_VM_Normal,
     TC_VM_Diff,
 } TC_ViewMode;
 
-#include "Texture.h"
+#include "texture.h"
 #ifdef _WIN32
-#include "TC_PluginInternal.h"
+#include "tc_plugininternal.h"
 #endif
 //static const TCHAR TC_Property_BitsPerPixel[] = _T("BitsPerPixel");
 
@@ -248,27 +243,27 @@ TC_PluginError TC_PluginGetFloatProperty(const TCHAR* pszProperty, const MipSet*
 /// \remarks Remember to set the appropriate flags in the MipSet such as ChannelFormat, TextureDataType, TextureType, MS_Flags, and m_dwFourCC.
 /// \remarks While the MipSet pointed to by pMipSet has been allocated already, pMipSet->m_MipLevel[0].m_pbData will be NULL (and all subsequent MipLevels' m_pbData as well). You must use TC_AppAllocateCompressedMipLevelData to allocate memory for the compressed texture that your plugin will place in pMipSet (and if this plugin outputs an uncompressed texture, use TC_AppAllocateMipLevelData instead). Allocating with malloc or new or any other allocator will cause problems when that memory is eventually deallocated.
 /// \par Example:
-/// Your code could go something like this. 
+/// Your code could go something like this.
 /// \code
 /// TC_PluginError TC_PluginFileLoadTexture(const HFILETYPE hFileType, const TCHAR* pszFilename, MipSet* pMipSet)
 /// {
 ///    OutputDebugString("TextureAPI SomeFile Plugin : TC_PluginFileLoadTexture\n");
 ///    assert(pszFileName);
 ///    assert(pMipSet);
-/// 
+///
 ///    //open the file and read from it
-/// 
+///
 ///    if(!TC_AppAllocateMipSet(pMipSet, CF_Compressed, TDT_XRGB, TT_2D, imageDescriptor.wWidth, imageDescriptor.wHeight, 1))
 ///       return PE_Unknown;
-/// 
+///
 ///    DWORD dwSize = imageDescriptor.wWidth * imageDescriptor.wHeight;
 ///    MipLevel* pMipLevelZero = TC_AppGetMipLevel(pMipSet, 0);
-/// 
+///
 ///    if(!TC_AppAllocateCompressedMipLevelData(pMipLevelZero , imageDescriptor.wWidth, imageDescriptor.wHeight, dwSize))
 ///       return PE_Unknown;
-/// 
+///
 ///    //take the data from the file, put it into pMipSet
-/// 
+///
 ///    return PE_OK;
 /// }
 /// \endcode
@@ -282,7 +277,7 @@ TC_PluginError TC_PluginFileLoadTexture(const HFILETYPE hFileType, const TCHAR* 
 /// \param[in] pMipSet Pointer to a MipSet that is the (compressed) texture input, used to write the texture to disk.
 /// \param[in] pFileSaveParams A pointer to a file save parameters. Can be NULL.
 /// \return PE_OK if no errors are encountered. PE_Unknown otherwise.
-/// \remarks You are free to write the file to disk however you want to. You can use the Standard C Library functions (_tfopen, fwrite etc.) or the Windows MFC CFile class, or any other method. You can assume that the directory of pszFilename has already been created. 
+/// \remarks You are free to write the file to disk however you want to. You can use the Standard C Library functions (_tfopen, fwrite etc.) or the Windows MFC CFile class, or any other method. You can assume that the directory of pszFilename has already been created.
 /// \sa \link FilePlugins \endlink, \link TC_PluginFileLoadTexture() TC_PluginFileLoadTexture\endlink
 TC_PluginError TC_PluginFileSaveTexture(const HFILETYPE hFileType, const TCHAR* pszFilename, const MipSet* pMipSet, const TC_FileSaveParams* pFileSaveParams);
 
@@ -300,13 +295,13 @@ TC_PluginError TC_PluginFileSaveTexture(const HFILETYPE hFileType, const TCHAR* 
 ///    assert(pMipSet);
 ///    if(pMipSet == NULL)
 ///       return FALSE;
-/// 
+///
 ///    switch(pMipSet->m_dwFourCC)
 ///    {
 ///    case CMP_MAKEFOURCC('P', '8', ' ', ' '):
 ///       return TRUE;
 ///    }
-/// 
+///
 ///    return FALSE;
 /// }
 /// \endcode
@@ -380,25 +375,25 @@ bool TC_PluginFileSupportsMipLevels(const HFILETYPE hFileType, const int nMipLev
 ///     assert(pMipSetIn->m_MipLevel[0].m_pbData);
 ///     assert(pMipSetOut);
 ///     assert(!pMipSetOut->m_nMipLevels);
-/// 
+///
 ///     switch(pMipSetIn->m_dwFourCC)
 ///     {
 ///         case CMP_FOURCC_P1:
 ///             return Decompress_P1(pMipSetIn, pMipSetOut);
 ///             break;
-/// 
+///
 ///         case CMP_FOURCC_P2:
 ///             return Decompress_P2(pMipSetIn, pMipSetOut);
 ///             break;
-/// 
+///
 ///         case CMP_FOURCC_P4:
 ///             return Decompress_P4(pMipSetIn, pMipSetOut);
 ///             break;
-/// 
+///
 ///         case CMP_FOURCC_P8:
 ///             return Decompress_P8(pMipSetIn, pMipSetOut);
 ///             break;
-/// 
+///
 ///         default:
 ///             ASSERT(0);
 ///             return PE_Unknown;
@@ -419,7 +414,7 @@ TC_PluginError TC_PluginCodecDecompressTexture(const HCODEC hCodec, const MipSet
 /// \remarks For each MipLevel of pMipSetOut that you are writing to, you must use TC_AppAllocateCompressedMipLevelData to allocate memory for the compressed texture that your plugin will place place there. Allocating with malloc or new or any other allocator will cause problems when that memory is eventually unallocated. You can call TC_AppCompressTextureCallback from this function to let users know compression progress.
 /// \par Example:
 /// See the codec plugin example included with the SDK.
-/// \sa \link CodecPlugins \endlink, 
+/// \sa \link CodecPlugins \endlink,
 /// \link TC_AppAllocateCompressedMipLevelData() TC_AppAllocateCompressedMipLevelData\endlink
 /// \link TC_AppCompressTextureCallback() TC_AppCompressTextureCallback\endlink
 /// \link TC_PluginCodecDecompressTexture() TC_PluginCodecDecompressTexture\endlink, TC_CompressParams
@@ -438,16 +433,16 @@ TC_PluginError TC_PluginCodecCompressTexture(const HCODEC hCodec, const MipSet* 
 ///    assert(pMipSet);
 ///    if(pMipSet == NULL)
 ///       return FALSE;
-/// 
+///
 ///    if(pMipSet->m_ChannelFormat == CF_8bit && pMipSet->m_TextureDataType == TDT_ARGB)
 ///    {
 ///       return TRUE;
 ///    }
-/// 
+///
 ///    return FALSE;
 /// }
 /// \endcode
-/// \sa \link CodecPlugins \endlink, \link TC_PluginCodecCompressTexture() TC_PluginCodecCompressTexture\endlink 
+/// \sa \link CodecPlugins \endlink, \link TC_PluginCodecCompressTexture() TC_PluginCodecCompressTexture\endlink
 bool TC_PluginCodecSupportsFormat(const HCODEC hCodec, const MipSet* pMipSet);
 
 /// This function is called by The Compressonator before enabling the compression options dialog specific to this plugin. Its purpose is to do the setup before the compression options dialog is called.
@@ -509,7 +504,7 @@ TC_PluginError TC_PluginMipGenerateMipLevels(const HMIPPER hMipper, MipSet* pMip
 ///    assert(ppfnDialogProc);
 ///    if(hMipper != g_hMipper)
 ///       return false;
-/// 
+///
 ///    *ppTemplate = MAKEINTRESOURCE(IDD_MIP_PARAMETERS);
 ///    *ppfnDialogProc = &GenerateMipsParametersDialogProc;
 ///    ASSERT(pGenerateMipsParams);
@@ -547,45 +542,45 @@ bool TC_PluginMipSupportsFormat(const HMIPPER hMipper, const MipSet* pMipSet);
 //View plugin functions
 
 /// \internal
-/// 
+///
 /// \param[in]
-/// \return 
+/// \return
 /// \remarks
 /// \par Example:
-/// 
+///
 /// \code
 /// \endcode
 TC_PluginError TC_PluginViewCreateView(const HVIEWTYPE hViewType, HWND hParent, HWND* phWnd, HVIEW* phView, TC_ViewMode viewMode);
 
 /// \internal
-/// 
+///
 /// \param[in]
-/// \return 
+/// \return
 /// \remarks
 /// \par Example:
-/// 
+///
 /// \code
 /// \endcode
 TC_PluginError TC_PluginViewUpdateView(const HVIEW hView, const MipSet* pMipSetSourceRGBA, const MipSet* pMipSetCompressedRGBA, const MipSet* pMipSetCompressedData, const MipSet* pMipSetDiff);
 
 /// \internal
-/// 
+///
 /// \param[in]
-/// \return 
+/// \return
 /// \remarks
 /// \par Example:
-/// 
+///
 /// \code
 /// \endcode
 TC_PluginError TC_PluginViewUpdateViewTitles(const HVIEW hView, const TCHAR* pszTitle, const TCHAR* pszSourceTitle, const TCHAR* pszCompressedTitle, const TCHAR* pszDiffTitle);
 
 /// \internal
-/// 
+///
 /// \param[in]
-/// \return 
+/// \return
 /// \remarks
 /// \par Example:
-/// 
+///
 /// \code
 /// \endcode
 TC_PluginError TC_PluginViewReleaseView(HVIEW hView);
@@ -684,10 +679,10 @@ void TC_AppDebugString(const TCHAR* pszString);
 ///    return PE_Unknown;
 /// }
 /// \endcode
-/// \sa \link FilePlugins File Plugins\endlink, 
-/// \link TC_PluginLoad() TC_PluginLoad \endlink, 
-/// \link TC_AppUnregisterFileType() TC_AppUnregisterFileType \endlink, 
-/// \link TC_PluginFileLoadTexture() TC_PluginFileLoadTexture \endlink, 
+/// \sa \link FilePlugins File Plugins\endlink,
+/// \link TC_PluginLoad() TC_PluginLoad \endlink,
+/// \link TC_AppUnregisterFileType() TC_AppUnregisterFileType \endlink,
+/// \link TC_PluginFileLoadTexture() TC_PluginFileLoadTexture \endlink,
 /// \link TC_PluginFileSaveTexture() TC_PluginFileSaveTexture \endlink
 HFILETYPE TC_AppRegisterFileType(TCHAR* pszFileTypeDescription, TCHAR* pszFileTypeExtensions[], bool bSaveFile);
 
@@ -703,8 +698,8 @@ HFILETYPE TC_AppRegisterFileType(TCHAR* pszFileTypeDescription, TCHAR* pszFileTy
 ///    g_FileType = NULL;
 /// }
 /// \endcode
-/// \sa \link FilePlugins File Plugins\endlink, 
-/// \link TC_PluginUnload() TC_PluginUnload \endlink, 
+/// \sa \link FilePlugins File Plugins\endlink,
+/// \link TC_PluginUnload() TC_PluginUnload \endlink,
 /// \link TC_AppRegisterFileType() TC_AppRegisterFileType \endlink
 void TC_AppUnregisterFileType(HFILETYPE hFileType);
 
@@ -726,10 +721,10 @@ void TC_AppUnregisterFileType(HFILETYPE hFileType);
 ///    return PE_Unknown;
 /// }
 /// \endcode
-/// \sa \link CodecPlugins Codec Plugins\endlink, 
-/// \link TC_PluginLoad() TC_PluginLoad \endlink, 
-/// \link TC_AppUnregisterCodec() TC_AppUnregisterCodec \endlink, 
-/// \link TC_PluginCodecCompressTexture() TC_PluginCodecCompressTexture \endlink, 
+/// \sa \link CodecPlugins Codec Plugins\endlink,
+/// \link TC_PluginLoad() TC_PluginLoad \endlink,
+/// \link TC_AppUnregisterCodec() TC_AppUnregisterCodec \endlink,
+/// \link TC_PluginCodecCompressTexture() TC_PluginCodecCompressTexture \endlink,
 /// \link TC_PluginCodecDecompressTexture() TC_PluginCodecDecompressTexture \endlink
 HCODEC TC_AppRegisterCodec(TCHAR* pszCodecDescription, CMP_DWORD dwFourCCs[], bool bDecompressorOnly);
 
@@ -745,8 +740,8 @@ HCODEC TC_AppRegisterCodec(TCHAR* pszCodecDescription, CMP_DWORD dwFourCCs[], bo
 ///    g_Codec = NULL;
 /// }
 /// \endcode
-/// \sa \link CodecPlugins Codec Plugins \endlink, 
-/// \link TC_PluginUnload() TC_PluginUnload \endlink, 
+/// \sa \link CodecPlugins Codec Plugins \endlink,
+/// \link TC_PluginUnload() TC_PluginUnload \endlink,
 /// \link TC_AppRegisterCodec() TC_AppRegisterCodec \endlink
 void TC_AppUnregisterCodec(HCODEC hCodec);
 
@@ -754,8 +749,8 @@ void TC_AppUnregisterCodec(HCODEC hCodec);
 /// \param[in] pszMipGeneratorDescription A string description of the mipmap generator.
 /// \return A HMIPPER that must be saved by this plugin to use in a future call to
 /// TC_AppUnregisterMipGenerator if successful, otherwise false.
-/// \remarks Call this function in your TC_PluginLoad function. The HMIPPER that this function returns your plugin must save for 
-/// TC_AppUnregisterMipGenerator, which your plugin must call sometime before the end of TC_PluginUnload (assuming this function 
+/// \remarks Call this function in your TC_PluginLoad function. The HMIPPER that this function returns your plugin must save for
+/// TC_AppUnregisterMipGenerator, which your plugin must call sometime before the end of TC_PluginUnload (assuming this function
 /// call succeeded). If the HMIPPER returned is NULL, then the registration failed, and your plugin should react accordingly.
 /// \par Example:
 /// The following example is from a Mipper Plugin's TC_PluginLoad function. It registers the plugin as a mipmap generator so that users can generate mipmaps with the plugin (through a call to the plugin's TC_PluginMipGenerateMipLevels). If the returned HMIPPER is NULL then the plugin returns PE_Unknown (indicating failure).
@@ -768,9 +763,9 @@ void TC_AppUnregisterCodec(HCODEC hCodec);
 ///    return PE_Unknown;
 /// }
 /// \endcode
-/// \sa \link MipperPlugins Mipper Plugins\endlink, 
-/// \link TC_PluginLoad() TC_PluginLoad \endlink, 
-/// \link TC_AppUnregisterMipGenerator() TC_AppUnregisterMipGenerator \endlink, 
+/// \sa \link MipperPlugins Mipper Plugins\endlink,
+/// \link TC_PluginLoad() TC_PluginLoad \endlink,
+/// \link TC_AppUnregisterMipGenerator() TC_AppUnregisterMipGenerator \endlink,
 /// \link TC_PluginMipGenerateMipLevels() TC_PluginMipGenerateMipLevels \endlink
 HMIPPER TC_AppRegisterMipGenerator(TCHAR* pszMipGeneratorDescription);
 
@@ -786,8 +781,8 @@ HMIPPER TC_AppRegisterMipGenerator(TCHAR* pszMipGeneratorDescription);
 ///    g_hMipper = NULL;
 /// }
 /// \endcode
-/// \sa \link MipperPlugins Mipper Plugins \endlink, 
-/// \link TC_PluginUnload() TC_PluginUnload \endlink, 
+/// \sa \link MipperPlugins Mipper Plugins \endlink,
+/// \link TC_PluginUnload() TC_PluginUnload \endlink,
 /// \link TC_AppRegisterMipGenerator() TC_AppRegisterMipGenerator \endlink
 void TC_AppUnregisterMipGenerator(HMIPPER hMipper);
 
@@ -848,8 +843,8 @@ MipLevel* TC_AppGetMipLevel(const MipSet* pMipSet, int nMipLevel, int nFaceOrSli
 ///    return PE_Unknown;
 /// }
 /// \endcode
-/// \sa \link TC_AppGetMipLevel() TC_AppGetMipLevel \endlink, 
-/// \link TC_AppAllocateMipLevelData() TC_AppAllocateMipLevelData \endlink, 
+/// \sa \link TC_AppGetMipLevel() TC_AppGetMipLevel \endlink,
+/// \link TC_AppAllocateMipLevelData() TC_AppAllocateMipLevelData \endlink,
 /// \link TC_AppAllocateCompressedMipLevelData() TC_AppAllocateCompressedMipLevelData \endlink
 bool TC_AppAllocateMipSet(MipSet* pMipSet, ChannelFormat channelFormat, TextureDataType textureDataType, TextureType textureType, int nWidth, int nHeight, int nDepth = 1);
 
@@ -870,10 +865,10 @@ bool TC_AppAllocateMipSet(MipSet* pMipSet, ChannelFormat channelFormat, TextureD
 ///    return PE_Unknown;
 /// }
 /// \endcode
-/// \sa \link TC_AppGetMipLevel() TC_AppGetMipLevel \endlink, 
-/// \link TC_AppAllocateMipSet() TC_AppAllocateMipSet \endlink, 
+/// \sa \link TC_AppGetMipLevel() TC_AppGetMipLevel \endlink,
+/// \link TC_AppAllocateMipSet() TC_AppAllocateMipSet \endlink,
 /// \link TC_AppAllocateCompressedMipLevelData() TC_AppAllocateCompressedMipLevelData \endlink,
-/// \link TC_AppFreeMipLevelData() TC_AppFreeMipLevelData \endlink, 
+/// \link TC_AppFreeMipLevelData() TC_AppFreeMipLevelData \endlink,
 bool TC_AppAllocateMipLevelData(MipLevel* pMipLevel, int nWidth, int nHeight, ChannelFormat channelFormat, TextureDataType textureDataType);
 
 /// This function is called by plugins to allocate memory whenever a compressed MipLevel is being created. Usually needed by Codec Plugins' TC_PluginCodecCompressTexture function when they are compressing textures and some File Plugins' TC_PluginFileLoadTexture when they are converting a file on disk into a compressed texture in memory.
@@ -891,10 +886,10 @@ bool TC_AppAllocateMipLevelData(MipLevel* pMipLevel, int nWidth, int nHeight, Ch
 ///    return PE_Unknown;
 /// }
 /// \endcode
-/// \sa \link TC_AppGetMipLevel() TC_AppGetMipLevel \endlink, 
-/// \link TC_AppAllocateMipSet() TC_AppAllocateMipSet \endlink, 
+/// \sa \link TC_AppGetMipLevel() TC_AppGetMipLevel \endlink,
+/// \link TC_AppAllocateMipSet() TC_AppAllocateMipSet \endlink,
 /// \link TC_AppAllocateMipLevelData() TC_AppAllocateMipLevelData \endlink,
-/// \link TC_AppFreeMipLevelData() TC_AppFreeMipLevelData \endlink, 
+/// \link TC_AppFreeMipLevelData() TC_AppFreeMipLevelData \endlink,
 bool TC_AppAllocateCompressedMipLevelData(MipLevel* pMipLevel, int nWidth, int nHeight, CMP_DWORD dwSize);
 
 /// Deallocates a chunk of memory previously allocated by TC_AppAllocateMipLevelData or TC_AppAllocateCompressedMipLevelData.
@@ -905,7 +900,7 @@ bool TC_AppAllocateCompressedMipLevelData(MipLevel* pMipLevel, int nWidth, int n
 /// TC_AppFreeMipLevelData(TC_AppGetMipLevel(pMipSet, 0));
 /// \endcode
 /// \sa \link TC_AppAllocateMipLevelData() TC_AppAllocateMipLevelData \endlink,
-/// \link TC_AppAllocateCompressedMipLevelData() TC_AppAllocateCompressedMipLevelData \endlink, 
+/// \link TC_AppAllocateCompressedMipLevelData() TC_AppAllocateCompressedMipLevelData \endlink,
 void TC_AppFreeMipLevelData(MipLevel* pMipLevel);
 
 //Other
@@ -932,34 +927,34 @@ bool TC_AppCompressTextureCallback(float fProgress, CMP_DWORD_PTR pUser1, CMP_DW
 //View plugin communication
 
 /// \internal
-/// 
+///
 /// \param[in]
-/// \return 
+/// \return
 /// \remarks
 /// \par Example:
-/// 
+///
 /// \code
 /// \endcode
 void TC_AppUpdateViewParent(HWND hParent, unsigned int nWidth, unsigned int nHeight);
 
 /// \internal
-/// 
+///
 /// \param[in]
-/// \return 
+/// \return
 /// \remarks
 /// \par Example:
-/// 
+///
 /// \code
 /// \endcode
 void TC_AppEnableCommand(HWND hParent, unsigned int nCommand, bool bEnable);
 
 /// \internal
-/// 
+///
 /// \param[in]
-/// \return 
+/// \return
 /// \remarks
 /// \par Example:
-/// 
+///
 /// \code
 /// \endcode
 void TC_AppCheckCommand(HWND hParent, unsigned int nCommand, bool bCheck);

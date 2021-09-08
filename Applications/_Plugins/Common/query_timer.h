@@ -1,5 +1,5 @@
 //=====================================================================
-// Copyright (c) 2020    Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2021    Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
@@ -7,10 +7,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -44,20 +44,17 @@ typedef timeval         cmp_timeval;
 #define QUERY_PERFORMANCE(label)
 #endif
 
-#include "Compressonator.h"
-#include "Common.h"
+#include "compressonator.h"
+#include "common.h"
 
-struct query_timer 
-{
-    static void initialize()
-    {
+struct query_timer {
+    static void initialize() {
 #ifdef _WIN32
         QueryPerformanceFrequency(&m_frequency);
 #endif
     }
 
-    query_timer(char const* p_label):m_label(p_label)
-    {
+    query_timer(char const* p_label):m_label(p_label) {
 #ifdef _WIN32
         QueryPerformanceCounter(&m_start);
 #else
@@ -65,8 +62,7 @@ struct query_timer
 #endif
     }
 
-    ~query_timer()
-    {
+    ~query_timer() {
 #ifdef _WIN32
         QueryPerformanceCounter(&m_end);
         m_elapsed_count = static_cast< int >(m_end.QuadPart - m_start.QuadPart);
@@ -87,16 +83,15 @@ struct query_timer
 
 #define CMP_TIMER_REFMAX 15     // Max number of timer references used for timing a function call
 
-class cmp_cputimer
-{
-public:
+class cmp_cputimer {
+  public:
     void initialize();
     void Reset(CMP_INT ref);
     void Start(CMP_INT ref);
     void Stop(CMP_INT ref);
     CMP_FLOAT GetMS(CMP_INT ref);
 
-private:
+  private:
     float                 m_fcpufrequency;
     cmp_timeval           m_cpufrequency;
     cmp_timeval           m_start[CMP_TIMER_REFMAX];

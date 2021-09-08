@@ -9,10 +9,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -21,14 +21,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#ifndef RECONSTRUCT_H_INCLUDED 
-#define RECONSTRUCT_H_INCLUDED 
+#ifndef RECONSTRUCT_H_INCLUDED
+#define RECONSTRUCT_H_INCLUDED
 
-#include "BC7_Definitions.h"
+#include "bc7_definitions.h"
 
-// continious recoustruction unclumped 
+// continious recoustruction unclumped
 /*********************************/
-double reconstruct( 
+double reconstruct(
     double data[MAX_ENTRIES][DIMENSION],  // input
     int numEntries,                            // input
     int index_[MAX_ENTRIES],            // input
@@ -36,19 +36,19 @@ double reconstruct(
     int ns,                                // input
     double direction [DIMENSION],        // output
     double *step                        // output
-    );
+);
 /*********************************/
 
 
-double reconstruct_rnd( 
-    double data[MAX_ENTRIES][DIMENSION], 
+double reconstruct_rnd(
+    double data[MAX_ENTRIES][DIMENSION],
     int numEntries, int index_[MAX_ENTRIES],
     double out[MAX_ENTRIES][DIMENSION],int ns,
     double direction [DIMENSION],double *step
-    );
-int block_mean_rnd( 
-    double data_[MAX_ENTRIES][DIMENSION], 
-    int numEntries, 
+);
+int block_mean_rnd(
+    double data_[MAX_ENTRIES][DIMENSION],
+    int numEntries,
     int partition[MAX_ENTRIES],
     int ns,
 
@@ -58,11 +58,11 @@ int block_mean_rnd(
     double ni[MAX_SUBSETS]  // norm
 
 
-       ); 
+);
 /*****************************************/
 
-double ep_shaker_2( 
-    double data[MAX_ENTRIES][DIMENSION], 
+double ep_shaker_2(
+    double data[MAX_ENTRIES][DIMENSION],
     int numEntries,
     int index_[MAX_ENTRIES],
     double out[MAX_ENTRIES][DIMENSION],
@@ -73,28 +73,28 @@ double ep_shaker_2(
     int bcc,
     int nClusters,
     int size
-    ) ;
+) ;
 
 /*****************************************/
 
-double ep_shaker_2__( 
-    double data[MAX_ENTRIES][DIMENSION], 
+double ep_shaker_2__(
+    double data[MAX_ENTRIES][DIMENSION],
     int numEntries, int index_[MAX_ENTRIES],
     double out[MAX_ENTRIES][DIMENSION],int ns,
     double direction [DIMENSION],double *step
-    ); 
+);
 
 // good but broken (first one) ?????????????????????
-double ep_shaker( 
-    double data[MAX_ENTRIES][DIMENSION], 
+double ep_shaker(
+    double data[MAX_ENTRIES][DIMENSION],
     int numEntries, int index_[MAX_ENTRIES],
     double out[MAX_ENTRIES][DIMENSION],int ns,
     double direction [DIMENSION],double *step,
     int lock
-    ); 
+);
 
 
 void printStep (void);
 void printCnt (void);
-void printStepHisto (void); 
+void printStepHisto (void);
 #endif

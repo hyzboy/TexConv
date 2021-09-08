@@ -7,10 +7,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -24,72 +24,66 @@
 #define _JML_MATRIX_H_
 
 
-namespace JML
-{
+namespace JML {
 
 /**
     Simple templatized matrix class.
     The matrix is stored in column major order
 */
 template <class T, int SIZE>
-class Matrix
-{
-public:
+class Matrix {
+  public:
 
-    Matrix()
-    {
+    Matrix() {
         // initialize to identity
-        for (int i = 0; i < SIZE * SIZE; i++)
-        {
-            if (i % (SIZE + 1) == 0)
-            {
+        for (int i = 0; i < SIZE * SIZE; i++) {
+            if (i % (SIZE + 1) == 0) {
                 m_values[i] = (T)1;
-            }
-            else
-            {
+            } else {
                 m_values[i] = (T)0;
             }
         }
     };
 
-    Matrix(const T values[(SIZE * SIZE)])
-    {
+    Matrix(const T values[(SIZE * SIZE)]) {
         memcpy(m_values, values, (SIZE * SIZE)*sizeof(T));
     };
 
-    Matrix(const Matrix<T, SIZE>& rhs)
-    {
+    Matrix(const Matrix<T, SIZE>& rhs) {
         *this = rhs;
     };
 
-    const Matrix<T, SIZE>& operator=(const Matrix<T, SIZE>& rhs)
-    {
+    const Matrix<T, SIZE>& operator=(const Matrix<T, SIZE>& rhs) {
         memcpy(m_values, rhs.m_values, (SIZE * SIZE)*sizeof(T));
         return *this;
     };
 
     /// Returns pointer to matrix data in COLUMN-major order
-    const T* GetValues() const { return m_values; };
-    T* GetValues()  { return m_values; };
+    const T* GetValues() const {
+        return m_values;
+    };
+    T* GetValues()  {
+        return m_values;
+    };
 
-    operator const T* () const { return (const T*) this; };
+    operator const T* () const {
+        return (const T*) this;
+    };
 
-    operator T* () { return (T*) this; };
+    operator T* () {
+        return (T*) this;
+    };
 
-    Matrix<T, SIZE>& operator *= (const Matrix<T, SIZE>& rhs)
-    {
+    Matrix<T, SIZE>& operator *= (const Matrix<T, SIZE>& rhs) {
         T newdata[(SIZE * SIZE)];
         int i, j, x;
 
-        for (j = 0; j < SIZE; j++)
-        {
-            for (i = 0; i < SIZE; i++)
-            {
+        for (j = 0; j < SIZE; j++) {
+            for (i = 0; i < SIZE; i++) {
                 /** loop across ith row and down jth column **/
                 newdata[(SIZE * i) + j] = 0.0;
 
-                for (x = 0; x < SIZE; x++)
-                {
+                for (x = 0; x < SIZE; x++) {
                     newdata[(SIZE * i) + j] += m_values[(SIZE * i) + x] * rhs.m_values[(SIZE * x) + j];
                 }
             }
@@ -98,20 +92,16 @@ public:
         memcpy(m_values, newdata, 16 * sizeof(T));
     };
 
-    Matrix<T, SIZE> operator* (const Matrix<T, SIZE>& rhs) const
-    {
+    Matrix<T, SIZE> operator* (const Matrix<T, SIZE>& rhs) const {
         T newdata[(SIZE * SIZE)];
         int i, j, x;
 
-        for (j = 0; j < SIZE; j++)
-        {
-            for (i = 0; i < SIZE; i++)
-            {
+        for (j = 0; j < SIZE; j++) {
+            for (i = 0; i < SIZE; i++) {
                 /** loop across ith row and down jth column **/
                 newdata[(SIZE * i) + j] = 0.0;
 
-                for (x = 0; x < SIZE; x++)
-                {
+                for (x = 0; x < SIZE; x++) {
                     newdata[(SIZE * i) + j] += m_values[(SIZE * i) + x] * rhs.m_values[(SIZE * x) + j];
                 }
             }
@@ -120,16 +110,13 @@ public:
         return Matrix<T, SIZE>(newdata);
     }
 
-    Matrix<T, SIZE> Transpose() const
-    {
+    Matrix<T, SIZE> Transpose() const {
         T newdata[(SIZE * SIZE)];
 
         int i, j;
 
-        for (i = 0; i < SIZE; i++)
-        {
-            for (j = 0; j < SIZE; j++)
-            {
+        for (i = 0; i < SIZE; i++) {
+            for (j = 0; j < SIZE; j++) {
                 /** loop across ith row and down jth column **/
                 newdata[(SIZE * j) + i] = m_values[(SIZE * i) + j];
             }
@@ -138,17 +125,15 @@ public:
         return Matrix<T, SIZE>(newdata);
     };
 
-    void Set(unsigned int row, unsigned int col, T val)
-    {
+    void Set(unsigned int row, unsigned int col, T val) {
         m_values[(col * SIZE) + row ] = val;
     };
 
-    T Get(unsigned int row, unsigned int col) const
-    {
+    T Get(unsigned int row, unsigned int col) const {
         return m_values[(col * SIZE) + row ];
     };
 
-private:
+  private:
 
     T m_values[(SIZE * SIZE)];
 

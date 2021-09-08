@@ -1,5 +1,5 @@
 // AMD AMDUtils code
-// 
+//
 // Copyright(c) 2017 Advanced Micro Devices, Inc.All rights reserved.
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
@@ -18,8 +18,8 @@
 // THE SOFTWARE.
 #pragma once
 
-#include "GltfCommon.h"
-#include "GltfTechnique.h"
+#include "gltfcommon.h"
+#include "gltftechnique.h"
 
 #include <glm/matrix.hpp>
 #include <glm/vec4.hpp>
@@ -36,11 +36,9 @@ class UploadHeapVK;
 
 // This class takes a GltfCommon class (that holds all the non-GPU specific data) as an input and loads all the GPU specific data
 //
-class GltfBBoxPassVK : public GltfTechnique
-{
-public:
-    struct per_object
-    {
+class GltfBBoxPassVK : public GltfTechnique {
+  public:
+    struct per_object {
         glm::mat4x4 mWorldViewProj;
         glm::vec4 vCenter;
         glm::vec4 vRadius;
@@ -57,9 +55,11 @@ public:
         GLTFCommon *pGLTFData);
 
     void OnDestroy();
-    glm::mat4x4 *SetPerBatchConstants() { return &m_Camera; };
+    glm::mat4x4 *SetPerBatchConstants() {
+        return &m_Camera;
+    };
     void DrawMesh(VkCommandBuffer cmd_buf, int meshIndex, const glm::mat4x4& worldMatrix);
-private:
+  private:
 
     DeviceVK* m_pDevice;
     ResourceViewHeapsVK *m_pResourceViewHeaps;

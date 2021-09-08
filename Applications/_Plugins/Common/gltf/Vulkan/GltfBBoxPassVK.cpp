@@ -25,17 +25,17 @@
 // THE SOFTWARE.
 
 
-#include "GltfBBoxPassVK.h"
+#include "gltfbboxpassvk.h"
 
-#include "DeviceVK.h"
-#include "StaticBufferPoolVK.h"
-#include "DynamicBufferRingVK.h"
-#include "ResourceViewHeapsVK.h"
-#include "UploadHeapVK.h"
-#include "ShaderCompilerHelper.h"
-#include "Camera.h"
-#include "GltfHelpers.h"
-#include "GltfHelpers_Vulkan.h"
+#include "devicevk.h"
+#include "staticbufferpoolvk.h"
+#include "dynamicbufferringvk.h"
+#include "resourceviewheapsvk.h"
+#include "uploadheapvk.h"
+#include "shadercompilerhelper.h"
+#include "camera.h"
+#include "gltfhelpers.h"
+#include "gltfhelpers_vulkan.h"
 
 
 void GltfBBoxPassVK::OnCreate(
@@ -45,8 +45,7 @@ void GltfBBoxPassVK::OnCreate(
     ResourceViewHeapsVK *pHeaps,
     DynamicBufferRingVK *pDynamicBufferRing,
     StaticBufferPoolVK *pStaticBufferPool,
-    GLTFCommon *pGLTFData)
-{
+    GLTFCommon *pGLTFData) {
     VkResult res;
 
     m_pGLTFData = pGLTFData;
@@ -56,8 +55,7 @@ void GltfBBoxPassVK::OnCreate(
 
     // set indices
     {
-        short indices[] =
-        {
+        short indices[] = {
             0,1, 1,2, 2,3, 3,0,
             4,5, 5,6, 6,7, 7,4,
             0,4,
@@ -76,17 +74,16 @@ void GltfBBoxPassVK::OnCreate(
 
     // set vertices
     {
-        float vertices[] =
-        {
+        float vertices[] = {
             -1,  -1,  1,  1,
-             1,  -1,  1,  1,
-             1,   1,  1,  1,
-            -1,   1,  1,  1,
-            -1,  -1, -1,  1,
-             1,  -1, -1,  1,
-             1,   1, -1,  1,
-            -1,   1, -1,  1,
-        };
+                1,  -1,  1,  1,
+                1,   1,  1,  1,
+                -1,   1,  1,  1,
+                -1,  -1, -1,  1,
+                1,  -1, -1,  1,
+                1,   1, -1,  1,
+                -1,   1, -1,  1,
+            };
 
         void *pDest;
         m_pStaticBufferPool->AllocVertexBuffer(8, 4 * sizeof(float), &pDest, &m_VBV);
@@ -113,7 +110,7 @@ void GltfBBoxPassVK::OnCreate(
         "}\n";
 
     // the pixel shader
-    static const char* pixelShader = 
+    static const char* pixelShader =
         "#version 400\n"
         "#extension GL_ARB_separate_shader_objects : enable\n"
         "#extension GL_ARB_shading_language_420pack : enable\n"
@@ -127,7 +124,7 @@ void GltfBBoxPassVK::OnCreate(
     // Compile and create shaders
 
     init_glslang();
-    
+
     std::map<std::string, std::string> attributeDefines;
 
     VkPipelineShaderStageCreateInfo m_vertexShader;
@@ -326,7 +323,7 @@ void GltfBBoxPassVK::OnCreate(
     res = vkCreatePipelineCache(pDevice->GetDevice(), &pipelineCache, NULL, &m_pipelineCache);
     assert(res == VK_SUCCESS);
 
-    // create pipeline 
+    // create pipeline
 
     VkGraphicsPipelineCreateInfo pipeline = {};
     pipeline.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -354,12 +351,10 @@ void GltfBBoxPassVK::OnCreate(
 
 }
 
-void GltfBBoxPassVK::OnDestroy()
-{
+void GltfBBoxPassVK::OnDestroy() {
 }
 
-void GltfBBoxPassVK::DrawMesh(VkCommandBuffer cmd_buf, int meshIndex, const glm::mat4x4& worldMatrix)
-{
+void GltfBBoxPassVK::DrawMesh(VkCommandBuffer cmd_buf, int meshIndex, const glm::mat4x4& worldMatrix) {
     vkCmdBindVertexBuffers(cmd_buf, 0, 1, &m_VBV.buffer, &m_VBV.offset);
     vkCmdBindIndexBuffer(cmd_buf, m_IBV.buffer, m_IBV.offset, m_indexType);
 
@@ -370,8 +365,7 @@ void GltfBBoxPassVK::DrawMesh(VkCommandBuffer cmd_buf, int meshIndex, const glm:
     glm::mat4x4 mWorldViewProj = worldMatrix * m_Camera;
 
     tfMesh *pMesh = &m_pGLTFData->m_meshes[meshIndex];
-    for (unsigned int p = 0; p < pMesh->m_pPrimitives.size(); p++)
-    {
+    for (unsigned int p = 0; p < pMesh->m_pPrimitives.size(); p++) {
         // Set per Object constants
         //
         per_object *cbPerObject;

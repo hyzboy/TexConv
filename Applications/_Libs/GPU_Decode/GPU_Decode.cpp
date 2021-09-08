@@ -8,10 +8,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -25,14 +25,13 @@
 //=====================================================================
 
 #ifdef _WIN32
-#ifndef DISABLE_TESTCODE
-#include "GPU_DecodeBase.h"
-#include "GPU_Decode.h"
-#include "PluginInterface.h"
+#include "gpu_decodebase.h"
+#include "gpu_decode.h"
+#include "plugininterface.h"
+
+#include <windows.h>
 
 extern PluginManager    g_pluginManager;
-
-using namespace GPU_Decode;
 
 PluginInterface_GPUDecode   *g_GPUDecode_plugin = NULL;
 
@@ -41,36 +40,31 @@ static CMP_GPUDecode DecodeType = GPUDecode_INVALID;
 //
 // CMP_InitializeDecompessLibrary - Initialize the DeCompression library based in GPU Driver support types
 //
-CMP_ERROR CMP_API CMP_InitializeDecompessLibrary(CMP_GPUDecode GPUDecodeType, CMP_DWORD Width, CMP_DWORD Height, WNDPROC callback)
-{
+CMP_ERROR CMP_API CMP_InitializeDecompessLibrary(CMP_GPUDecode GPUDecodeType, CMP_DWORD Width, CMP_DWORD Height, WNDPROC callback) {
     if (g_GPUDecode_plugin && (DecodeType == GPUDecodeType)) return CMP_OK;
 
-    if (GPUDecodeType != DecodeType)
-    {
+    if (GPUDecodeType != DecodeType) {
         CMP_ShutdownDecompessLibrary();
     }
 
-    switch (GPUDecodeType)
-    {
+    switch (GPUDecodeType) {
     case GPUDecode_DIRECTX:
-                            g_GPUDecode_plugin = reinterpret_cast<PluginInterface_GPUDecode *>(g_pluginManager.GetPlugin("GPUDECODE", "DIRECTX"));
-                            break;
-    case GPUDecode_OPENGL: 
-                            g_GPUDecode_plugin = reinterpret_cast<PluginInterface_GPUDecode *>(g_pluginManager.GetPlugin("GPUDECODE", "OPENGL"));
-                            break;
+        g_GPUDecode_plugin = reinterpret_cast<PluginInterface_GPUDecode *>(g_pluginManager.GetPlugin("GPUDECODE", "DIRECTX"));
+        break;
+    case GPUDecode_OPENGL:
+        g_GPUDecode_plugin = reinterpret_cast<PluginInterface_GPUDecode *>(g_pluginManager.GetPlugin("GPUDECODE", "OPENGL"));
+        break;
     case GPUDecode_VULKAN:
-                            g_GPUDecode_plugin = reinterpret_cast<PluginInterface_GPUDecode *>(g_pluginManager.GetPlugin("GPUDECODE", "VULKAN"));
-                            break;
+        g_GPUDecode_plugin = reinterpret_cast<PluginInterface_GPUDecode *>(g_pluginManager.GetPlugin("GPUDECODE", "VULKAN"));
+        break;
     default:
-                            return CMP_ERR_UNABLE_TO_INIT_DECOMPRESSLIB;
+        return CMP_ERR_UNABLE_TO_INIT_DECOMPRESSLIB;
     }
 
-    if (g_GPUDecode_plugin)
-    {
+    if (g_GPUDecode_plugin) {
         if (g_GPUDecode_plugin->TC_Init(Width, Height, callback) != 0)
             return CMP_ERR_UNABLE_TO_INIT_DECOMPRESSLIB;
-    }
-    else return CMP_ERR_UNABLE_TO_INIT_DECOMPRESSLIB;
+    } else return CMP_ERR_UNABLE_TO_INIT_DECOMPRESSLIB;
 
     return CMP_OK;
 }
@@ -79,10 +73,8 @@ CMP_ERROR CMP_API CMP_InitializeDecompessLibrary(CMP_GPUDecode GPUDecodeType, CM
 //
 // CMP_ShutdownDecompessLibrary - Shutdown the DeCompression library
 //
-CMP_ERROR CMP_API CMP_ShutdownDecompessLibrary()
-{
-    if (g_GPUDecode_plugin)
-    {
+CMP_ERROR CMP_API CMP_ShutdownDecompessLibrary() {
+    if (g_GPUDecode_plugin) {
         g_GPUDecode_plugin->TC_Close();
         delete g_GPUDecode_plugin;
         g_GPUDecode_plugin = NULL;
@@ -94,24 +86,20 @@ CMP_ERROR CMP_API CMP_ShutdownDecompessLibrary()
 
 CMP_ERROR CMP_API CMP_DecompressTexture(
     const CMP_Texture* pSourceTexture,
-          CMP_Texture* pDestTexture,
-          CMP_GPUDecode GPUDecodeType)
-{
+    CMP_Texture* pDestTexture,
+    CMP_GPUDecode GPUDecodeType) {
     CMP_ERROR result;
 
     // This is temporary code we should move this into CLI and GUI
     result = CMP_InitializeDecompessLibrary(GPUDecodeType, pSourceTexture->dwWidth, pSourceTexture->dwHeight, NULL);
     if (result  != CMP_OK) return (result);
 
-    if (g_GPUDecode_plugin)
-    {
+    if (g_GPUDecode_plugin) {
         result = g_GPUDecode_plugin->TC_Decompress(pSourceTexture, pDestTexture);
         if (result != CMP_OK) return (result);
-    }
-    else return CMP_ABORTED;
+    } else return CMP_ABORTED;
 
 
     return CMP_OK;
 }
-#endif
 #endif

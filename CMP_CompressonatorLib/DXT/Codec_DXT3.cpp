@@ -9,10 +9,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -28,11 +28,11 @@
 //////////////////////////////////////////////////////////////////////////////
 #pragma warning(disable:4100)
 
-#include "Common.h"
-#include "Codec_DXT3.h"
+#include "common.h"
+#include "codec_dxt3.h"
 
 #ifdef TEST_CMP_CORE_DECODER
-#include "CMP_Core.h"
+#include "cmp_core.h"
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -40,16 +40,13 @@
 //////////////////////////////////////////////////////////////////////////////
 
 CCodec_DXT3::CCodec_DXT3() :
-CCodec_DXTC(CT_DXT3)
-{
+    CCodec_DXTC(CT_DXT3) {
 }
 
-CCodec_DXT3::~CCodec_DXT3()
-{
+CCodec_DXT3::~CCodec_DXT3() {
 }
 
-CodecError CCodec_DXT3::Compress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut, Codec_Feedback_Proc pFeedbackProc, CMP_DWORD_PTR pUser1, CMP_DWORD_PTR pUser2)
-{
+CodecError CCodec_DXT3::Compress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut, Codec_Feedback_Proc pFeedbackProc, CMP_DWORD_PTR pUser1, CMP_DWORD_PTR pUser2) {
 #ifndef _WIN64  //todo: add sse2 feature for win64
     if(m_nCompressionSpeed == CMP_Speed_SuperFast && m_bUseSSE2)
         return Compress_SuperFast(bufferIn, bufferOut, pFeedbackProc, pUser1, pUser2);
@@ -67,27 +64,21 @@ CodecError CCodec_DXT3::Compress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut
 
     bool bUseFixed = (!bufferIn.IsFloat() && bufferIn.GetChannelDepth() == 8 && !m_bUseFloat);
 
-    for(CMP_DWORD j = 0; j < dwBlocksY; j++)
-    {
-        for(CMP_DWORD i = 0; i < dwBlocksX; i++)
-        {
+    for(CMP_DWORD j = 0; j < dwBlocksY; j++) {
+        for(CMP_DWORD i = 0; i < dwBlocksX; i++) {
             CMP_DWORD compressedBlock[4];
-            if(bUseFixed)
-            {
+            if(bUseFixed) {
                 CMP_BYTE srcBlock[BLOCK_SIZE_4X4X4];
                 bufferIn.ReadBlockRGBA(i*4, j*4, 4, 4, srcBlock);
                 CompressRGBABlock_ExplicitAlpha(srcBlock, compressedBlock, CalculateColourWeightings(srcBlock));
-            }
-            else
-            {
+            } else {
                 float srcBlock[BLOCK_SIZE_4X4X4];
                 bufferIn.ReadBlockRGBA(i*4, j*4, 4, 4, srcBlock);
                 CompressRGBABlock_ExplicitAlpha(srcBlock, compressedBlock, CalculateColourWeightings(srcBlock));
             }
             bufferOut.WriteBlock(i*4, j*4, compressedBlock, 4);
         }
-        if(pFeedbackProc)
-        {
+        if(pFeedbackProc) {
             float fProgress = 100.f * (j * dwBlocksX) / (dwBlocksX * dwBlocksY);
             if(pFeedbackProc(fProgress, pUser1, pUser2))
                 return CE_Aborted;
@@ -97,8 +88,7 @@ CodecError CCodec_DXT3::Compress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut
     return CE_OK;
 }
 
-CodecError CCodec_DXT3::Compress_Fast(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut, Codec_Feedback_Proc pFeedbackProc, CMP_DWORD_PTR pUser1, CMP_DWORD_PTR pUser2)
-{
+CodecError CCodec_DXT3::Compress_Fast(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut, Codec_Feedback_Proc pFeedbackProc, CMP_DWORD_PTR pUser1, CMP_DWORD_PTR pUser2) {
     assert(bufferIn.GetWidth() == bufferOut.GetWidth());
     assert(bufferIn.GetHeight() == bufferOut.GetHeight());
 
@@ -110,16 +100,13 @@ CodecError CCodec_DXT3::Compress_Fast(CCodecBuffer& bufferIn, CCodecBuffer& buff
 
     CMP_DWORD compressedBlock[4];
     CMP_BYTE srcBlock[BLOCK_SIZE_4X4X4];
-    for(CMP_DWORD j = 0; j < dwBlocksY; j++)
-    {
-        for(CMP_DWORD i = 0; i < dwBlocksX; i++)
-        {
+    for(CMP_DWORD j = 0; j < dwBlocksY; j++) {
+        for(CMP_DWORD i = 0; i < dwBlocksX; i++) {
             bufferIn.ReadBlockRGBA(i*4, j*4, 4, 4, srcBlock);
             CompressRGBABlock_ExplicitAlpha_Fast(srcBlock, compressedBlock);
             bufferOut.WriteBlock(i*4, j*4, compressedBlock, 4);
         }
-        if(pFeedbackProc)
-        {
+        if(pFeedbackProc) {
             float fProgress = 100.f * (j * dwBlocksX) / (dwBlocksX * dwBlocksY);
             if(pFeedbackProc(fProgress, pUser1, pUser2))
                 return CE_Aborted;
@@ -129,8 +116,7 @@ CodecError CCodec_DXT3::Compress_Fast(CCodecBuffer& bufferIn, CCodecBuffer& buff
     return CE_OK;
 }
 
-CodecError CCodec_DXT3::Compress_SuperFast(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut, Codec_Feedback_Proc pFeedbackProc, CMP_DWORD_PTR pUser1, CMP_DWORD_PTR pUser2)
-{
+CodecError CCodec_DXT3::Compress_SuperFast(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut, Codec_Feedback_Proc pFeedbackProc, CMP_DWORD_PTR pUser1, CMP_DWORD_PTR pUser2) {
     assert(bufferIn.GetWidth() == bufferOut.GetWidth());
     assert(bufferIn.GetHeight() == bufferOut.GetHeight());
 
@@ -142,16 +128,13 @@ CodecError CCodec_DXT3::Compress_SuperFast(CCodecBuffer& bufferIn, CCodecBuffer&
 
     CMP_DWORD compressedBlock[4];
     CMP_BYTE srcBlock[BLOCK_SIZE_4X4X4];
-    for(CMP_DWORD j = 0; j < dwBlocksY; j++)
-    {
-        for(CMP_DWORD i = 0; i < dwBlocksX; i++)
-        {
+    for(CMP_DWORD j = 0; j < dwBlocksY; j++) {
+        for(CMP_DWORD i = 0; i < dwBlocksX; i++) {
             bufferIn.ReadBlockRGBA(i*4, j*4, 4, 4, srcBlock);
             CompressRGBABlock_ExplicitAlpha_SuperFast(srcBlock, compressedBlock);
             bufferOut.WriteBlock(i*4, j*4, compressedBlock, 4);
         }
-        if(pFeedbackProc)
-        {
+        if(pFeedbackProc) {
             float fProgress = 100.f * (j * dwBlocksX) / (dwBlocksX * dwBlocksY);
             if(pFeedbackProc(fProgress, pUser1, pUser2))
                 return CE_Aborted;
@@ -161,8 +144,7 @@ CodecError CCodec_DXT3::Compress_SuperFast(CCodecBuffer& bufferIn, CCodecBuffer&
     return CE_OK;
 }
 
-CodecError CCodec_DXT3::Decompress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut, Codec_Feedback_Proc pFeedbackProc, CMP_DWORD_PTR pUser1, CMP_DWORD_PTR pUser2)
-{
+CodecError CCodec_DXT3::Decompress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut, Codec_Feedback_Proc pFeedbackProc, CMP_DWORD_PTR pUser1, CMP_DWORD_PTR pUser2) {
     assert(bufferIn.GetWidth() == bufferOut.GetWidth());
     assert(bufferIn.GetHeight() == bufferOut.GetHeight());
 
@@ -175,35 +157,28 @@ CodecError CCodec_DXT3::Decompress(CCodecBuffer& bufferIn, CCodecBuffer& bufferO
 
     bool bUseFixed = (!bufferOut.IsFloat() && bufferOut.GetChannelDepth() == 8 && !m_bUseFloat);
 
-    for(CMP_DWORD j = 0; j < dwBlocksY; j++)
-    {
-        for(CMP_DWORD i = 0; i < dwBlocksX; i++)
-        {
+    for(CMP_DWORD j = 0; j < dwBlocksY; j++) {
+        for(CMP_DWORD i = 0; i < dwBlocksX; i++) {
             CMP_DWORD compressedBlock[4];
             bufferIn.ReadBlock(i*4, j*4, compressedBlock, 4);
-            if(bUseFixed)
-            {
+            if(bUseFixed) {
                 CMP_BYTE destBlock[BLOCK_SIZE_4X4X4];
-                #ifdef TEST_CMP_CORE_DECODER
-                    DecompressBlockBC2((CMP_BYTE *)compressedBlock,destBlock);
-                #else
-                    DecompressRGBABlock_ExplicitAlpha(destBlock, compressedBlock);
-                #endif
+#ifdef TEST_CMP_CORE_DECODER
+                DecompressBlockBC2((CMP_BYTE *)compressedBlock,destBlock);
+#else
+                DecompressRGBABlock_ExplicitAlpha(destBlock, compressedBlock);
+#endif
                 bufferOut.WriteBlockRGBA(i*4, j*4, 4, 4, destBlock);
-            }
-            else
-            {
+            } else {
                 float destBlock[BLOCK_SIZE_4X4X4];
                 DecompressRGBABlock_ExplicitAlpha(destBlock, compressedBlock);
                 bufferOut.WriteBlockRGBA(i*4, j*4, 4, 4, destBlock);
             }
         }
 
-        if (pFeedbackProc)
-        {
+        if (pFeedbackProc) {
             float fProgress = 100.f * (j * dwBlocksX) / dwBlocksXY;
-            if (pFeedbackProc(fProgress, pUser1, pUser2))
-            {
+            if (pFeedbackProc(fProgress, pUser1, pUser2)) {
                 return CE_Aborted;
             }
         }

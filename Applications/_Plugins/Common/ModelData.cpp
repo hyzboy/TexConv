@@ -9,10 +9,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -29,25 +29,22 @@
 
 #include <stdarg.h>
 #include <stdio.h>
-#include "ModelData.h"
+#include "modeldata.h"
 #include <assert.h>
-#include "TC_PluginInternal.h"
+#include "tc_plugininternal.h"
 
 
 
-CMODEL_DATA::CMODEL_DATA()
-{
+CMODEL_DATA::CMODEL_DATA() {
 #ifdef USE_ASSIMP
     m_Scene = nullptr;
 #endif
 }
 
 
-CMODEL_DATA::~CMODEL_DATA()
-{
+CMODEL_DATA::~CMODEL_DATA() {
 #ifdef USE_ASSIMP
-    if (m_Scene)
-    {
+    if (m_Scene) {
         delete m_Scene;
         m_Scene = nullptr;
     }

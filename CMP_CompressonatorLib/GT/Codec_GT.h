@@ -8,10 +8,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -28,17 +28,16 @@
 #ifndef _CODEC_GTC_H_INCLUDED_
 #define _CODEC_GTC_H_INCLUDED_
 
-#include "Compressonator.h"
-#include "Codec_DXTC.h"
-#include "GT_Encode.h"
-#include "GT_Decode.h"
+#include "compressonator.h"
+#include "codec_dxtc.h"
+#include "gt_encode.h"
+#include "gt_decode.h"
 
 #include <thread>
 
 extern GTC_Encode g_GTCEncode;
 
-struct GTCEncodeThreadParam
-{
+struct GTCEncodeThreadParam {
     GTCBlockEncoder      *encoder;
     // Max storage buffer for blocks size = 8x8x4
     CMP_BYTE             in[256];
@@ -47,9 +46,8 @@ struct GTCEncodeThreadParam
     volatile CMP_BOOL    exit;
 };
 
-class CCodec_GTC : public CCodec_DXTC
-{
-public:
+class CCodec_GTC : public CCodec_DXTC {
+  public:
     CCodec_GTC();
     ~CCodec_GTC();
 
@@ -64,14 +62,14 @@ public:
     virtual CodecError Decompress           (CCodecBuffer& bufferIn, CCodecBuffer& bufferOut, Codec_Feedback_Proc pFeedbackProc = NULL, CMP_DWORD_PTR pUser1 = NULL, CMP_DWORD_PTR pUser2 = NULL);
 
 
-private:
+  private:
 
     GTCEncodeThreadParam *m_EncodeParameterStorage;
 
     // GTC Quality level
     float m_quality;
 
-    // source block dimentions (typically 4x4x1) 
+    // source block dimentions (typically 4x4x1)
     int m_xdim;
     int m_ydim;
     int m_zdim;
@@ -79,7 +77,7 @@ private:
     // GT User configurable variables
     CMP_WORD    m_NumThreads;
 
-    // GT Internal status 
+    // GT Internal status
     CMP_BOOL     m_LibraryInitialized;
     CMP_BOOL     m_Use_MultiThreading;
     CMP_INT      m_NumEncodingThreads;

@@ -7,10 +7,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -26,42 +26,39 @@
 #ifndef COMPUTE_BASE_H
 #define COMPUTE_BASE_H
 
-#include "Compressonator.h"
-#include "Common.h"
-#include "Common_KernelDef.h"
-#include "Texture.h"
+#include "compressonator.h"
+#include "common.h"
+#include "common_kerneldef.h"
+#include "texture.h"
 
-namespace CMP_Compute_Base
-{
+namespace CMP_Compute_Base {
 
-    class RenderWindow
-    {
-    public:
-        RenderWindow() {};
-        virtual ~RenderWindow() {};
-    };
+class RenderWindow {
+  public:
+    RenderWindow() {};
+    virtual ~RenderWindow() {};
+};
 
-    class ComputeBase: public RenderWindow
-    {
-    public:
-        ComputeBase() {};
-        virtual ~ComputeBase() {};
+class ComputeBase: public RenderWindow {
+  public:
+    ComputeBase() {};
+    virtual ~ComputeBase() {};
 
-        virtual CMP_ERROR   Compress(KernelOptions *Options, MipSet &SrcTexture, MipSet &destTexture,CMP_Feedback_Proc pFeedback) = 0;
-        virtual void        SetComputeOptions(ComputeOptions *options) = 0;
-        virtual float       GetProcessElapsedTimeMS() = 0;
-        virtual float       GetMTxPerSec() = 0;
-        virtual int         GetBlockSize() = 0;
-        virtual const char* GetDeviceName() = 0;
-        virtual const char* GetVersion() = 0;
-        virtual int         GetMaxUCores() = 0;
+    virtual CMP_ERROR   Compress(KernelOptions *Options, MipSet &SrcTexture, MipSet &destTexture,CMP_Feedback_Proc pFeedback) = 0;
+    virtual void        SetComputeOptions(ComputeOptions *options) = 0;
+    virtual float       GetProcessElapsedTimeMS() = 0;
+    virtual float       GetMTxPerSec() = 0;
+    virtual int         GetBlockSize() = 0;
+    virtual const char* GetDeviceName() = 0;
+    virtual const char* GetVersion() = 0;
+    virtual int         GetMaxUCores() = 0;
 
-    private:
-    };
+  private:
+};
 }
 
 
 const CMP_CHAR* GetEncodeWithDesc(CMP_Compute_type nFormat);
-
+bool            cmp_recompile_shader(std::string m_sourceShaderFile);
 
 #endif // !COMPUTE_BASE_H

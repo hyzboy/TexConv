@@ -9,10 +9,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -41,26 +41,22 @@ extern "C" {
 void DXTCV11CompressBlockSSE(DWORD *block_32, DWORD *block_dxtc);
 
 #ifdef _WIN32
-#ifndef DISABLE_TESTCODE
 void __cdecl DXTCV11CompressBlockSSE2(DWORD *block_32, DWORD *block_dxtc);
-#endif
 #endif
 
 
 void DXTCV11CompressBlockSSEMinimal(DWORD *block_32, DWORD *block_dxtc);
 void DXTCV11CompressBlockMinimal(DWORD block_32[16], DWORD block_dxtc[2]);
-     
+
 void DXTCV11CompressAlphaBlock(BYTE block_8[16], DWORD block_dxtc[2]);
 void DXTCV11CompressExplicitAlphaBlock(BYTE block_8[16], DWORD block_dxtc[2]);
 
 #ifdef _WIN32
-#ifndef DISABLE_TESTCODE
 #if defined(_WIN64) || defined(__linux__)
 void DXTCV11CompressExplicitAlphaBlockMMX(BYTE block_8[16], DWORD block_dxtc[2]);
 #else
 void __fastcall DXTCV11CompressExplicitAlphaBlockMMX(BYTE block_8[16], DWORD block_dxtc[2]);
 #endif // !_WIN64
-#endif
 #endif //_WIN32
 
 #ifdef __cplusplus

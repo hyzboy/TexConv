@@ -9,10 +9,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -29,11 +29,10 @@
 #ifndef _CODEC_ATI2N_H_INCLUDED_
 #define _CODEC_ATI2N_H_INCLUDED_
 
-#include "Codec_DXTC.h"
+#include "codec_dxtc.h"
 
-class CCodec_ATI2N : public CCodec_DXTC  
-{
-public:
+class CCodec_ATI2N : public CCodec_DXTC {
+  public:
     CCodec_ATI2N(CodecType codecType = CT_ATI2N);
     virtual ~CCodec_ATI2N();
 
@@ -41,8 +40,31 @@ public:
     virtual CodecError Compress_Fast(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut, Codec_Feedback_Proc pFeedbackProc = NULL, CMP_DWORD_PTR pUser1 = NULL, CMP_DWORD_PTR pUser2 = NULL);
     virtual CodecError Decompress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut, Codec_Feedback_Proc pFeedbackProc = NULL, CMP_DWORD_PTR pUser1 = NULL, CMP_DWORD_PTR pUser2 = NULL);
 
+  protected:
+    CodecType m_codecType;
+};
+
+class CCodec_ATI2N_S : public CCodec_DXTC
+{
+public:
+    CCodec_ATI2N_S(CodecType codecType = CT_ATI2N);
+    virtual ~CCodec_ATI2N_S();
+
+    virtual CodecError Compress(CCodecBuffer&       bufferIn,
+                                CCodecBuffer&       bufferOut,
+                                Codec_Feedback_Proc pFeedbackProc = NULL,
+                                CMP_DWORD_PTR       pUser1        = NULL,
+                                CMP_DWORD_PTR       pUser2        = NULL);
+
+    virtual CodecError Decompress(CCodecBuffer&       bufferIn,
+                                  CCodecBuffer&       bufferOut,
+                                  Codec_Feedback_Proc pFeedbackProc = NULL,
+                                  CMP_DWORD_PTR       pUser1        = NULL,
+                                  CMP_DWORD_PTR       pUser2        = NULL);
+
 protected:
     CodecType m_codecType;
 };
+
 
 #endif // !defined(_CODEC_ATI2N_H_INCLUDED_)

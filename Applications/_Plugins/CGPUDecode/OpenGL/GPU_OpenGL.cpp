@@ -7,10 +7,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -23,23 +23,35 @@
 //
 //=====================================================================
 
-#include "GPU_OpenGL.h"
-#include "Common.h"
-#include "Compressonator.h"
+#include "gpu_opengl.h"
+#include "common.h"
+#include "compressonator.h"
 
 #include <GL/glew.h>
 #include <GL/gl.h>
 #include <GL/glu.h>
 
 #include <stdio.h>
-#include "GPU_Decode.h"
+#include "gpu_decode.h"
 
 #include <assert.h>
 
+#if defined(_WIN32) //&& !defined(NO_LEGACY_BEHAVIOR)
+#pragma comment(lib, "opengl32.lib")     // Open GL
+#pragma comment(lib, "Glu32.lib")        // Glu 
+#pragma comment(lib, "glew32.lib")       // glew 
+#else
 #ifdef _WIN32
 #pragma comment(lib, "opengl32.lib")     // Open GL
 #pragma comment(lib, "Glu32.lib")        // Glu 
-#pragma comment(lib, "glew32.lib")       // glew 1.13.0
+//#ifdef _DEBUG
+//    #pragma comment(lib, "glew32d.lib")   // glew
+//#else
+#pragma comment(lib, "glew32.lib")   // glew
+//#endif
+#else
+#pragma comment(lib, "libglew32.lib")   // glew
+#endif
 #endif
 
 static_assert(sizeof(unsigned int) == sizeof(GLuint), "Inconsistent size for GLuint");
@@ -47,16 +59,14 @@ static_assert(sizeof(unsigned int) == sizeof(GLenum), "Inconsistent size for GLe
 
 using namespace GPU_Decode;
 
-GPU_OpenGL::GPU_OpenGL(CMP_DWORD Width, CMP_DWORD Height, WNDPROC callback):RenderWindow("OpenGL")
-{
+GPU_OpenGL::GPU_OpenGL(CMP_DWORD Width, CMP_DWORD Height, WNDPROC callback):RenderWindow("OpenGL") {
     //set default width and height if is 0
     if (Width <= 0)
         Width = 640;
     if (Height <= 0)
         Height = 480;
 
-    if (FAILED(InitWindow(Width, Height, callback)))
-    {
+    if (FAILED(InitWindow(Width, Height, callback))) {
         fprintf(stderr, "Failed to initialize Window. Please make sure GLEW is downloaded.\n");
         assert(0);
     }
@@ -64,14 +74,13 @@ GPU_OpenGL::GPU_OpenGL(CMP_DWORD Width, CMP_DWORD Height, WNDPROC callback):Rend
     EnableWindowContext(m_hWnd, &m_hDC, &m_hRC);
 }
 
-GPU_OpenGL::~GPU_OpenGL()
-{
+GPU_OpenGL::~GPU_OpenGL() {
 }
 
 //====================================================================================
+// #define SHOW_WINDOW
 
-void GPU_OpenGL::GLRender()
-{
+void GPU_OpenGL::GLRender() {
     // OpenGL animation code goes here
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -87,16 +96,24 @@ void GPU_OpenGL::GLRender()
 #ifdef SHOW_WINDOW
     //for certain image format like bmp, the image texture is upside down, need to use coordinate as below
     //use when showwindow and swapbuffer enabled
-    glTexCoord2d(0.0, 1.0); glVertex2d(-1.0, -1.0);
-    glTexCoord2d(1.0, 1.0); glVertex2d(+1.0, -1.0);
-    glTexCoord2d(1.0, 0.0); glVertex2d(+1.0, +1.0);
-    glTexCoord2d(0.0, 0.0); glVertex2d(-1.0, +1.0);
+    glTexCoord2d(0.0, 1.0);
+    glVertex2d(-1.0, -1.0);
+    glTexCoord2d(1.0, 1.0);
+    glVertex2d(+1.0, -1.0);
+    glTexCoord2d(1.0, 0.0);
+    glVertex2d(+1.0, +1.0);
+    glTexCoord2d(0.0, 0.0);
+    glVertex2d(-1.0, +1.0);
 #else
-    //for dds use coordinate below 
-    glTexCoord2d(0.0, 0.0); glVertex2d(-1.0, -1.0);
-    glTexCoord2d(1.0, 0.0); glVertex2d(+1.0, -1.0);
-    glTexCoord2d(1.0, 1.0); glVertex2d(+1.0, +1.0);
-    glTexCoord2d(0.0, 1.0); glVertex2d(-1.0, +1.0);
+    //for dds use coordinate below
+    glTexCoord2d(0.0, 0.0);
+    glVertex2d(-1.0, -1.0);
+    glTexCoord2d(1.0, 0.0);
+    glVertex2d(+1.0, -1.0);
+    glTexCoord2d(1.0, 1.0);
+    glVertex2d(+1.0, +1.0);
+    glTexCoord2d(0.0, 1.0);
+    glVertex2d(-1.0, +1.0);
 #endif
     glEnd();
     glPopMatrix();
@@ -108,11 +125,9 @@ void GPU_OpenGL::GLRender()
 
 }
 
-unsigned int GPU_OpenGL::MIP2OLG_Format(const CMP_Texture* pSourceTexture)
-{
+unsigned int GPU_OpenGL::MIP2OLG_Format(const CMP_Texture* pSourceTexture) {
     GLenum m_GLnum;
-    switch (pSourceTexture->format)
-    {
+    switch (pSourceTexture->format) {
     case CMP_FORMAT_BC1:
     case CMP_FORMAT_DXT1:
         m_GLnum = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
@@ -129,11 +144,17 @@ unsigned int GPU_OpenGL::MIP2OLG_Format(const CMP_Texture* pSourceTexture)
     case CMP_FORMAT_ATI1N:
         m_GLnum = GL_COMPRESSED_RED_RGTC1;
         break;
+    case CMP_FORMAT_BC4_S:
+        m_GLnum = GL_COMPRESSED_SIGNED_RED_RGTC1;
+        break;
     case CMP_FORMAT_BC5:
     case CMP_FORMAT_ATI2N:
     case CMP_FORMAT_ATI2N_XY:
     case CMP_FORMAT_ATI2N_DXT5:
         m_GLnum = GL_COMPRESSED_RG_RGTC2;
+        break;
+    case CMP_FORMAT_BC5_S:
+        m_GLnum = GL_COMPRESSED_SIGNED_RG_RGTC2;
         break;
     case CMP_FORMAT_BC6H:
         m_GLnum = GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT;
@@ -159,11 +180,11 @@ unsigned int GPU_OpenGL::MIP2OLG_Format(const CMP_Texture* pSourceTexture)
         break;
     case CMP_FORMAT_ETC2_SRGBA:
         m_GLnum = GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC;
-         break;
+        break;
     case CMP_FORMAT_ETC2_SRGBA1:
         m_GLnum = GL_COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2;
         break;
-    case CMP_FORMAT_ASTC:  
+    case CMP_FORMAT_ASTC:
         if ((pSourceTexture->nBlockWidth == 4) && (pSourceTexture->nBlockHeight == 4))
             m_GLnum = GL_COMPRESSED_RGBA_ASTC_4x4_KHR;
         else if ((pSourceTexture->nBlockWidth == 5) && (pSourceTexture->nBlockHeight == 4))
@@ -192,7 +213,7 @@ unsigned int GPU_OpenGL::MIP2OLG_Format(const CMP_Texture* pSourceTexture)
             m_GLnum = GL_COMPRESSED_RGBA_ASTC_12x10_KHR;
         else if ((pSourceTexture->nBlockWidth == 12) && (pSourceTexture->nBlockHeight == 12))
             m_GLnum = GL_COMPRESSED_RGBA_ASTC_12x12_KHR;
-        else 
+        else
             m_GLnum = GL_COMPRESSED_RGBA_ASTC_4x4_KHR;
         break;
     default:
@@ -203,11 +224,9 @@ unsigned int GPU_OpenGL::MIP2OLG_Format(const CMP_Texture* pSourceTexture)
 }
 
 // load pre-compressed texture
-unsigned int GPU_OpenGL::LoadTexture(const CMP_Texture* pSourceTexture, bool wrap)
-{
+unsigned int GPU_OpenGL::LoadTexture(const CMP_Texture* pSourceTexture, bool wrap) {
     GLenum m_GLnum = MIP2OLG_Format(pSourceTexture);
-    if (m_GLnum == GL_INVALID_ENUM)
-    {
+    if (m_GLnum == GL_INVALID_ENUM) {
         fprintf(stderr, "Unsupported format.\n");
         return static_cast<unsigned int>(GLuint(-1));
     }
@@ -224,7 +243,7 @@ unsigned int GPU_OpenGL::LoadTexture(const CMP_Texture* pSourceTexture, bool wra
     glGenTextures(1, &texture);
 
     glBindTexture(GL_TEXTURE_2D, texture);
-   
+
     //modulate to mix texture with color for shading
     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
@@ -246,13 +265,12 @@ unsigned int GPU_OpenGL::LoadTexture(const CMP_Texture* pSourceTexture, bool wra
 
     //for compressed image (only for mip level 1)
     glCompressedTexImage2D(GL_TEXTURE_2D, 0, m_GLnum, pSourceTexture->dwWidth, pSourceTexture->dwHeight, 0, pSourceTexture->dwDataSize, pSourceTexture->pData);
-    
+
     return texture;
 }
 
 // Free Texture
-void GPU_OpenGL::FreeTexture(unsigned int texture)
-{
+void GPU_OpenGL::FreeTexture(unsigned int texture) {
     glDeleteTextures(1, static_cast<GLuint*>(&texture));
 }
 
@@ -261,8 +279,7 @@ void GPU_OpenGL::FreeTexture(unsigned int texture)
 CMP_ERROR WINAPI GPU_OpenGL::Decompress(
     const CMP_Texture* pSourceTexture,
     CMP_Texture* pDestTexture
-)
-{
+) {
 
     GLint majVer = 0;
     GLint minVer = 0;
@@ -270,16 +287,14 @@ CMP_ERROR WINAPI GPU_OpenGL::Decompress(
     glGetIntegerv(GL_MAJOR_VERSION, &majVer);
     glGetIntegerv(GL_MINOR_VERSION, &minVer);
 
-    if (majVer < 3 || (majVer < 3 && minVer < 2))
-    {
+    if (majVer < 3 || (majVer < 3 && minVer < 2)) {
         PrintInfo("Error: OpenGL 3.2 and up cannot be detected.\n");
         fprintf(stderr, "Error: OpenGL 3.2 and up cannot be detected.\n" );
         return CMP_ERR_UNABLE_TO_INIT_DECOMPRESSLIB;
     }
 
     texture = LoadTexture(pSourceTexture, false);
-    if (texture == -1)
-    {
+    if (texture == -1) {
         return CMP_ERR_UNSUPPORTED_SOURCE_FORMAT;
     }
 
@@ -291,38 +306,37 @@ CMP_ERROR WINAPI GPU_OpenGL::Decompress(
     //  then exit
     MSG msg = { 0 };
     int loopcount = 0;
-    while (WM_QUIT != msg.message)
-    {
-        if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE) && (loopcount < 100))
-        {
+    while (WM_QUIT != msg.message) {
+        if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE) && (loopcount < 100)) {
             loopcount++;
             TranslateMessage(&msg);
-        }
-        else
-        {
+        } else {
             GLRender();
             break;
         }
     }
 
-    if (pDestTexture)
-    {
+    if (pDestTexture) {
         if (pSourceTexture->format == CMP_FORMAT_ETC_RGB ||
-            pSourceTexture->format == CMP_FORMAT_ETC2_RGB ||
-            pSourceTexture->format == CMP_FORMAT_ETC2_RGBA ||
-            pSourceTexture->format == CMP_FORMAT_ETC2_RGBA1 
-            )
-            glReadPixels(0, 0, pDestTexture->dwWidth, pDestTexture->dwHeight, GL_BGRA_EXT, GL_UNSIGNED_BYTE, pDestTexture->pData);
-        else
-        if (pSourceTexture->format == CMP_FORMAT_ETC2_SRGB ||
-            pSourceTexture->format == CMP_FORMAT_ETC2_SRGBA ||
-            pSourceTexture->format == CMP_FORMAT_ETC2_SRGBA1
-            )
-            glReadPixels(0, 0, pDestTexture->dwWidth, pDestTexture->dwHeight, GL_BGRA_EXT, GL_BYTE, pDestTexture->pData);
-        else
-        {
-            if(pDestTexture->format ==  CMP_FORMAT_ARGB_16F)
+                pSourceTexture->format == CMP_FORMAT_ETC2_RGB ||
+                pSourceTexture->format == CMP_FORMAT_ETC2_RGBA ||
+                pSourceTexture->format == CMP_FORMAT_ETC2_RGBA1
+           )
+           glReadPixels(0, 0, pDestTexture->dwWidth, pDestTexture->dwHeight, GL_BGRA_EXT, GL_UNSIGNED_BYTE, pDestTexture->pData);
+        else if (pSourceTexture->format == CMP_FORMAT_ETC2_SRGB ||
+                 pSourceTexture->format == CMP_FORMAT_ETC2_SRGBA ||
+                 pSourceTexture->format == CMP_FORMAT_ETC2_SRGBA1
+                )
+           glReadPixels(0, 0, pDestTexture->dwWidth, pDestTexture->dwHeight, GL_BGRA_EXT, GL_BYTE, pDestTexture->pData);
+        else {
+            if (pDestTexture->format == CMP_FORMAT_ARGB_16F)
+            {
                 glReadPixels(0, 0, pDestTexture->dwWidth, pDestTexture->dwHeight, GL_RGBA, GL_HALF_FLOAT, pDestTexture->pData);
+            }
+            else if (pDestTexture->format == CMP_FORMAT_RGBA_8888_S)
+            {
+                glReadPixels(0, 0, pDestTexture->dwWidth, pDestTexture->dwHeight, GL_RGBA_SNORM, GL_BYTE, pDestTexture->pData);
+            }
             else
                 glReadPixels(0, 0, pDestTexture->dwWidth, pDestTexture->dwHeight, GL_RGBA, GL_UNSIGNED_BYTE, pDestTexture->pData);
         }

@@ -8,10 +8,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -26,13 +26,12 @@
 
 #pragma once
 
-#define WIN32_LEAN_AND_MEAN        // Exclude rarely-used stuff from Windows headers
 // Windows Header Files:
 // TODO: reference additional headers your program requires here
 #include <assert.h>
 #include <tchar.h>
-#include "GPU_Vulkan.h"
-#include "PluginInterface.h"
+#include "gpu_vulkan.h"
+#include "plugininterface.h"
 
 // {D88C7EB3-38D3-4B75-BE14-22ED445156FE}
 static const GUID  g_GUID_VULKAN = { 0xd88c7eb3, 0x38d3, 0x4b75,{ 0xbe, 0x14, 0x22, 0xed, 0x44, 0x51, 0x56, 0xfe } };
@@ -43,17 +42,16 @@ static const GUID  g_GUID_VULKAN = { 0xd88c7eb3, 0x38d3, 0x4b75,{ 0xbe, 0x14, 0x
 
 using namespace GPU_Decode;
 
-class Plugin_CVulkan : public PluginInterface_GPUDecode
-{
-public: 
-        Plugin_CVulkan();
-        virtual ~Plugin_CVulkan();
-        int TC_PluginGetVersion(TC_PluginVersion* pPluginVersion);
-        int TC_Init(std::uint32_t Width, std::uint32_t Height, WNDPROC callback);
-        CMP_ERROR TC_Decompress(const CMP_Texture* pSourceTexture, CMP_Texture* pDestTexture);
-        int TC_Close();
-private:
-        TextureControl  *m_pGPUDecode;
+class Plugin_CVulkan : public PluginInterface_GPUDecode {
+  public:
+    Plugin_CVulkan();
+    virtual ~Plugin_CVulkan();
+    int TC_PluginGetVersion(TC_PluginVersion* pPluginVersion);
+    int TC_Init(std::uint32_t Width, std::uint32_t Height, WNDPROC callback);
+    CMP_ERROR TC_Decompress(const CMP_Texture* pSourceTexture, CMP_Texture* pDestTexture);
+    int TC_Close();
+  private:
+    TextureControl  *m_pGPUDecode;
 };
 
 #endif

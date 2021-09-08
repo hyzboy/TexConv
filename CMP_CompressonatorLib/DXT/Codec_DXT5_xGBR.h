@@ -9,10 +9,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -29,16 +29,15 @@
 
 #ifndef _CODEC_DXT5_XGBR_H_INCLUDED_
 #define _CODEC_DXT5_XGBR_H_INCLUDED_
- 
-#include "Codec_DXT5_Swizzled.h"
 
-class CCodec_DXT5_xGBR : public CCodec_DXT5_Swizzled  
-{
-public:
+#include "codec_dxt5_swizzled.h"
+
+class CCodec_DXT5_xGBR : public CCodec_DXT5_Swizzled {
+  public:
     CCodec_DXT5_xGBR();
     virtual ~CCodec_DXT5_xGBR();
 
-protected:
+  protected:
     virtual void ReadBlock(CCodecBuffer& buffer, CMP_DWORD x, CMP_DWORD y, CMP_BYTE block[BLOCK_SIZE_4X4X4]);
     virtual void WriteBlock(CCodecBuffer& buffer, CMP_DWORD x, CMP_DWORD y, CMP_BYTE block[BLOCK_SIZE_4X4X4]);
 

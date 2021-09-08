@@ -1,5 +1,5 @@
 // AMD AMDUtils code
-// 
+//
 // Copyright(c) 2017 Advanced Micro Devices, Inc.All rights reserved.
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
@@ -18,17 +18,16 @@
 // THE SOFTWARE.
 #pragma once
 
-#include "GltfCommon.h"
-#include "GltfTechnique.h"
-#include "SkyDome.h"
+#include "gltfcommon.h"
+#include "gltftechnique.h"
+#include "skydome.h"
 
-#include <DirectXMath.h>
+#include <directxmath.h>
 #include <wrl.h>
 
 extern CMIPS *DX12_CMips;
 
-struct PBRMaterial
-{
+struct PBRMaterial {
     int m_textureCount = 0;
     CBV_SRV_UAV *m_pTexturesTable;
     std::map<std::string, std::string> m_defines;
@@ -39,31 +38,27 @@ struct PBRMaterial
     float    roughnessFactor;
 };
 
-struct PBRPrimitives
-{
+struct PBRPrimitives {
     UINT m_NumIndices;
     D3D12_INDEX_BUFFER_VIEW m_IBV;
     std::vector<D3D12_VERTEX_BUFFER_VIEW> m_VBV;
 
     PBRMaterial *m_pMaterial = NULL;
 
-    Microsoft::WRL::ComPtr<ID3D12RootSignature>	m_RootSignature;
-    Microsoft::WRL::ComPtr<ID3D12PipelineState>	m_PipelineRender;
+    Microsoft::WRL::ComPtr<ID3D12RootSignature>    m_RootSignature;
+    Microsoft::WRL::ComPtr<ID3D12PipelineState>    m_PipelineRender;
     SAMPLER                                    *m_sampler;
 };
 
-struct PBRMesh
-{
+struct PBRMesh {
     std::vector<PBRPrimitives> m_pPrimitives;
 };
 
 // This class takes a GltfCommon class (that holds all the non-GPU specific data) as an input and loads all the GPU specific data
 //
-class GltfPbr : public GltfTechnique
-{
-public:
-    struct per_batch
-    {
+class GltfPbr : public GltfTechnique {
+  public:
+    struct per_batch {
         DirectX::XMMATRIX mCameraViewProj;
         DirectX::XMVECTOR cameraPos;
         DirectX::XMMATRIX mLightViewProj;
@@ -91,7 +86,7 @@ public:
 
     UINT m_TotalNumIndices = 0;
 
-private:
+  private:
 
     std::vector<TextureDX12> m_textures;
     std::vector<PBRMesh> m_meshes;

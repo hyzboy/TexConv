@@ -8,10 +8,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -51,7 +51,7 @@ typedef std::uint8_t BYTE;
 
 // ASTC Specification based data
 
-// OpenGL 4.0, table 3.2 (page 162) 
+// OpenGL 4.0, table 3.2 (page 162)
 #define ASTC_GL_COMPRESSED          0x0000
 #define ASTC_GL_UNSIGNED_SHORT      0x1403
 #define ASTC_GL_HALF_FLOAT          0x140B

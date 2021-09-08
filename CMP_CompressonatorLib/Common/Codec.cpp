@@ -27,35 +27,40 @@
 //
 //////////////////////////////////////////////////////////////////////////////
 
-#include "Common.h"
-#include "Codec.h"
-#include "Codec_ATI1N.h"
-#include "Codec_ATI2N.h"
-#include "Codec_ATI2N_DXT5.h"
-#include "Codec_DXT1.h"
-#include "Codec_DXT3.h"
-#include "Codec_DXT5.h"
-#include "Codec_DXT5_xGBR.h"
-#include "Codec_DXT5_RxBG.h"
-#include "Codec_DXT5_RBxG.h"
-#include "Codec_DXT5_xRBG.h"
-#include "Codec_DXT5_RGxB.h"
-#include "Codec_DXT5_xGxR.h"
-#include "Codec_ATC_RGB.h"
-#include "Codec_ATC_RGBA_Explicit.h"
-#include "Codec_ATC_RGBA_Interpolated.h"
-#include "Codec_ETC_RGB.h"
-#include "Codec_ETC2_RGB.h"
-#include "Codec_ETC2_RGBA.h"
-#include "Codec_ETC2_RGBA1.h"
-#include "Codec_BC6H.h"
-#include "Codec_BC7.h"
-#include "ASTC/Codec_ASTC.h"
+#include "common.h"
+#include "codec.h"
+#include "codec_ati1n.h"
+#include "codec_ati2n.h"
+#include "codec_ati2n_dxt5.h"
+#include "codec_dxt1.h"
+#include "codec_dxt3.h"
+#include "codec_dxt5.h"
+#include "codec_dxt5_xgbr.h"
+#include "codec_dxt5_rxbg.h"
+#include "codec_dxt5_rbxg.h"
+#include "codec_dxt5_xrbg.h"
+#include "codec_dxt5_rgxb.h"
+#include "codec_dxt5_xgxr.h"
+#include "codec_atc_rgb.h"
+#include "codec_atc_rgba_explicit.h"
+#include "codec_atc_rgba_interpolated.h"
+#include "codec_etc_rgb.h"
+#include "codec_etc2_rgb.h"
+#include "codec_etc2_rgba.h"
+#include "codec_etc2_rgba1.h"
+#include "codec_bc6h.h"
+#include "codec_bc7.h"
+#include "astc/codec_astc.h"
 
 #ifdef _WIN32  //GT only enabled for win build now
-#include "Codec_GT.h"
+#ifdef USE_APC
+#include "codec_apc.h"
+#endif
+#ifdef USE_GTC
+#include "codec_gt.h"
+#endif
 #ifdef USE_BASIS
-#include "Codec_BASIS.h"
+#include "codec_basis.h"
 #endif
 #endif
 
@@ -63,37 +68,30 @@
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
-CCodec::CCodec(CodecType codecType)
-{
+CCodec::CCodec(CodecType codecType) {
     m_CodecType = codecType;
 }
 
-CCodec::~CCodec()
-{
+CCodec::~CCodec() {
 }
 
-bool CCodec::SetParameter(const CMP_CHAR* /*pszParamName*/, CMP_CHAR* /*dwValue*/)
-{
+bool CCodec::SetParameter(const CMP_CHAR* /*pszParamName*/, CMP_CHAR* /*dwValue*/) {
     return false;
 }
 
-bool CCodec::SetParameter(const CMP_CHAR* /*pszParamName*/, CMP_DWORD /*dwValue*/)
-{
+bool CCodec::SetParameter(const CMP_CHAR* /*pszParamName*/, CMP_DWORD /*dwValue*/) {
     return false;
 }
 
-bool CCodec::GetParameter(const CMP_CHAR* /*pszParamName*/, CMP_DWORD& /*dwValue*/)
-{
+bool CCodec::GetParameter(const CMP_CHAR* /*pszParamName*/, CMP_DWORD& /*dwValue*/) {
     return false;
 }
 
-bool CCodec::SetParameter(const CMP_CHAR* /*pszParamName*/, CODECFLOAT /*fValue*/)
-{
+bool CCodec::SetParameter(const CMP_CHAR* /*pszParamName*/, CODECFLOAT /*fValue*/) {
     return false;
 }
 
-bool CCodec::GetParameter(const CMP_CHAR* /*pszParamName*/, CODECFLOAT& /*fValue*/)
-{
+bool CCodec::GetParameter(const CMP_CHAR* /*pszParamName*/, CODECFLOAT& /*fValue*/) {
     return false;
 }
 
@@ -108,52 +106,45 @@ bool CCodec::GetParameter(const CMP_CHAR* /*pszParamName*/, CODECFLOAT& /*fValue
 
 //  GCC Intrinsics
 #include <cpuid.h>
-void cpuid(int info[4], int InfoType)
-{
+void cpuid(int info[4], int InfoType) {
     __cpuid_count(InfoType, 0, info[0], info[1], info[2], info[3]);
 }
 
 #endif
 
-bool SupportsSSE()
-{
+bool SupportsSSE() {
 #if defined(USE_SSE)
     int info[4];
     cpuid(info, 0);
 
     int nIds = info[0];
 
-    if (nIds >= 1)
-    {
+    if (nIds >= 1) {
         return ((info[3] & ((int)1 << 25)) != 0);
     }
 #endif
     return false;
 }
 
-bool SupportsSSE2()
-{
+bool SupportsSSE2() {
 #if defined(USE_SSE2) && defined(_WIN32)
     int info[4];
     cpuid(info, 0);
 
     int nIds = info[0];
 
-    if (nIds >= 1)
-    {
+    if (nIds >= 1) {
         return ((info[3] & ((int)1 << 26)) != 0);
     }
 #endif
     return false;
 }
 
-CCodec* CreateCodec(CodecType nCodecType)
-{
+CCodec* CreateCodec(CodecType nCodecType) {
 #ifdef USE_DBGTRACE
     DbgTrace(("nCodecType %d", nCodecType));
 #endif
-    switch (nCodecType)
-    {
+    switch (nCodecType) {
     case CT_DXT1:
         return new CCodec_DXT1;
     case CT_DXT3:
@@ -174,10 +165,16 @@ CCodec* CreateCodec(CodecType nCodecType)
         return new CCodec_DXT5_xGxR;
     case CT_ATI1N:
         return new CCodec_ATI1N;
+    case CT_ATI1N_S:
+        return new CCodec_ATI1N_S;
     case CT_ATI2N:
         return new CCodec_ATI2N;
+    case CT_ATI2N_S:
+        return new CCodec_ATI2N_S;
     case CT_ATI2N_XY:
         return new CCodec_ATI2N(CT_ATI2N_XY);
+    case CT_ATI2N_XY_S:
+        return new CCodec_ATI2N_S(CT_ATI2N_XY_S);
     case CT_ATI2N_DXT5:
         return new CCodec_ATI2N_DXT5;
     case CT_ATC_RGB:
@@ -190,10 +187,10 @@ CCodec* CreateCodec(CodecType nCodecType)
         return new CCodec_ETC_RGB;
     case CT_ETC2_RGB:
     case CT_ETC2_SRGB:
-         return new CCodec_ETC2_RGB(nCodecType);
+        return new CCodec_ETC2_RGB(nCodecType);
     case CT_ETC2_RGBA:
     case CT_ETC2_SRGBA:
-          return new CCodec_ETC2_RGBA(nCodecType);
+        return new CCodec_ETC2_RGBA(nCodecType);
     case CT_ETC2_RGBA1:
     case CT_ETC2_SRGBA1:
         return new CCodec_ETC2_RGBA1(nCodecType);
@@ -205,11 +202,17 @@ CCodec* CreateCodec(CodecType nCodecType)
     case CT_ASTC:
         return new CCodec_ASTC;
 #ifdef _WIN32
+#ifdef USE_APC
+    case CT_APC:
+        return new CCodec_APC;
+#endif
+#ifdef USE_GTC
     case CT_GTC:
         return new CCodec_GTC;
+#endif
 #ifdef USE_BASIS
-     case CT_BASIS:
-         return new CCodec_BASIS;
+    case CT_BASIS:
+        return new CCodec_BASIS;
 #endif
 #endif
     case CT_Unknown:
@@ -219,8 +222,7 @@ CCodec* CreateCodec(CodecType nCodecType)
     }
 }
 
-CMP_DWORD CalcBufferSize(CodecType nCodecType, CMP_DWORD dwWidth, CMP_DWORD dwHeight, CMP_BYTE nBlockWidth, CMP_BYTE nBlockHeight)
-{
+CMP_DWORD CalcBufferSize(CodecType nCodecType, CMP_DWORD dwWidth, CMP_DWORD dwHeight, CMP_BYTE nBlockWidth, CMP_BYTE nBlockHeight) {
 #ifdef USE_DBGTRACE
     DbgTrace(("IN: nCodecType %d, dwWidth %d, dwHeight %d", nCodecType, dwWidth, dwHeight));
 #endif
@@ -228,11 +230,11 @@ CMP_DWORD CalcBufferSize(CodecType nCodecType, CMP_DWORD dwWidth, CMP_DWORD dwHe
     CMP_DWORD dwBitsPerChannel;
     CMP_DWORD buffsize = 0;
 
-    switch (nCodecType)
-    {
+    switch (nCodecType) {
     // Block size is 4x4 and 64 bits per block
     case CT_DXT1:
     case CT_ATI1N:
+    case CT_ATI1N_S:
     case CT_ATC_RGB:
     case CT_ETC_RGB:
     case CT_ETC2_RGB:
@@ -271,7 +273,9 @@ CMP_DWORD CalcBufferSize(CodecType nCodecType, CMP_DWORD dwWidth, CMP_DWORD dwHe
     case CT_DXT5_RGxB:
     case CT_DXT5_xGxR:
     case CT_ATI2N:
+    case CT_ATI2N_S:
     case CT_ATI2N_XY:
+    case CT_ATI2N_XY_S:
     case CT_ATI2N_DXT5:
     case CT_ATC_RGBA_Explicit:
     case CT_ATC_RGBA_Interpolated:
@@ -308,7 +312,19 @@ CMP_DWORD CalcBufferSize(CodecType nCodecType, CMP_DWORD dwWidth, CMP_DWORD dwHe
         buffsize = dwWidth * dwHeight;
         break;
 #ifdef _WIN32
-    // Block size is 4x4 and 128 bits per block. in future releases its will vary in Block Sizes and bits per block may change to 256
+#ifdef USE_APC
+    case CT_APC:
+        if (nBlockWidth <= 0)
+            nBlockWidth = 4;
+        if (nBlockHeight <= 0)
+            nBlockHeight = 4;
+        dwWidth  = ((dwWidth + nBlockWidth - 1) / nBlockWidth) * 4;
+        dwHeight = ((dwHeight + nBlockHeight - 1) / nBlockHeight) * 4;
+        buffsize = dwWidth * dwHeight;
+        break;
+#endif
+        // Block size is 4x4 and 128 bits per block. in future releases its will vary in Block Sizes and bits per block may change to 256
+#ifdef USE_GTC
     case CT_GTC:
         dwWidth  = ((dwWidth + 3) / 4) * 4;
         dwHeight = ((dwHeight + 3) / 4) * 4;
@@ -316,6 +332,7 @@ CMP_DWORD CalcBufferSize(CodecType nCodecType, CMP_DWORD dwWidth, CMP_DWORD dwHe
         if (buffsize < (4 * 4))
             buffsize = 4 * 4;
         break;
+#endif
 #ifdef USE_BASIS
     // Block size is 4x4 and 128 bits per block, needs conformation!!
     case CT_BASIS:

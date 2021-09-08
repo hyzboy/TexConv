@@ -1,5 +1,5 @@
 // AMD AMDUtils code
-// 
+//
 // Copyright(c) 2017 Advanced Micro Devices, Inc.All rights reserved.
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
@@ -17,15 +17,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include "GltfPbr.h"
+#include "gltfpbr.h"
 
-#include "GltfFeatures.h"
-#include "gltfGetFormat_DX12.h"
-#include "GltfHelpers_DX12.h"
-#include "GltfHelpers.h"
-#include "ThreadPool.h"
+#include "gltffeatures.h"
+#include "gltfgetformat_dx12.h"
+#include "gltfhelpers_dx12.h"
+#include "gltfhelpers.h"
+#include "threadpool.h"
 
-#include <Error.h>
+#include <error.h>
 
 #include <d3dcompiler.h>
 #include <d3dx12.h>
@@ -35,11 +35,9 @@
 
 using namespace DirectX;
 
-void GltfPbr::AddTextureIfExists(json::object_t material, json::array_t textures, std::map<std::string, TextureDX12 *> &map, char *texturePath, char *textureName)
-{
+void GltfPbr::AddTextureIfExists(json::object_t material, json::array_t textures, std::map<std::string, TextureDX12 *> &map, char *texturePath, char *textureName) {
     int id = GetElementInt(material, texturePath, -1);
-    if (id >= 0)
-    {
+    if (id >= 0) {
         unsigned int tex = textures[id]["source"];
         if (m_textures.size() > tex)
             map[textureName] = &m_textures[tex];
@@ -57,8 +55,7 @@ bool GltfPbr::OnCreate(
 #ifdef USE_SHADOWMAPS
     Texture *pShadowMap,
 #endif
-    void *pluginManager, void *msghandler)
-{
+    void *pluginManager, void *msghandler) {
     m_pGLTFData = pGLTFData;
     m_pDynamicBufferRing = pDynamicBufferRing;
     m_pResourceViewHeaps = pHeaps;
@@ -67,8 +64,7 @@ bool GltfPbr::OnCreate(
     // Load cubemaps maps for IBL
     m_pCubeDiffuseTexture = pSkyDome->GetDiffuseCubeMap();
     m_pCubeSpecularTexture = pSkyDome->GetSpecularCubeMap();
-    if (m_BrdfTexture.InitFromFile(pDevice, pUploadHeap, L"./plugins/media/envmap/brdf.dds", pluginManager, msghandler) != 0)
-    {
+    if (m_BrdfTexture.InitFromFile(pDevice, pUploadHeap, L"./plugins/media/envmap/brdf.dds", pluginManager, msghandler) != 0) {
         return false;
     }
     pUploadHeap->FlushAndFinish();
@@ -77,12 +73,10 @@ bool GltfPbr::OnCreate(
 
     // Load Textures for gltf file
 
-    if (!pGLTFData->isBinFile)
-    {
+    if (!pGLTFData->isBinFile) {
         auto images = j3["images"];
         m_textures.resize(images.size());
-        for (unsigned int i = 0; i < images.size(); i++)
-        {
+        for (unsigned int i = 0; i < images.size(); i++) {
             std::string filename = images[i]["uri"];
             WCHAR wcstrPath[MAX_PATH];
             MultiByteToWideChar(CP_UTF8, 0, (pGLTFData->m_path + filename).c_str(), -1, wcstrPath, MAX_PATH);
@@ -94,16 +88,14 @@ bool GltfPbr::OnCreate(
 
     // Load PBR 2.0 Materials
     //
-    if (DX12_CMips)
-    {
+    if (DX12_CMips) {
         DX12_CMips->Print("Load PBR 2.0 Materials");
     }
 
     std::vector<PBRMaterial *> materialsData;
     auto materials = j3["materials"];
     auto textures = j3["textures"];
-    for (unsigned int i = 0; i < materials.size(); i++)
-    {
+    for (unsigned int i = 0; i < materials.size(); i++) {
         json::object_t material = materials[i];
 
         PBRMaterial *tfmat = new PBRMaterial();
@@ -117,17 +109,13 @@ bool GltfPbr::OnCreate(
         tfmat->baseColorFactor = (XMVECTOR) GetXVector(GetElementJsonArray(material, "pbrMetallicRoughness/baseColorFactor", ones));
         try {
             tfmat->metallicFactor = GetElementFloat(material, "pbrMetallicRoughness/metallicFactor", 1.0);
-        }
-        catch (json::exception& e)
-        {
+        } catch (json::exception& e) {
             UNREFERENCED_PARAMETER(e);
             tfmat->metallicFactor = (GetElementJsonArray(material, "pbrMetallicRoughness/metallicFactor", ones))[0];
         }
         try {
             tfmat->roughnessFactor = GetElementFloat(material, "pbrMetallicRoughness/roughnessFactor", 1.0);
-        }
-        catch (json::exception& e)
-        {
+        } catch (json::exception& e) {
             UNREFERENCED_PARAMETER(e);
             tfmat->roughnessFactor = (GetElementJsonArray(material, "pbrMetallicRoughness/roughnessFactor", ones))[0];
         }
@@ -137,9 +125,7 @@ bool GltfPbr::OnCreate(
         float alphaCutOff = 0.0f;
         try {
             alphaCutOff = GetElementFloat(material, "alphaCutoff", 1.0);
-        }
-        catch (json::exception& e)
-        {
+        } catch (json::exception& e) {
             UNREFERENCED_PARAMETER(e);
             alphaCutOff = (GetElementJsonArray(material, "alphaCutoff", ones))[0];
         }
@@ -148,8 +134,7 @@ bool GltfPbr::OnCreate(
         // load glTF 2.0 material's textures (if present) and create descriptor set
         //
         std::map<std::string, TextureDX12 *> texturesBase;
-        if (textures.size() > 0)
-        {
+        if (textures.size() > 0) {
             AddTextureIfExists(material, textures, texturesBase, "pbrMetallicRoughness/baseColorTexture/index", "baseColorTexture");
             AddTextureIfExists(material, textures, texturesBase, "pbrMetallicRoughness/metallicRoughnessTexture/index", "metallicRoughnessTexture");
             AddTextureIfExists(material, textures, texturesBase, "emissiveTexture/index", "emissiveTexture");
@@ -174,31 +159,27 @@ bool GltfPbr::OnCreate(
             tfmat->m_textureCount += 1;
 #endif
 
-        if (tfmat->m_textureCount >= 0)
-        {
-            //allocate descriptor table for the textures            
+        if (tfmat->m_textureCount >= 0) {
+            //allocate descriptor table for the textures
             tfmat->m_pTexturesTable = new CBV_SRV_UAV[tfmat->m_textureCount];
             pHeaps->AllocCBV_SRV_UAVDescriptor(tfmat->m_textureCount, tfmat->m_pTexturesTable);
 
             int cnt = 0;
 
-            //create SRVs and #defines so the shader compiler knows what the index of each texture is           
-            for (auto it = texturesBase.begin(); it != texturesBase.end(); it++)
-            {
+            //create SRVs and #defines so the shader compiler knows what the index of each texture is
+            for (auto it = texturesBase.begin(); it != texturesBase.end(); it++) {
                 tfmat->m_defines[std::string("ID_") + it->first] = std::to_string(cnt);
                 it->second->CreateSRV(cnt++, tfmat->m_pTexturesTable);
             }
 
             //create SRVs and #defines for the IBL resources
-            if (m_pCubeDiffuseTexture)
-            {
+            if (m_pCubeDiffuseTexture) {
                 tfmat->m_defines["ID_diffuseCube"] = std::to_string(cnt);
                 m_pCubeDiffuseTexture->CreateCubeSRV(cnt++, tfmat->m_pTexturesTable);
                 tfmat->m_defines["USE_IBL"] = "1";
             }
 
-            if (m_pCubeSpecularTexture)
-            {
+            if (m_pCubeSpecularTexture) {
                 tfmat->m_defines["ID_specularCube"] = std::to_string(cnt);
                 m_pCubeSpecularTexture->CreateCubeSRV(cnt++, tfmat->m_pTexturesTable);
                 tfmat->m_defines["USE_IBL"] = "1";
@@ -209,8 +190,7 @@ bool GltfPbr::OnCreate(
 
 #ifdef USE_SHADOWMAPS
             // add SRV for the shadowmap
-            if (pShadowMap!=NULL)
-            {
+            if (pShadowMap!=NULL) {
                 tfmat->m_defines["ID_shadowMap"] = std::to_string(cnt);
                 pShadowMap->CreateSRV(cnt++, tfmat->m_pTexturesTable);
             }
@@ -221,8 +201,7 @@ bool GltfPbr::OnCreate(
 
     // Load Meshes
     //
-    if (DX12_CMips)
-    {
+    if (DX12_CMips) {
         DX12_CMips->Print("Load Meshes");
     }
 
@@ -231,14 +210,12 @@ bool GltfPbr::OnCreate(
     auto meshes = j3["meshes"];
     m_meshes.resize(meshes.size());
 
-    for (unsigned int i = 0; i < meshes.size(); i++)
-    {
+    for (unsigned int i = 0; i < meshes.size(); i++) {
         PBRMesh *tfmesh = &m_meshes[i];
 
         auto primitives = meshes[i]["primitives"];
         tfmesh->m_pPrimitives.resize(primitives.size());
-        for (unsigned int p = 0; p < primitives.size(); p++)
-        {
+        for (unsigned int p = 0; p < primitives.size(); p++) {
             PBRPrimitives *pPrimitive = &tfmesh->m_pPrimitives[p];
 
             // Set Material
@@ -264,8 +241,7 @@ bool GltfPbr::OnCreate(
             layout.reserve(attribute.size());
             semanticNames.reserve(attribute.size());
             vertexBuffers.resize(attribute.size());
-            for (auto it = attribute.begin(); it != attribute.end(); it++)
-            {
+            for (auto it = attribute.begin(); it != attribute.end(); it++) {
                 // glTF attributes may end in a number, DX12 doest like this and if this is the case we need to split the attribute name from the number
                 //
                 CMP_DWORD semanticIndex = 0;
@@ -295,28 +271,24 @@ bool GltfPbr::OnCreate(
             }
 
             if (!CreateGeometry(indexBuffer, vertexBuffers, pPrimitive)) return false;
-            GetThreadPool()->Add_Job([=]()
-            {               
+            GetThreadPool()->Add_Job([=]() {
                 CreatePipeline(pDevice, pUploadHeap->GetNodeMask(), semanticNames, layout, pPrimitive);
-            });          
+            });
         }
     }
 
     return true;
 }
 
-void GltfPbr::OnDestroy()
-{
-    for (unsigned int i = 0; i < m_textures.size(); i++)
-    {
+void GltfPbr::OnDestroy() {
+    for (unsigned int i = 0; i < m_textures.size(); i++) {
         m_textures[i].OnDestroy();
     }
 
     m_BrdfTexture.OnDestroy();
 }
 
-bool GltfPbr::CreateGeometry(tfAccessor indexBuffer, std::vector<tfAccessor> vertexBuffers, PBRPrimitives *pPrimitive)
-{
+bool GltfPbr::CreateGeometry(tfAccessor indexBuffer, std::vector<tfAccessor> vertexBuffers, PBRPrimitives *pPrimitive) {
     pPrimitive->m_NumIndices = indexBuffer.m_count;
 
     void *pDest;
@@ -325,8 +297,7 @@ bool GltfPbr::CreateGeometry(tfAccessor indexBuffer, std::vector<tfAccessor> ver
 
     // load those buffers into the GPU
     pPrimitive->m_VBV.resize(vertexBuffers.size());
-    for (unsigned int i = 0; i < vertexBuffers.size(); i++)
-    {
+    for (unsigned int i = 0; i < vertexBuffers.size(); i++) {
         tfAccessor *pVertexAccessor = &vertexBuffers[i];
 
         void *pDest;
@@ -337,18 +308,16 @@ bool GltfPbr::CreateGeometry(tfAccessor indexBuffer, std::vector<tfAccessor> ver
     return true;
 }
 
-void GltfPbr::CreatePipeline(ID3D12Device* pDevice, UINT node, std::vector<std::string> semanticNames, std::vector<D3D12_INPUT_ELEMENT_DESC> layout, PBRPrimitives *pPrimitive)
-{
+void GltfPbr::CreatePipeline(ID3D12Device* pDevice, UINT node, std::vector<std::string> semanticNames, std::vector<D3D12_INPUT_ELEMENT_DESC> layout, PBRPrimitives *pPrimitive) {
     //=================================================================================================
     // let vertex shader know what buffers are present
     // The Shader Code glTF20_EX.hlsl has if defs that are enable using these attributes when compiled
-    // and ref by the D3D12_GRAPHICS_PIPELINE_STATE_DESC 
+    // and ref by the D3D12_GRAPHICS_PIPELINE_STATE_DESC
     //=================================================================================================
     bool Has_Normals = false;
 
     std::map<std::string, std::string> attributeDefines;
-    for (unsigned int i = 0; i < layout.size(); i++)
-    {
+    for (unsigned int i = 0; i < layout.size(); i++) {
         layout[i].SemanticName = semanticNames[i].c_str();
         attributeDefines[std::string("HAS_") + layout[i].SemanticName] = "1";
 
@@ -370,8 +339,7 @@ void GltfPbr::CreatePipeline(ID3D12Device* pDevice, UINT node, std::vector<std::
         ID3DBlob *pError;
         D3DCompileFromFile(L"./plugins/shaders/glTF20_EX.hlsl", macros.data(), nullptr, "mainVS", "vs_5_0", 0, 0, &pBlobShaderVert, &pError);
         D3DCompileFromFile(L"./plugins/shaders/glTF20_EX.hlsl", macros.data(), nullptr, "mainPS", "ps_5_0", 0, 0, &pBlobShaderPixel, &pError);
-        if (pError != NULL)
-        {
+        if (pError != NULL) {
             char *msg = (char *)pError->GetBufferPointer();
             MessageBoxA(0, msg, "", 0);
         }
@@ -381,10 +349,10 @@ void GltfPbr::CreatePipeline(ID3D12Device* pDevice, UINT node, std::vector<std::
     //
     {
         CD3DX12_DESCRIPTOR_RANGE DescRange[4];
-        DescRange[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);		// b0 <- per frame
-        DescRange[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, pPrimitive->m_pMaterial->m_textureCount, 0);		// t0 <- per material
-        DescRange[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);		// b1 <- per material parameters
-        DescRange[3].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 5, 0);	// s0 <- samplers
+        DescRange[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);        // b0 <- per frame
+        DescRange[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, pPrimitive->m_pMaterial->m_textureCount, 0);        // t0 <- per material
+        DescRange[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);        // b1 <- per material parameters
+        DescRange[3].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 5, 0);    // s0 <- samplers
 
         CD3DX12_ROOT_PARAMETER RTSlot[4];
         RTSlot[0].InitAsDescriptorTable(1, &DescRange[0], D3D12_SHADER_VISIBILITY_ALL);
@@ -399,14 +367,14 @@ void GltfPbr::CreatePipeline(ID3D12Device* pDevice, UINT node, std::vector<std::
         descRootSignature.NumStaticSamplers = 0;
         descRootSignature.pStaticSamplers = NULL;
 
-        // deny uneccessary access to certain pipeline stages   
+        // deny uneccessary access to certain pipeline stages
         descRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_NONE
-            | D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT
-            //| D3D12_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS
-            | D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS
-            | D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS
-            | D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
-            //| D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
+                                  | D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT
+                                  //| D3D12_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS
+                                  | D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS
+                                  | D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS
+                                  | D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
+        //| D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
 
         ID3DBlob *pOutBlob, *pErrorBlob = NULL;
         ThrowIfFailed(D3D12SerializeRootSignature(&descRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &pOutBlob, &pErrorBlob));
@@ -424,8 +392,7 @@ void GltfPbr::CreatePipeline(ID3D12Device* pDevice, UINT node, std::vector<std::
             pErrorBlob->Release();
     }
 
-    D3D12_RENDER_TARGET_BLEND_DESC blendingOpaque = D3D12_RENDER_TARGET_BLEND_DESC
-    {
+    D3D12_RENDER_TARGET_BLEND_DESC blendingOpaque = D3D12_RENDER_TARGET_BLEND_DESC {
         FALSE,FALSE,
         D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD,
         D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD,
@@ -433,8 +400,7 @@ void GltfPbr::CreatePipeline(ID3D12Device* pDevice, UINT node, std::vector<std::
         D3D12_COLOR_WRITE_ENABLE_ALL,
     };
 
-    D3D12_RENDER_TARGET_BLEND_DESC blendingBlend = D3D12_RENDER_TARGET_BLEND_DESC
-    {
+    D3D12_RENDER_TARGET_BLEND_DESC blendingBlend = D3D12_RENDER_TARGET_BLEND_DESC {
         TRUE,FALSE,
         D3D12_BLEND_SRC_ALPHA, D3D12_BLEND_INV_SRC_ALPHA, D3D12_BLEND_OP_ADD,
         D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD,
@@ -444,13 +410,12 @@ void GltfPbr::CreatePipeline(ID3D12Device* pDevice, UINT node, std::vector<std::
 
     // Create a PSO description
     //
-    if (!pBlobShaderVert || !pBlobShaderPixel)
-    {
+    if (!pBlobShaderVert || !pBlobShaderPixel) {
         throw 1;
     }
 
     D3D12_GRAPHICS_PIPELINE_STATE_DESC descPso = {};
-    
+
     descPso.InputLayout = { layout.data(), (UINT)layout.size() };
     descPso.pRootSignature = pPrimitive->m_RootSignature.Get();
     descPso.VS = { reinterpret_cast<BYTE*>(pBlobShaderVert->GetBufferPointer()), pBlobShaderVert->GetBufferSize() };
@@ -459,26 +424,19 @@ void GltfPbr::CreatePipeline(ID3D12Device* pDevice, UINT node, std::vector<std::
     descPso.RasterizerState.CullMode = D3D12_CULL_MODE_FRONT;
 
     // Decide on default view based on attributes available
-    if (m_pGLTFData)
-    {
+    if (m_pGLTFData) {
         if(m_pGLTFData->isBinFile)
             descPso.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
         else {
-            if (Has_Normals)
-            {
+            if (Has_Normals) {
                 descPso.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
-            }
-            else
+            } else
                 descPso.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
         }
-    }
-    else 
-    {
-        if (Has_Normals)
-        {
+    } else {
+        if (Has_Normals) {
             descPso.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
-        }
-        else
+        } else
             descPso.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
     }
 
@@ -500,8 +458,7 @@ void GltfPbr::CreatePipeline(ID3D12Device* pDevice, UINT node, std::vector<std::
     );
 
     // create samplers if not initialized (this should happen once)
-    if (m_sampler.GetSize()==0)
-    {
+    if (m_sampler.GetSize()==0) {
         m_pResourceViewHeaps->AllocSamplerDescriptor(5, &m_sampler);
 
         //for pbr materials
@@ -594,18 +551,15 @@ void GltfPbr::CreatePipeline(ID3D12Device* pDevice, UINT node, std::vector<std::
     pPrimitive->m_sampler = &m_sampler;
 }
 
-GltfPbr::per_batch *GltfPbr::SetPerBatchConstants()
-{
-    per_batch *cbPerBatch;    
+GltfPbr::per_batch *GltfPbr::SetPerBatchConstants() {
+    per_batch *cbPerBatch;
     m_pDynamicBufferRing->AllocConstantBuffer(sizeof(per_batch), (void **)&cbPerBatch, &m_perBatchDesc);
 
     return cbPerBatch;
 }
 
-void GltfPbr::DrawMesh(ID3D12GraphicsCommandList* pCommandList, int meshIndex, DirectX::XMMATRIX worldMatrix)
-{
-    struct per_object
-    {
+void GltfPbr::DrawMesh(ID3D12GraphicsCommandList* pCommandList, int meshIndex, DirectX::XMMATRIX worldMatrix) {
+    struct per_object {
         XMMATRIX mWorld;
         XMVECTOR u_emissiveFactor;
         XMVECTOR u_baseColorFactor;
@@ -619,8 +573,7 @@ void GltfPbr::DrawMesh(ID3D12GraphicsCommandList* pCommandList, int meshIndex, D
 
     m_TotalNumIndices = 0;
     PBRMesh *pMesh = &m_meshes[meshIndex];
-    for (unsigned int p = 0; p < pMesh->m_pPrimitives.size(); p++)
-    {
+    for (unsigned int p = 0; p < pMesh->m_pPrimitives.size(); p++) {
         PBRPrimitives *pPrimitive = &pMesh->m_pPrimitives[p];
 
         if (pPrimitive->m_sampler == NULL)

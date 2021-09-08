@@ -7,10 +7,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -21,14 +21,13 @@
 //
 //=====================================================================
 
-#include "BC2_Encode_kernel.h"
+#include "bc2_encode_kernel.h"
 
 //============================================== BC2 INTERFACES =======================================================
 
 void  CompressBlockBC2_Internal(const CMP_Vec4uc srcBlockTemp[16],
                                 CMP_GLOBAL CGU_UINT32 compressedBlock[4],
-                                CMP_GLOBAL const CMP_BC15Options *BC15options)
-{
+                                CMP_GLOBAL const CMP_BC15Options *BC15options) {
 
     CGU_Vec2ui  cmpBlock;
     CGU_Vec3f   rgbBlock[16];
@@ -50,16 +49,16 @@ void  CompressBlockBC2_Internal(const CMP_Vec4uc srcBlockTemp[16],
     internalOptions             = CalculateColourWeightings3f(rgbBlock, internalOptions);
     internalOptions.m_bUseAlpha = false;
     CGU_Vec3f  channelWeights   = {internalOptions.m_fChannelWeights[0],internalOptions.m_fChannelWeights[1],internalOptions.m_fChannelWeights[2]};
-    CGU_Vec3f MinColor = {0,0,0}, MaxColor={0,0,0};
+    CGU_Vec3f MinColor = {0,0,0}, MaxColor= {0,0,0};
 
     cmpBlock = CompressBlockBC1_RGBA_Internal(
-                 rgbBlock, 
-                 BlockA,
-                 channelWeights,
-                 0,//internalOptions.m_nAlphaThreshold,
-                 1, //internalOptions.m_nRefinementSteps
-                 internalOptions.m_fquality,
-                 FALSE);
+                   rgbBlock,
+                   BlockA,
+                   channelWeights,
+                   internalOptions.m_nAlphaThreshold,
+                   internalOptions.m_nRefinementSteps,
+                   internalOptions.m_fquality,
+                   FALSE);
 
     compressedBlock[DXTC_OFFSET_RGB]   = cmpBlock.x;
     compressedBlock[DXTC_OFFSET_RGB+1] = cmpBlock.y;
@@ -69,22 +68,19 @@ void  CompressBlockBC2_Internal(const CMP_Vec4uc srcBlockTemp[16],
 //============================================== USER INTERFACES ========================================================
 #ifndef ASPM_GPU
 
-int CMP_CDECL CreateOptionsBC2(void **options)
-{
+int CMP_CDECL CreateOptionsBC2(void **options) {
     CMP_BC15Options *BC15optionsDefault = new CMP_BC15Options;
     if (BC15optionsDefault) {
         SetDefaultBC15Options(BC15optionsDefault);
         (*options) = BC15optionsDefault;
-    }
-    else {
+    } else {
         (*options) = NULL;
         return CGU_CORE_ERR_NEWMEM;
     }
     return CGU_CORE_OK;
 }
 
-int CMP_CDECL DestroyOptionsBC2(void *options)
-{
+int CMP_CDECL DestroyOptionsBC2(void *options) {
     if (!options) return CGU_CORE_ERR_INVALIDPTR;
     CMP_BC15Options *BCOptions = reinterpret_cast <CMP_BC15Options *>(options);
     delete BCOptions;
@@ -92,21 +88,19 @@ int CMP_CDECL DestroyOptionsBC2(void *options)
 }
 
 int CMP_CDECL SetQualityBC2(void *options,
-    CGU_FLOAT fquality)
-{
+                            CGU_FLOAT fquality) {
     if (!options) return CGU_CORE_ERR_INVALIDPTR;
     CMP_BC15Options *BC15optionsDefault = reinterpret_cast <CMP_BC15Options *>(options);
     if (fquality < 0.0f) fquality = 0.0f;
-    else
-        if (fquality > 1.0f) fquality = 1.0f;
+    else if (fquality > 1.0f) fquality = 1.0f;
     BC15optionsDefault->m_fquality = fquality;
     return CGU_CORE_OK;
 }
 
 int CMP_CDECL SetChannelWeightsBC2(void *options,
-    CGU_FLOAT WeightRed,
-    CGU_FLOAT WeightGreen,
-    CGU_FLOAT WeightBlue) {
+                                   CGU_FLOAT WeightRed,
+                                   CGU_FLOAT WeightGreen,
+                                   CGU_FLOAT WeightBlue) {
     if (!options) return CGU_CORE_ERR_INVALIDPTR;
     CMP_BC15Options *BC15optionsDefault = (CMP_BC15Options *)options;
 
@@ -121,7 +115,7 @@ int CMP_CDECL SetChannelWeightsBC2(void *options,
     return CGU_CORE_OK;
 }
 
-int CMP_CDECL SetGammaBC2(void *options,
+int CMP_CDECL SetSrgbBC2(void* options,
                           CGU_BOOL sRGB) {
     if (!options) return CGU_CORE_ERR_INVALIDPTR;
     CMP_BC15Options *BC15optionsDefault = (CMP_BC15Options *)options;
@@ -135,10 +129,8 @@ int CMP_CDECL SetGammaBC2(void *options,
 
 // Decompresses an explicit alpha block (DXT3)
 void DecompressExplicitAlphaBlock(CGU_UINT8 alphaBlock[BLOCK_SIZE_4X4],
-    const CGU_UINT32 compressedBlock[2])
-{
-    for (int i = 0; i < 16; i++)
-    {
+                                  const CGU_UINT32 compressedBlock[2]) {
+    for (int i = 0; i < 16; i++) {
         int nBlock = i < 8 ? 0 : 1;
         CGU_UINT8 cAlpha = (CGU_UINT8)((compressedBlock[nBlock] >> ((i % 8) * EXPLICIT_ALPHA_PIXEL_BPP)) & EXPLICIT_ALPHA_PIXEL_MASK);
         alphaBlock[i] = (CGU_UINT8)((cAlpha << EXPLICIT_ALPHA_PIXEL_BPP) | cAlpha);
@@ -146,9 +138,8 @@ void DecompressExplicitAlphaBlock(CGU_UINT8 alphaBlock[BLOCK_SIZE_4X4],
 }
 
 void DecompressBC2_Internal(CMP_GLOBAL CGU_UINT8 rgbaBlock[BLOCK_SIZE_4X4X4],
-    const CGU_UINT32 compressedBlock[4],
-    const CMP_BC15Options *BC15options)
-{
+                            const CGU_UINT32 compressedBlock[4],
+                            const CMP_BC15Options *BC15options) {
     CGU_UINT8 alphaBlock[BLOCK_SIZE_4X4];
 
     DecompressExplicitAlphaBlock(alphaBlock, &compressedBlock[DXTC_OFFSET_ALPHA]);
@@ -176,11 +167,9 @@ int CMP_CDECL CompressBlockBC2(const unsigned char *srcBlock,
     //----------------------------------
     CGU_INT srcpos = 0;
     CGU_INT dstptr = 0;
-    for (CGU_UINT8 row = 0; row < 4; row++)
-    {
+    for (CGU_UINT8 row = 0; row < 4; row++) {
         srcpos = row * srcStrideInBytes;
-        for (CGU_UINT8 col = 0; col < 4; col++)
-        {
+        for (CGU_UINT8 col = 0; col < 4; col++) {
             inBlock[dstptr].x = CGU_UINT8(srcBlock[srcpos++]);
             inBlock[dstptr].y = CGU_UINT8(srcBlock[srcpos++]);
             inBlock[dstptr].z = CGU_UINT8(srcBlock[srcpos++]);
@@ -191,8 +180,7 @@ int CMP_CDECL CompressBlockBC2(const unsigned char *srcBlock,
 
     CMP_BC15Options *BC15options = (CMP_BC15Options *)options;
     CMP_BC15Options BC15optionsDefault;
-    if (BC15options == NULL)
-    {
+    if (BC15options == NULL) {
         BC15options = &BC15optionsDefault;
         SetDefaultBC15Options(BC15options);
     }
@@ -200,13 +188,12 @@ int CMP_CDECL CompressBlockBC2(const unsigned char *srcBlock,
     return CGU_CORE_OK;
 }
 
-int CMP_CDECL DecompressBlockBC2(const unsigned char cmpBlock[16], 
+int CMP_CDECL DecompressBlockBC2(const unsigned char cmpBlock[16],
                                  CMP_GLOBAL unsigned char srcBlock[64],
                                  const void *options = NULL) {
     CMP_BC15Options *BC15options = (CMP_BC15Options *)options;
     CMP_BC15Options BC15optionsDefault;
-    if (BC15options == NULL)
-    {
+    if (BC15options == NULL) {
         BC15options = &BC15optionsDefault;
         SetDefaultBC15Options(BC15options);
     }
@@ -223,8 +210,7 @@ CMP_STATIC CMP_KERNEL void CMP_GPUEncoder(
     CMP_GLOBAL  CGU_UINT8*          ImageDestination,
     CMP_GLOBAL  Source_Info*        SourceInfo,
     CMP_GLOBAL  CMP_BC15Options*    BC15options
-)
-{
+) {
     CGU_UINT32 xID;
     CGU_UINT32 yID;
 

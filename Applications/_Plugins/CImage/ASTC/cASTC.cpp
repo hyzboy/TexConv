@@ -8,10 +8,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -24,40 +24,38 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "Common.h"
-#include "Compressonator.h"
+#include "common.h"
+#include "compressonator.h"
 
-#include "TC_PluginAPI.h"
-#include "TC_PluginInternal.h"
+#include "tc_pluginapi.h"
+#include "tc_plugininternal.h"
 
-#include "cASTC.h"
+#include "castc.h"
 
 #ifdef BUILD_AS_PLUGIN_DLL
 DECLARE_PLUGIN(Plugin_ASTC)
 SET_PLUGIN_TYPE("IMAGE")
 SET_PLUGIN_NAME("ASTC")
 #else
-void *make_Plugin_ASTC() { return new Plugin_ASTC; } 
+void *make_Plugin_ASTC() {
+    return new Plugin_ASTC;
+}
 #endif
 
 
-Plugin_ASTC::Plugin_ASTC()
-{ 
-    //MessageBox(0,"Plugin_TGA","Plugin_KTX",MB_OK);  
+Plugin_ASTC::Plugin_ASTC() {
+    //MessageBox(0,"Plugin_TGA","Plugin_KTX",MB_OK);
     m_xdim = 4;
     m_ydim = 4;
     m_zdim = 4;
 }
 
-Plugin_ASTC::~Plugin_ASTC()
-{ 
-    //MessageBox(0,"Plugin_TGA","~Plugin_KTX",MB_OK);  
+Plugin_ASTC::~Plugin_ASTC() {
+    //MessageBox(0,"Plugin_TGA","~Plugin_KTX",MB_OK);
 }
 
-int Plugin_ASTC::TC_PluginSetSharedIO(void* Shared)
-{
-    if (Shared)
-    {
+int Plugin_ASTC::TC_PluginSetSharedIO(void* Shared) {
+    if (Shared) {
         ASTC_CMips = static_cast<CMIPS *>(Shared);
         return 0;
     }
@@ -65,10 +63,9 @@ int Plugin_ASTC::TC_PluginSetSharedIO(void* Shared)
 }
 
 
-int Plugin_ASTC::TC_PluginGetVersion(TC_PluginVersion* pPluginVersion)
-{ 
-    //MessageBox(0,"TC_PluginGetVersion","Plugin_KTX",MB_OK); 
-#ifdef _WIN32 
+int Plugin_ASTC::TC_PluginGetVersion(TC_PluginVersion* pPluginVersion) {
+    //MessageBox(0,"TC_PluginGetVersion","Plugin_KTX",MB_OK);
+#ifdef _WIN32
     pPluginVersion->guid                    = g_GUID;
 #endif
     pPluginVersion->dwAPIVersionMajor        = TC_API_VERSION_MAJOR;
@@ -78,49 +75,43 @@ int Plugin_ASTC::TC_PluginGetVersion(TC_PluginVersion* pPluginVersion)
     return 0;
 }
 
-int Plugin_ASTC::TC_PluginFileLoadTexture(const char* pszFilename, CMP_Texture *srcTexture)
-{
-    //MessageBox(0,"TC_PluginFileLoadTexture srcTexture","Plugin_KTX",MB_OK);  
+int Plugin_ASTC::TC_PluginFileLoadTexture(const char* pszFilename, CMP_Texture *srcTexture) {
+    //MessageBox(0,"TC_PluginFileLoadTexture srcTexture","Plugin_KTX",MB_OK);
     return 0;
 }
 
-int Plugin_ASTC::TC_PluginFileSaveTexture(const char* pszFilename, CMP_Texture *srcTexture)
-{
-    //MessageBox(0,"TC_PluginFileSaveTexture srcTexture","Plugin_KTX",MB_OK);  
+int Plugin_ASTC::TC_PluginFileSaveTexture(const char* pszFilename, CMP_Texture *srcTexture) {
+    //MessageBox(0,"TC_PluginFileSaveTexture srcTexture","Plugin_KTX",MB_OK);
     return 0;
 }
 
-int Plugin_ASTC::TC_PluginFileLoadTexture(const char* pszFilename, MipSet* pMipSet)
-{
+int Plugin_ASTC::TC_PluginFileLoadTexture(const char* pszFilename, MipSet* pMipSet) {
     FILE* pFile = NULL;
     pFile = fopen( pszFilename, "rb");
-    if(pFile == NULL)
-    {
+    if(pFile == NULL) {
         if (ASTC_CMips)
             ASTC_CMips->PrintError("Error(%d): ASTC Plugin ID(%d) opening file = %s ", EL_Error, IDS_ERROR_FILE_OPEN, pszFilename);
         return -1;
     }
 
-        // Read the header
+    // Read the header
     astc_header header;
     memset(&header, 0, sizeof(header));
 
-   if(fread(&header, sizeof(astc_header), 1, pFile) != 1)
-   {
-      if (ASTC_CMips)
+    if(fread(&header, sizeof(astc_header), 1, pFile) != 1) {
+        if (ASTC_CMips)
             ASTC_CMips->PrintError("Error(%d): ASTC Plugin ID(%d) invalid ASTC header. Filename = %s ", EL_Error, IDS_ERROR_NOT_ASTC, pszFilename);
-      fclose(pFile);
-      return -1;
-   }
+        fclose(pFile);
+        return -1;
+    }
 
-   uint32_t magicval = header.magic[0] + 256 * (uint32_t) (header.magic[1]) + 65536 * (uint32_t) (header.magic[2]) + 16777216 * (uint32_t) (header.magic[3]);
+    uint32_t magicval = header.magic[0] + 256 * (uint32_t) (header.magic[1]) + 65536 * (uint32_t) (header.magic[2]) + 16777216 * (uint32_t) (header.magic[3]);
 
-      if (magicval != MAGIC_FILE_CONSTANT)
-    {
-      if (ASTC_CMips)
+    if (magicval != MAGIC_FILE_CONSTANT) {
+        if (ASTC_CMips)
             ASTC_CMips->PrintError("Error(%d): ASTC Plugin ID(%d) invalid ASTC header constant. Filename = %s ", EL_Error, IDS_ERROR_NOT_ASTC, pszFilename);
-      fclose(pFile);
-      return -1;
+        fclose(pFile);
+        return -1;
     }
 
 
@@ -132,11 +123,10 @@ int Plugin_ASTC::TC_PluginFileLoadTexture(const char* pszFilename, MipSet* pMipS
     pMipSet->m_nBlockHeight = m_ydim;
     pMipSet->m_nBlockDepth  = m_zdim;
 
-    if (m_xdim < 3 || m_xdim > 12 || m_ydim < 3 || m_ydim > 12 || (m_zdim < 3 && m_zdim != 1) || m_zdim > 12)
-    {
+    if (m_xdim < 3 || m_xdim > 12 || m_ydim < 3 || m_ydim > 12 || (m_zdim < 3 && m_zdim != 1) || m_zdim > 12) {
         if (ASTC_CMips)
             ASTC_CMips->PrintError("Error(%d): ASTC Plugin ID(%d) Block size %d %d %d is not supported. Filename = %s ", EL_Error, IDS_ERROR_UNSUPPORTED_TYPE, pszFilename,m_xdim, m_ydim, m_zdim);
-         fclose(pFile);
+        fclose(pFile);
         return -1;
     }
 
@@ -155,56 +145,52 @@ int Plugin_ASTC::TC_PluginFileLoadTexture(const char* pszFilename, MipSet* pMipS
     pMipSet->m_compressed = true;
     pMipSet->m_format     = CMP_FORMAT_ASTC;
 
-    // Allocate compression 
+    // Allocate compression
     pMipSet->m_ChannelFormat  = CF_Compressed;
-    pMipSet->m_nMaxMipLevels  = 1; 
+    pMipSet->m_nMaxMipLevels  = 1;
     pMipSet->m_nMipLevels     = 1;    // this is overwriiten depending on input.
 
-   if(!ASTC_CMips->AllocateMipSet(pMipSet, CF_8bit, TDT_ARGB, TT_2D, xsize, ysize, zsize))
-   {        
+    if(!ASTC_CMips->AllocateMipSet(pMipSet, CF_8bit, TDT_ARGB, TT_2D, xsize, ysize, zsize)) {
         fclose(pFile);
         return PE_Unknown;
-   }
+    }
 
 
-   MipLevel *mipLevel = ASTC_CMips->GetMipLevel(pMipSet, 0);
-   int dwTotalSize = xblocks * yblocks * zblocks * 16;
+    MipLevel *mipLevel = ASTC_CMips->GetMipLevel(pMipSet, 0);
+    int dwTotalSize = xblocks * yblocks * zblocks * 16;
 
-   // Allocate a data buffer 
-   // The actual size should be xblocks , yblocks, 1
-   // Since Decompressed Output Texture is also calculated from these params
-   // We will have to oversize the input buffer for now, This should be corrected 
-   // in future releases.
-   if(!ASTC_CMips->AllocateCompressedMipLevelData(mipLevel, xsize, ysize, dwTotalSize))
-   {
+    // Allocate a data buffer
+    // The actual size should be xblocks , yblocks, 1
+    // Since Decompressed Output Texture is also calculated from these params
+    // We will have to oversize the input buffer for now, This should be corrected
+    // in future releases.
+    if(!ASTC_CMips->AllocateCompressedMipLevelData(mipLevel, xsize, ysize, dwTotalSize)) {
         fclose(pFile);
         if (ASTC_CMips)
             ASTC_CMips->PrintError("Error(%d): ASTC allocate compress memmory Plugin ID(%d)\n", EL_Error, IDS_ERROR_OUTOFMEMORY);
         return PE_Unknown;
-   }
+    }
 
-   CMP_BYTE* pData = (CMP_BYTE*) (mipLevel->m_pbData);
-   pMipSet->m_nMipLevels     = 1;
-   int DataSize = mipLevel->m_dwLinearSize;
+    CMP_BYTE* pData = (CMP_BYTE*) (mipLevel->m_pbData);
+    pMipSet->m_nMipLevels     = 1;
+    int DataSize = mipLevel->m_dwLinearSize;
 
-   fread(pData, DataSize, 1, pFile);
+    fread(pData, DataSize, 1, pFile);
 
-   fclose(pFile);
+    fclose(pFile);
 
-   return 0;
+    return 0;
 }
 
 
-int Plugin_ASTC::TC_PluginFileSaveTexture(const char* pszFilename, MipSet* pMipSet)
-{
+int Plugin_ASTC::TC_PluginFileSaveTexture(const char* pszFilename, MipSet* pMipSet) {
     assert(pszFilename);
     assert(pMipSet);
 
 
     FILE* pFile = NULL;
     pFile = fopen(pszFilename, "wb");
-    if(pFile == NULL)
-    {
+    if(pFile == NULL) {
         if (ASTC_CMips)
             ASTC_CMips->PrintError("Error(%d): ASTC Plugin ID(%d) saving file = %s ", EL_Error, IDS_ERROR_FILE_OPEN, pszFilename);
         return -1;
@@ -252,7 +238,7 @@ int Plugin_ASTC::TC_PluginFileSaveTexture(const char* pszFilename, MipSet* pMipS
     fwrite(pData, DataSize, 1, pFile);
 
     fclose(pFile);
-    
+
     return 0;
 }
 

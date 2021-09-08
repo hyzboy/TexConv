@@ -8,10 +8,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -28,11 +28,11 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
-#define WIN32_LEAN_AND_MEAN        // Exclude rarely-used stuff from Windows headers
+#include "gpu_directx.h"
+#include "plugininterface.h"
+
 #include <assert.h>
 #include <tchar.h>
-#include "GPU_DirectX.h"
-#include "PluginInterface.h"
 
 // {91551830-C6D3-49A3-B75D-116A0AD5901B}
 static const GUID  g_GUID_DIRECTX = { 0x91551830, 0xc6d3, 0x49a3,{ 0xb7, 0x5d, 0x11, 0x6a, 0xa, 0xd5, 0x90, 0x1b } };
@@ -41,19 +41,21 @@ static const GUID  g_GUID_DIRECTX = { 0x91551830, 0xc6d3, 0x49a3,{ 0xb7, 0x5d, 0
 #define TC_PLUGIN_VERSION_MAJOR    1
 #define TC_PLUGIN_VERSION_MINOR    0
 
-using namespace GPU_Decode;
+// Forward Declaration
+namespace GPU_Decode {
+class TextureControl;
+}
 
-class Plugin_CDirectX : public PluginInterface_GPUDecode
-{
-public: 
-        Plugin_CDirectX();
-        virtual ~Plugin_CDirectX();
-        int TC_PluginGetVersion(TC_PluginVersion* pPluginVersion);
-        int TC_Init(CMP_DWORD Width, CMP_DWORD Height, WNDPROC callback);
-        CMP_ERROR TC_Decompress(const CMP_Texture* pSourceTexture, CMP_Texture* pDestTexture);
-        int TC_Close();
-private:
-        TextureControl  *m_pGPUDecode;
+class Plugin_CDirectX : public PluginInterface_GPUDecode {
+  public:
+    Plugin_CDirectX();
+    virtual ~Plugin_CDirectX();
+    int TC_PluginGetVersion(TC_PluginVersion* pPluginVersion);
+    int TC_Init(CMP_DWORD Width, CMP_DWORD Height, WNDPROC callback);
+    CMP_ERROR TC_Decompress(const CMP_Texture* pSourceTexture, CMP_Texture* pDestTexture);
+    int TC_Close();
+  private:
+    GPU_Decode::TextureControl  *m_pGPUDecode;
 };
 
 #endif

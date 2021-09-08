@@ -55,7 +55,7 @@ SOURCE_GROUP("Texture File Creater" FILES ${TEXTURE_FILE_CREATER_SOURCE})
 
 add_executable(TexConv ${SOURCE_FILE} ${ILIMAGE_SOURCE} ${PIXEL_FORMAT_SOURCE} ${TEXTURE_FILE_CREATER_SOURCE})
 
-target_link_libraries(TexConv PRIVATE CMCore CMPlatform CMUtil DevIL ILU Compressonator CMP_Framework CMP_Core)
+target_link_libraries(TexConv PRIVATE CMCore CMPlatform CMUtil DevIL ILU CMP_Compressonator CMP_Framework CMP_Core)
 
 IF(CM_BUILD_GUI_TOOLS)
     set(IDENTIFIER "com.hyzgame.texconv")

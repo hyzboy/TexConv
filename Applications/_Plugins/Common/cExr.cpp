@@ -25,10 +25,9 @@
 #ifdef _WIN32
 #include <windows.h>
 #endif
-#include "cExr.h"
+#include "cexr.h"
 
-float half_conv_float(unsigned short in)
-{
+float half_conv_float(unsigned short in) {
     union fi32 {
         float f;
         uint i;
@@ -46,8 +45,7 @@ float half_conv_float(unsigned short in)
     //exponent special cases
     if (exp == shift_exp)        //Inf case
         u.i += (128 - 16) << 23; // extra exp adjust
-    else if (exp == 0)           // Zero/Denormal case
-    {
+    else if (exp == 0) {         // Zero/Denormal case
         u.i += 1 << 23;           // extra exp adjust
         u.f -= (magic_exp << 23); // renormalize
     }
@@ -56,8 +54,7 @@ float half_conv_float(unsigned short in)
     return u.f;
 }
 
-void Exr::fileinfo(const string inf, int &width, int &height)
-{
+void Exr::fileinfo(const string inf, int &width, int &height) {
     RgbaInputFile file(inf.c_str());
     Box2i dw = file.dataWindow();
 
@@ -65,8 +62,7 @@ void Exr::fileinfo(const string inf, int &width, int &height)
     height = dw.max.y - dw.min.y + 1;
 }
 
-void Exr::readRgba(const string inf, Array2D<Rgba> &pix, int &w, int &h)
-{
+void Exr::readRgba(const string inf, Array2D<Rgba> &pix, int &w, int &h) {
     RgbaInputFile file(inf.c_str());
     Box2i dw = file.dataWindow();
     w = dw.max.x - dw.min.x + 1;
@@ -76,20 +72,16 @@ void Exr::readRgba(const string inf, Array2D<Rgba> &pix, int &w, int &h)
     file.readPixels(dw.min.y, dw.max.y);
 }
 
-void Exr::writeRgba(const string outf, const Array2D<Rgba> &pix, int w, int h)
-{
+void Exr::writeRgba(const string outf, const Array2D<Rgba> &pix, int w, int h) {
     RgbaOutputFile file(outf.c_str(), w, h, WRITE_RGBA);
     file.setFrameBuffer(&pix[0][0], 1, w);
     file.writePixels(h);
 }
 
-void Rgba2Texture(Array2D<Rgba> &pixels, CMP_HALFSHORT *data, int w, int h)
-{
+void Rgba2Texture(Array2D<Rgba> &pixels, CMP_HALFSHORT *data, int w, int h) {
     // Save the Half Data format value into CMP_HALFSHORT bit format for processing later
-    for (int y = 0; y < h; ++y)
-    {
-        for (int x = 0; x < w; ++x)
-        {
+    for (int y = 0; y < h; ++y) {
+        for (int x = 0; x < w; ++x) {
             *data = pixels[y][x].r.bits();
             data++;
             *data = pixels[y][x].g.bits();
@@ -102,16 +94,12 @@ void Rgba2Texture(Array2D<Rgba> &pixels, CMP_HALFSHORT *data, int w, int h)
     }
 }
 
-void Texture2Rgba(CMP_HALFSHORT *data, Array2D<Rgba> &pixels, int w, int h, CMP_FORMAT isDeCompressed)
-{
+void Texture2Rgba(CMP_HALFSHORT *data, Array2D<Rgba> &pixels, int w, int h, CMP_FORMAT isDeCompressed) {
 
-    if (isDeCompressed != CMP_FORMAT_Unknown)
-    {
+    if (isDeCompressed != CMP_FORMAT_Unknown) {
         // Save the Half Data format value into a Float for processing later
-        for (int y = 0; y < h; ++y)
-        {
-            for (int x = 0; x < w; ++x)
-            {
+        for (int y = 0; y < h; ++y) {
+            for (int x = 0; x < w; ++x) {
                 pixels[y][x].r.setBits(*data);
                 data++;
                 pixels[y][x].g.setBits(*data);
@@ -122,14 +110,10 @@ void Texture2Rgba(CMP_HALFSHORT *data, Array2D<Rgba> &pixels, int w, int h, CMP_
                 data++;
             }
         }
-    }
-    else
-    {
+    } else {
         // Save the Half Data format value into a Float for processing later
-        for (int y = 0; y < h; ++y)
-        {
-            for (int x = 0; x < w; ++x)
-            {
+        for (int y = 0; y < h; ++y) {
+            for (int x = 0; x < w; ++x) {
                 pixels[y][x].r = *data;
                 data++;
                 pixels[y][x].g = *data;

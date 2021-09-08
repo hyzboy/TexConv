@@ -8,10 +8,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -24,18 +24,17 @@
 #if !defined(_CODEC_ASTC_H_INCLUDED_)
 #define _CODEC_ASTC_H_INCLUDED_
 
-#include "Compressonator.h"
-#include "Codec_DXTC.h"
-#include "ASTC_Encode.h"
-#include "ASTC_Decode.h"
-#include "ASTC_Library.h"
-#include "ASTC_Definitions.h"
+#include "compressonator.h"
+#include "codec_dxtc.h"
+#include "astc_encode.h"
+#include "astc_decode.h"
+#include "astc_library.h"
+#include "astc_definitions.h"
 
 #include <thread>
 
-class CCodec_ASTC : public CCodec_DXTC
-{
-public:
+class CCodec_ASTC : public CCodec_DXTC {
+  public:
     CCodec_ASTC();
     ~CCodec_ASTC();
 
@@ -47,21 +46,21 @@ public:
     virtual CodecError Compress             (CCodecBuffer& bufferIn, CCodecBuffer& bufferOut, Codec_Feedback_Proc pFeedbackProc = NULL, CMP_DWORD_PTR pUser1 = NULL, CMP_DWORD_PTR pUser2 = NULL);
     virtual CodecError Decompress           (CCodecBuffer& bufferIn, CCodecBuffer& bufferOut, Codec_Feedback_Proc pFeedbackProc = NULL, CMP_DWORD_PTR pUser1 = NULL, CMP_DWORD_PTR pUser2 = NULL);
 
-private:
+  private:
 
     // ASTC User configurable variables
-    CMP_WORD    m_NumThreads;    
+    CMP_WORD    m_NumThreads;
     char        m_BlockRate[64];
 
-    // ASTC Internal status 
+    // ASTC Internal status
     CMP_BOOL    m_LibraryInitialized;
     CMP_INT     m_NumEncodingThreads;
     bool        m_AbortRequested;
 
     int m_xdim, m_ydim, m_zdim;        // Is now implamented and set by user ( defined in g_ASTCEncode )
-    float m_target_bitrate;            // defined in g_ASTCEncode 
+    float m_target_bitrate;            // defined in g_ASTCEncode
 
-                                       // ASTC Encoders and decoders: for encoding use the interfaces below
+    // ASTC Encoders and decoders: for encoding use the interfaces below
     ASTCBlockDecoder*    m_decoder;
     ASTCBlockEncoder*    m_encoder[MAX_ASTC_THREADS];
 
@@ -86,7 +85,7 @@ private:
     void find_closest_blockdim_3d(float target_bitrate, int *x, int *y, int *z, int consider_illegal);
     void find_closest_blockxy_2d(int *x, int *y, int consider_illegal);
 
-    // Internal status 
+    // Internal status
     CMP_BOOL    m_Use_MultiThreading;
     CMP_WORD    m_LiveThreads;
     CMP_WORD    m_LastThread;

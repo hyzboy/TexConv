@@ -9,10 +9,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -28,12 +28,12 @@
 #include <assert.h>
 #include <float.h>
 #include <math.h>
-#include "ASTC_Encode.h"
-#include "ASTC_Definitions.h"
+#include "astc_encode.h"
+#include "astc_definitions.h"
 #include "softfloat.h"
 
-#include "ASTC_Encode_Kernel.h"
-#include "ASTC_Host.h"
+#include "astc_encode_kernel.h"
+#include "astc_host.h"
 
 #ifdef ASTC_COMPDEBUGGER
 #include "compclient.h"
@@ -54,8 +54,7 @@ double ASTCBlockEncoder::CompressBlock_kernel(
     int y,
     int z,
     ASTC_Encoder::ASTC_Encode  *ASTCEncode
-)
-{
+) {
     //ASTC_Encoder::imageblock m_pb;
     ASTC_Encoder::symbolic_compressed_block  scb;
 
@@ -66,12 +65,12 @@ double ASTCBlockEncoder::CompressBlock_kernel(
         (const astc_codec_image_cpu *)input_image,
         (imageblock_cpu *) &m_pb,
         ASTCEncode->m_xdim,
-        ASTCEncode->m_ydim, 
-        ASTCEncode->m_zdim, 
-        x, 
-        y, 
+        ASTCEncode->m_ydim,
+        ASTCEncode->m_zdim,
+        x,
+        y,
         z
-        );
+    );
 
 
     ASTC_Encoder::compress_symbolic_block((ASTC_Encoder::imageblock *)&m_pb, &scb, ASTCEncode);

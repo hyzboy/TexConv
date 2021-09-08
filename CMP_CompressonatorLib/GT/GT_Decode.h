@@ -8,10 +8,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -28,13 +28,12 @@
 #ifndef _GT_DECODE_H_
 #define _GT_DECODE_H_
 
-#include "GT_Definitions.h"
+#include "gt_definitions.h"
 
-class GTCBlockDecoder
-{
-public:
-    GTCBlockDecoder(){};
-    ~GTCBlockDecoder(){};
+class GTCBlockDecoder {
+  public:
+    GTCBlockDecoder() {};
+    ~GTCBlockDecoder() {};
 
     void DecompressBlock(
         CMP_BYTE   out[MAX_SUBSET_SIZE][MAX_DIMENSION_BIG],

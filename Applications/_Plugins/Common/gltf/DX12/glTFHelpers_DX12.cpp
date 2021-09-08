@@ -1,5 +1,5 @@
 // AMD AMDUtils code
-// 
+//
 // Copyright(c) 2017 Advanced Micro Devices, Inc.All rights reserved.
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
@@ -17,15 +17,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include "glTFHelpers.h"
+#include "gltfhelpers.h"
 
-#include "glTFHelpers_DX12.h"
+#include "gltfhelpers_dx12.h"
 
 
-void CompileMacros(const std::map<std::string, std::string> *pMacros, std::vector<D3D_SHADER_MACRO> *pOut)
-{
-    for (auto it = pMacros->begin(); it != pMacros->end(); it++)
-    {
+void CompileMacros(const std::map<std::string, std::string> *pMacros, std::vector<D3D_SHADER_MACRO> *pOut) {
+    for (auto it = pMacros->begin(); it != pMacros->end(); it++) {
         D3D_SHADER_MACRO macro;
         macro.Name = it->first.c_str();
         macro.Definition = it->second.c_str();

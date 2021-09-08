@@ -1,5 +1,5 @@
 // AMD AMDUtils code
-// 
+//
 // Copyright(c) 2017 Advanced Micro Devices, Inc.All rights reserved.
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
@@ -18,31 +18,30 @@
 // THE SOFTWARE.
 #pragma once
 
-#include "GltfCommon.h"
+#include "gltfcommon.h"
 
-#include "DynamicBufferRingDX12.h"
-#include "StaticBufferPoolDX12.h"
-#include "UploadHeapDX12.h"
-#include "TextureDX12.h"
-#include "Camera.h"
+#include "dynamicbufferringdx12.h"
+#include "staticbufferpooldx12.h"
+#include "uploadheapdx12.h"
+#include "texturedx12.h"
+#include "camera.h"
 
 // This class takes a GltfCommon class (that holds all the non-GPU specific data) as an input and loads all the GPU specific data
 //
 
-class GltfTechnique
-{
-public:
+class GltfTechnique {
+  public:
     virtual void OnDestroy() = 0;
     void Draw(ID3D12GraphicsCommandList* pCommandList);
 
-protected:
+  protected:
     GLTFCommon *m_pGLTFData;
 
     DynamicBufferRingDX12 *m_pDynamicBufferRing;
     ResourceViewHeapsDX12 *m_pResourceViewHeaps;
     StaticBufferPoolDX12 *m_pStaticBufferPool;
 
-    virtual void DrawMesh(ID3D12GraphicsCommandList* pCommandList, int meshIndex, DirectX::XMMATRIX matrix) = 0;    
+    virtual void DrawMesh(ID3D12GraphicsCommandList* pCommandList, int meshIndex, DirectX::XMMATRIX matrix) = 0;
 };
 
 

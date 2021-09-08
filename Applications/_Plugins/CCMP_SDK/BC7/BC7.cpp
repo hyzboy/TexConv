@@ -1,5 +1,5 @@
 //=====================================================================
-// Copyright (c) 2018    Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2021    Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
@@ -7,10 +7,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -24,15 +24,16 @@
 //=====================================================================
 
 #include <stdio.h>
-#include "BC7.h"
-//#define BUILD_AS_PLUGIN_DLL
+#include "bc7.h"
 
 #ifdef BUILD_AS_PLUGIN_DLL
 DECLARE_PLUGIN(Plugin_BC7)
 SET_PLUGIN_TYPE("ENCODER")
 SET_PLUGIN_NAME("BC7")
 #else
-void *make_Plugin_BC7() { return new Plugin_BC7; }
+void *make_Plugin_BC7() {
+    return new Plugin_BC7;
+}
 #endif
 
 #define GPU_OCL_BC7_COMPUTEFILE      "./plugins/Compute/BC7_Encode_kernel.cpp"
@@ -45,12 +46,11 @@ static          LARGE_INTEGER frequency = {0};
 #endif
 
 extern void  CompressBlockBC7_Internal(
-                    CGU_UINT8       image_src[SOURCE_BLOCK_SIZE][4], 
-         CMP_GLOBAL CGU_UINT8       cmp_out[COMPRESSED_BLOCK_SIZE], 
-uniform  CMP_GLOBAL BC7_Encode      BC7Encode[]);
+    CGU_UINT8       image_src[SOURCE_BLOCK_SIZE][4],
+    CMP_GLOBAL CGU_UINT8       cmp_out[COMPRESSED_BLOCK_SIZE],
+    uniform  CMP_GLOBAL BC7_Encode      BC7Encode[]);
 
-double timeStampsecBC7()
-{
+double timeStampsecBC7() {
 #ifdef _WIN32
     LARGE_INTEGER now;
     QueryPerformanceCounter(&now);
@@ -66,60 +66,52 @@ CGU_INT     sequence=0;
 CGU_INT     highestFunctionID = -1;
 TIMERDATA   timerdata[50] = {0};
 
-extern "C" CGU_INT timerStart(CGU_INT id)
-{
-   if (id > highestFunctionID ) {
-       if (id > 49) id = 49;
-       highestFunctionID = id;
-   }
-   if (timerdata[id].sequence == -1)
-   {
-       sequence++;
-       timerdata[id].sequence = sequence;
-   }
+extern "C" CGU_INT timerStart(CGU_INT id) {
+    if (id > highestFunctionID ) {
+        if (id > 49) id = 49;
+        highestFunctionID = id;
+    }
+    if (timerdata[id].sequence == -1) {
+        sequence++;
+        timerdata[id].sequence = sequence;
+    }
 
-   timerdata[id].start=timeStampsecBC7();
+    timerdata[id].start=timeStampsecBC7();
 
-   return(0);
+    return(0);
 }
 
-extern "C" CGU_INT timerEnd(CGU_INT id)
-{
-   timerdata[id].end +=(timeStampsecBC7() - timerdata[id].start);
-   timerdata[id].calls++;
-   return(0);
+extern "C" CGU_INT timerEnd(CGU_INT id) {
+    timerdata[id].end +=(timeStampsecBC7() - timerdata[id].start);
+    timerdata[id].calls++;
+    return(0);
 }
 
-extern "C" CGU_INT timerSummary()
-{
-   printf("\n---- function calls [%d] ----\n",sequence);
-   for (CGU_INT seq=1; seq<=sequence; seq++)
-   {
+extern "C" CGU_INT timerSummary() {
+    printf("\n---- function calls [%d] ----\n",sequence);
+    for (CGU_INT seq=1; seq<=sequence; seq++) {
         // print sorted sequence (slow method)
-        for (CGU_INT func=0; func<= highestFunctionID; func++)
-        {
-            if (timerdata[func].sequence == seq)
-            {
+        for (CGU_INT func=0; func<= highestFunctionID; func++) {
+            if (timerdata[func].sequence == seq) {
                 printf("%2d func %2d calls [%9d] total [%3.2f] avg [%3.2f] usec\n",
-                    timerdata[func].sequence,
-                    func,
-                    timerdata[func].calls,
-                    (timerdata[func].end*1000000.0f),
-                    timerdata[func].calls?(timerdata[func].end /timerdata[func].calls )*1000000.0f: 0.0f
-                   );
+                       timerdata[func].sequence,
+                       func,
+                       timerdata[func].calls,
+                       (timerdata[func].end*1000000.0f),
+                       timerdata[func].calls?(timerdata[func].end /timerdata[func].calls )*1000000.0f: 0.0f
+                      );
             }
         }
-   }
+    }
 
-   return(0);
+    return(0);
 }
 
 // This limit is used for DualIndex Block and if fQuality is above this limit then Quantization shaking will always be performed
 // on all indexs
 CGU_FLOAT g_HIGHQUALITY_THRESHOLD = 0.7f;
 
-Plugin_BC7::Plugin_BC7()
-{
+Plugin_BC7::Plugin_BC7() {
     m_KernelOptions = NULL;
 #ifdef _WIN32
     if (frequency.QuadPart == 0)
@@ -127,38 +119,32 @@ Plugin_BC7::Plugin_BC7()
 #endif
 }
 
-Plugin_BC7::~Plugin_BC7()
-{
+Plugin_BC7::~Plugin_BC7() {
 }
 
-void Plugin_BC7::TC_Start() 
-{
-   // reset
-   for (CGU_INT j=0; j<50; j++)
-   {
+void Plugin_BC7::TC_Start() {
+    // reset
+    for (CGU_INT j=0; j<50; j++) {
         timerdata[j].calls = 0;
         timerdata[j].start = 0;
         timerdata[j].end   = 0;
         timerdata[j].sequence = -1;
-   }
-   sequence=0;
+    }
+    sequence=0;
 };
 
 
-void Plugin_BC7::TC_End() 
-{
+void Plugin_BC7::TC_End() {
     if (sequence > 0)
         timerSummary();
 }
 
-int Plugin_BC7::TC_PluginSetSharedIO(void* Shared)
-{
+int Plugin_BC7::TC_PluginSetSharedIO(void* Shared) {
     CMips = reinterpret_cast<CMIPS *> (Shared);
     return 0;
 }
 
-int Plugin_BC7::TC_PluginGetVersion(TC_PluginVersion* pPluginVersion)
-{ 
+int Plugin_BC7::TC_PluginGetVersion(TC_PluginVersion* pPluginVersion) {
     pPluginVersion->guid                    = g_GUID;
     pPluginVersion->dwAPIVersionMajor       = TC_API_VERSION_MAJOR;
     pPluginVersion->dwAPIVersionMinor       = TC_API_VERSION_MINOR;
@@ -167,38 +153,34 @@ int Plugin_BC7::TC_PluginGetVersion(TC_PluginVersion* pPluginVersion)
     return 0;
 }
 
-char *Plugin_BC7::TC_ComputeSourceFile(unsigned int Compute_type)
-{
-    switch (Compute_type)
-    {
-        case CMP_Compute_type::CMP_HPC:
-            // ToDo : Add features
-            break;
-        case CMP_Compute_type::CMP_GPU:
-        case CMP_Compute_type::CMP_GPU_OCL:
-            return(GPU_OCL_BC7_COMPUTEFILE);
-        case CMP_Compute_type::CMP_GPU_DXC:
-            return(GPU_DXC_BC7_COMPUTEFILE);
+char *Plugin_BC7::TC_ComputeSourceFile(unsigned int Compute_type) {
+    switch (Compute_type) {
+    case CMP_Compute_type::CMP_GPU_OCL:
+        return(GPU_OCL_BC7_COMPUTEFILE);
+    case CMP_Compute_type::CMP_GPU_DXC:
+        return(GPU_DXC_BC7_COMPUTEFILE);
     }
     return("");
 }
 
 extern void init_BC7ramps();
 
-void* Plugin_BC7::TC_Create()
-{
+void* Plugin_BC7::TC_Create() {
     BC7_EncodeClass *encoder = new BC7_EncodeClass();
     return (void*) encoder;
 }
 
-void  Plugin_BC7::TC_Destroy(void* codec) 
-{
-    delete codec;
-    codec = nullptr;
+void  Plugin_BC7::TC_Destroy(void* codec) {
+    if (codec != nullptr)
+    {
+        BC7_EncodeClass* pcodec;
+        pcodec = reinterpret_cast<BC7_EncodeClass*>(codec);
+        delete pcodec;
+        codec = nullptr;
+    }
 }
 
-int Plugin_BC7::TC_Init(void  *kernel_options)
-{
+int Plugin_BC7::TC_Init(void  *kernel_options) {
     if (!kernel_options)    return (-1);
     m_KernelOptions = reinterpret_cast<KernelOptions *>(kernel_options);
 
@@ -214,10 +196,9 @@ int Plugin_BC7::TC_Init(void  *kernel_options)
     m_KernelOptions->size = sizeof(BC7_Encode);
 
     if (m_KernelOptions->fquality > 1.0 ) g_BC7Encode.quality  = 1.0f;
+    else if (m_KernelOptions->fquality < 0.051)  g_BC7Encode.quality = 0.05f;
     else
-    if (m_KernelOptions->fquality < 0.051)  g_BC7Encode.quality = 0.05f;
-    else
-    g_BC7Encode.quality                 = m_KernelOptions->fquality;
+        g_BC7Encode.quality                 = m_KernelOptions->fquality;
 
 
     //BC7 Encoding modes                      76543210
@@ -239,37 +220,32 @@ int Plugin_BC7::TC_Init(void  *kernel_options)
     return(0);
 }
 
-BC7_EncodeClass::BC7_EncodeClass()
-{
+BC7_EncodeClass::BC7_EncodeClass() {
 };
 
-int BC7_EncodeClass::DecompressBlock(void *cmpin, void *srcout)
-{
+int BC7_EncodeClass::DecompressBlock(void *cmpin, void *srcout) {
     if (srcout == NULL) return -1;
     if (cmpin == NULL) return -1;
     return 0;
 }
 
-int BC7_EncodeClass::DecompressBlock(unsigned int xBlock, unsigned int yBlock, void *cmpin, void *srcout)
-{
+int BC7_EncodeClass::DecompressBlock(unsigned int xBlock, unsigned int yBlock, void *cmpin, void *srcout) {
     if ((xBlock != 0) && (yBlock != 0)) return -1;
     if (srcout == NULL) return -1;
     if (cmpin == NULL) return -1;
     return 0;
 }
 
-int BC7_EncodeClass::CompressBlock(void *in, void *out, void *blockoptions)
-{
+int BC7_EncodeClass::CompressBlock(void *in, void *out, void *blockoptions) {
     CompressBlockBC7_Internal((CGU_UINT8 (*)[4])in, (unsigned char *)out, (BC7_Encode *)blockoptions);
     return 0;
 }
 
-int BC7_EncodeClass::CompressTexture(void *srcin, void *cmpout,void *processOptions)
-{
+int BC7_EncodeClass::CompressTexture(void *srcin, void *cmpout,void *processOptions) {
 #ifdef USE_ASPM_CODE
 // Prototype code: ASPM Code execution
-if (g_BC7Encode.quality == 0.99f)
-    aspm::CompressBlockBC7_encode((aspm::texture_surface *) srcin, (unsigned char *)cmpout, (aspm::BC7_Encode *)&g_BC7Encode);
+    if (g_BC7Encode.quality == 0.99f)
+        aspm::CompressBlockBC7_encode((aspm::texture_surface *) srcin, (unsigned char *)cmpout, (aspm::BC7_Encode *)&g_BC7Encode);
 #else
     // ToDo: Implement texture level compression
     if (processOptions == NULL) return -1;
@@ -278,11 +254,10 @@ if (g_BC7Encode.quality == 0.99f)
     // MipSet* pSourceTexture  =  reinterpret_cast<MipSet *>(srcin);
     // MipSet* pDestTexture    =  reinterpret_cast<MipSet *>(cmpout);
 #endif
-return 0;
+    return 0;
 }
 
-int BC7_EncodeClass::DecompressTexture(void *cmpin, void *srcout,void *processOptions)
-{
+int BC7_EncodeClass::DecompressTexture(void *cmpin, void *srcout,void *processOptions) {
     // ToDo: Implement texture level decompression
     if (processOptions == NULL) return -1;
     if (srcout == NULL) return -1;
@@ -293,12 +268,10 @@ int BC7_EncodeClass::DecompressTexture(void *cmpin, void *srcout,void *processOp
     return 0;
 }
 
-int BC7_EncodeClass::CompressBlock(unsigned int xBlock, unsigned int yBlock, void *in, void *out) 
-{
+int BC7_EncodeClass::CompressBlock(unsigned int xBlock, unsigned int yBlock, void *in, void *out) {
     CMP_Vec4uc       *ImageSource = (CMP_Vec4uc *)in;
-    if ((m_srcHeight == 0)||(m_srcWidth==0))
-    {
-         return (-1);
+    if ((m_srcHeight == 0)||(m_srcWidth==0)) {
+        return (-1);
     }
 
     int width_in_blocks  = (m_srcWidth + 3) >> 2;
@@ -310,27 +283,22 @@ int BC7_EncodeClass::CompressBlock(unsigned int xBlock, unsigned int yBlock, voi
     CMP_Vec4uc srcData[16];
 
     //Check if it is a complete 4X4 block
-    if (((xBlock + 1)*BlockX <= m_srcWidth) && ((yBlock + 1)*BlockY <= m_srcHeight))
-    {
+    if (((xBlock + 1)*BlockX <= m_srcWidth) && ((yBlock + 1)*BlockY <= m_srcHeight)) {
         for (int j = 0; j < 4; j++) {
             for (int i = 0; i < 4; i++) {
                 memcpy(&srcData[blkindex++], &ImageSource[srcindex++], sizeof(CMP_Vec4uc));
             }
             srcindex += (m_srcWidth - 4);
         }
-    }
-    else
-    {
+    } else {
         CGU_DWORD dwWidth = CMP_MIN(static_cast<unsigned int>(BlockX), m_srcWidth - xBlock*BlockX);
         CGU_DWORD i, j, srcIndex;
 
         //Go through line by line
-        for (j = 0; j < BlockY && (BlockY * yBlock + j) < m_srcHeight; j++)
-        {
+        for (j = 0; j < BlockY && (BlockY * yBlock + j) < m_srcHeight; j++) {
             //Copy the real data
             srcIndex = ((yBlock * BlockY + j) * m_srcWidth + (xBlock * BlockX));
-            for (i = 0; i < dwWidth; i++)
-            {
+            for (i = 0; i < dwWidth; i++) {
                 memcpy(&srcData[j*BlockX + i], &ImageSource[srcIndex + i], sizeof(CMP_Vec4uc));
             }
             if (i < BlockX)

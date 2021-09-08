@@ -1,5 +1,5 @@
 // AMD AMDUtils code
-// 
+//
 // Copyright(c) 2017 Advanced Micro Devices, Inc.All rights reserved.
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
@@ -19,9 +19,9 @@
 
 #pragma once
 
-#ifdef _WIN32
-#include <Windows.h>
-#endif
-
 double MillisecondsNow();
+
+#ifdef _WIN32
+#include <windows.h>
 SIZE_T Align(SIZE_T uOffset, SIZE_T uAlign);
+#endif

@@ -9,10 +9,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -27,30 +27,27 @@
 //
 //////////////////////////////////////////////////////////////////////////////
 
-#include "Common.h"
-#include "Codec_DXT5_xRBG.h"
+#include "common.h"
+#include "codec_dxt5_xrbg.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////////////
 
 CCodec_DXT5_xRBG::CCodec_DXT5_xRBG() :
-CCodec_DXT5_Swizzled(CT_DXT5_xRBG)
-{
+    CCodec_DXT5_Swizzled(CT_DXT5_xRBG) {
 
 }
 
-CCodec_DXT5_xRBG::~CCodec_DXT5_xRBG()
-{
+CCodec_DXT5_xRBG::~CCodec_DXT5_xRBG() {
 
 }
 
 // Disable erroneous C4715 warning
 #pragma warning(push)
-#pragma warning(disable:4715) 
+#pragma warning(disable:4715)
 
-bool CCodec_DXT5_xRBG::SetParameter(const CMP_CHAR* pszParamName, CMP_CHAR* sValue)
-{
+bool CCodec_DXT5_xRBG::SetParameter(const CMP_CHAR* pszParamName, CMP_CHAR* sValue) {
     if (sValue == NULL) return false;
     CODECFLOAT fValue = std::stof(sValue);
     if(strcmp(pszParamName, "WeightR") == 0)
@@ -64,8 +61,7 @@ bool CCodec_DXT5_xRBG::SetParameter(const CMP_CHAR* pszParamName, CMP_CHAR* sVal
     return true;
 }
 
-bool CCodec_DXT5_xRBG::SetParameter(const CMP_CHAR* pszParamName, CODECFLOAT fValue)
-{
+bool CCodec_DXT5_xRBG::SetParameter(const CMP_CHAR* pszParamName, CODECFLOAT fValue) {
     if(strcmp(pszParamName, "WeightR") == 0)
         m_fChannelWeights[1] = m_fBaseChannelWeights[1] = fValue;
     else if(strcmp(pszParamName, "WeightG") == 0)
@@ -77,8 +73,7 @@ bool CCodec_DXT5_xRBG::SetParameter(const CMP_CHAR* pszParamName, CODECFLOAT fVa
     return true;
 }
 
-bool CCodec_DXT5_xRBG::GetParameter(const CMP_CHAR* pszParamName, CODECFLOAT& fValue)
-{
+bool CCodec_DXT5_xRBG::GetParameter(const CMP_CHAR* pszParamName, CODECFLOAT& fValue) {
     if(strcmp(pszParamName, "WeightR") == 0)
         fValue = m_fBaseChannelWeights[1];
     else if(strcmp(pszParamName, "WeightG") == 0)
@@ -93,28 +88,24 @@ bool CCodec_DXT5_xRBG::GetParameter(const CMP_CHAR* pszParamName, CODECFLOAT& fV
 // Re-enable erroneous C4715 warning
 #pragma warning(pop)
 
-void CCodec_DXT5_xRBG::ReadBlock(CCodecBuffer& buffer, CMP_DWORD x, CMP_DWORD y, CMP_BYTE block[BLOCK_SIZE_4X4X4])
-{
+void CCodec_DXT5_xRBG::ReadBlock(CCodecBuffer& buffer, CMP_DWORD x, CMP_DWORD y, CMP_BYTE block[BLOCK_SIZE_4X4X4]) {
     CMP_BYTE dwTempBlock[BLOCK_SIZE_4X4X4];
     buffer.ReadBlockRGBA(x, y, 4, 4, dwTempBlock);
     for(CMP_DWORD i = 0; i < BLOCK_SIZE_4X4; i++)
         ((CMP_DWORD*)block)[i] = SWIZZLE_RGBA_xRBG(((CMP_DWORD*)dwTempBlock)[i]);
 }
 
-void CCodec_DXT5_xRBG::WriteBlock(CCodecBuffer& buffer, CMP_DWORD x, CMP_DWORD y, CMP_BYTE block[BLOCK_SIZE_4X4X4])
-{
+void CCodec_DXT5_xRBG::WriteBlock(CCodecBuffer& buffer, CMP_DWORD x, CMP_DWORD y, CMP_BYTE block[BLOCK_SIZE_4X4X4]) {
     CMP_BYTE dwTempBlock[BLOCK_SIZE_4X4X4];
     for(CMP_DWORD i = 0; i < BLOCK_SIZE_4X4; i++)
         ((CMP_DWORD*)dwTempBlock)[i] = SWIZZLE_xRBG_RGBA(((CMP_DWORD*)block)[i]);
     buffer.WriteBlockRGBA(x, y, 4, 4, dwTempBlock);
 }
 
-void CCodec_DXT5_xRBG::ReadBlock(CCodecBuffer& buffer, CMP_DWORD x, CMP_DWORD y, CODECFLOAT block[BLOCK_SIZE_4X4X4])
-{
+void CCodec_DXT5_xRBG::ReadBlock(CCodecBuffer& buffer, CMP_DWORD x, CMP_DWORD y, CODECFLOAT block[BLOCK_SIZE_4X4X4]) {
     CODECFLOAT fTempBlock[BLOCK_SIZE_4X4X4];
     buffer.ReadBlockRGBA(x, y, 4, 4, fTempBlock);
-    for(CMP_DWORD i = 0; i < BLOCK_SIZE_4X4; i++)
-    {
+    for(CMP_DWORD i = 0; i < BLOCK_SIZE_4X4; i++) {
         block[(i* 4) + RGBA32F_OFFSET_R] = 0.0;
         block[(i* 4) + RGBA32F_OFFSET_G] = fTempBlock[(i* 4) + RGBA32F_OFFSET_R];
         block[(i* 4) + RGBA32F_OFFSET_B] = fTempBlock[(i* 4) + RGBA32F_OFFSET_B];
@@ -122,11 +113,9 @@ void CCodec_DXT5_xRBG::ReadBlock(CCodecBuffer& buffer, CMP_DWORD x, CMP_DWORD y,
     }
 }
 
-void CCodec_DXT5_xRBG::WriteBlock(CCodecBuffer& buffer, CMP_DWORD x, CMP_DWORD y, CODECFLOAT block[BLOCK_SIZE_4X4X4])
-{
+void CCodec_DXT5_xRBG::WriteBlock(CCodecBuffer& buffer, CMP_DWORD x, CMP_DWORD y, CODECFLOAT block[BLOCK_SIZE_4X4X4]) {
     CODECFLOAT fTempBlock[BLOCK_SIZE_4X4X4];
-    for(CMP_DWORD i = 0; i < BLOCK_SIZE_4X4; i++)
-    {
+    for(CMP_DWORD i = 0; i < BLOCK_SIZE_4X4; i++) {
         fTempBlock[(i* 4) + RGBA32F_OFFSET_R] = block[(i* 4) + RGBA32F_OFFSET_G];
         fTempBlock[(i* 4) + RGBA32F_OFFSET_G] = block[(i* 4) + RGBA32F_OFFSET_A];
         fTempBlock[(i* 4) + RGBA32F_OFFSET_B] = block[(i* 4) + RGBA32F_OFFSET_B];

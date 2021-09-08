@@ -8,10 +8,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -29,12 +29,12 @@
 #ifndef _PLUGINBASE_H
 #define _PLUGINBASE_H
 
-#include "Compressonator.h"
-#include "Common.h"
+#include "compressonator.h"
+#include "common.h"
 #include <memory>
 
 #ifdef _WIN32
-#include <Windows.h>
+#include <windows.h>
 #else
 typedef int  HWND;
 typedef int* GUID;
@@ -44,27 +44,26 @@ typedef int* GUID;
 // START OF: BASIC PLUGIN INTERFACE ----- DO NOT CHANGE CODE BELOW FOR BACKWARD SUPPORT------
 //===========================================================================================
 
-typedef struct _TC_PluginVersion
-{
-   GUID  guid;
-   CMP_DWORD dwAPIVersionMajor;         // Do not load plugin with greater API major version than app
-   CMP_DWORD dwAPIVersionMinor;
-   CMP_DWORD dwPluginVersionMajor;
-   CMP_DWORD dwPluginVersionMinor;
+typedef struct _TC_PluginVersion {
+    GUID  guid;
+    CMP_DWORD dwAPIVersionMajor;         // Do not load plugin with greater API major version than app
+    CMP_DWORD dwAPIVersionMinor;
+    CMP_DWORD dwPluginVersionMajor;
+    CMP_DWORD dwPluginVersionMinor;
 } TC_PluginVersion;
 
 /// Error codes returned by application & plugin functions.
 /// We should obviously return more meaningful error codes than we currently like.
-typedef enum
-{
-    PE_OK,            ///< No error - success.
-    PE_AlreadyLoaded, ///< The plugin is already loaded. 
-    PE_Unknown,       ///< An error occured.
+typedef enum {
+    PE_OK,            // No error - success.
+    PE_AlreadyLoaded, // The plugin is already loaded.
+    PE_Unknown,       // An error occured.
+    PE_InitErr,       // An error occured during init
+    PE_DeviceCreate,  // An error occured durind a device create
 } TC_PluginError;
 
 /// Indicates the error level of an error message.
-typedef enum
-{
+typedef enum {
     EL_Error,      ///< The error message is for an error.
     EL_Warning,    ///< The error message is for a warning.
 } TC_ErrorLevel;
@@ -76,11 +75,10 @@ typedef enum
 #define SET_PLUGIN_UUID(x)        extern "C"{__declspec(dllexport) char * getPluginUUID()    { return x; }}
 #define SET_PLUGIN_CATEGORY(x)    extern "C"{__declspec(dllexport) char * getPluginCategory(){ return x; }}
 
-class PluginBase 
-{
-public:
-    PluginBase(){}
-    virtual ~PluginBase(){}
+class PluginBase {
+  public:
+    PluginBase() {}
+    virtual ~PluginBase() {}
     virtual int TC_PluginGetVersion(TC_PluginVersion* pPluginVersion)=0;
 };
 

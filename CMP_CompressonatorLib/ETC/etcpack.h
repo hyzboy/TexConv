@@ -11,10 +11,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -32,16 +32,16 @@ enum { ETC1_RGB_NO_MIPMAPS, ETC2PACKAGE_RGB_NO_MIPMAPS, ETC2PACKAGE_RGBA_NO_MIPM
 
 
 void atiEncodeRGBBlockETC(
-        unsigned char *pPixels,     //for Color888_t(* pPixels)[ 4 ] [ 4 ]
-        unsigned int *pCompressed1,    // Return value
-        unsigned int *pCompressed2     // Return value
-    );
+    unsigned char *pPixels,     //for Color888_t(* pPixels)[ 4 ] [ 4 ]
+    unsigned int *pCompressed1,    // Return value
+    unsigned int *pCompressed2     // Return value
+);
 
 void atiDecodeRGBBlockETC(
     unsigned char *pPixels,        //for Color888_t(* pPixels)[ 4 ] [ 4 ]
     unsigned int compressed1,
     unsigned int compressed2
-    );
+);
 
 
 void decompressBlockETC21BitAlpha(unsigned int block_part1, unsigned int block_part2, uint8 *img, uint8* alphaimg, int width, int height, int startx, int starty);

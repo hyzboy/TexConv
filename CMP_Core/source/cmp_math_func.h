@@ -7,10 +7,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -24,7 +24,9 @@
 #define CMP_MATH_FUNC_H
 
 
-#include "Common_Def.h"
+#include "common_def.h"
+
+#include <cmath>
 
 #ifndef ASPM_GPU
 
@@ -39,44 +41,39 @@
 using namespace std;
 
 static CGU_INT QSortFCmp(const void *Elem1, const void *Elem2) {
-  CGU_INT ret = 0;
+    CGU_INT ret = 0;
 
-  if (*(CGU_FLOAT *)Elem1 - *(CGU_FLOAT *)Elem2 < 0.)
-    ret = -1;
-  else if (*(CGU_FLOAT *)Elem1 - *(CGU_FLOAT *)Elem2 > 0.)
-    ret = 1;
-  return ret;
+    if (*(CGU_FLOAT *)Elem1 < *(CGU_FLOAT *)Elem2)
+        ret = -1;
+    else if (*(CGU_FLOAT *)Elem1 > *(CGU_FLOAT *)Elem2)
+        ret = 1;
+    return ret;
 }
 
-static int QSortIntCmp(const void *Elem1, const void *Elem2) 
-{
-  return (*(CGU_INT32 *)Elem1 - *(CGU_INT32 *)Elem2);
+static int QSortIntCmp(const void *Elem1, const void *Elem2) {
+    return (*(CGU_INT32 *)Elem1 - *(CGU_INT32 *)Elem2);
 }
 
-static CGU_FLOAT  dot(CMP_IN CGU_Vec3f Color,CMP_IN CGU_Vec3f Color2)
-{
+static CGU_FLOAT  dot(CMP_IN CGU_Vec3f Color,CMP_IN CGU_Vec3f Color2) {
     CGU_FLOAT  ColorDot;
     ColorDot = (Color.x * Color2.x) + (Color.y * Color2.y) + (Color.z * Color2.z);
     return ColorDot;
 }
 
-static CGU_FLOAT  dot(CMP_IN CGU_Vec2f Color,CMP_IN CGU_Vec2f Color2)
-{
+static CGU_FLOAT  dot(CMP_IN CGU_Vec2f Color,CMP_IN CGU_Vec2f Color2) {
     CGU_FLOAT  ColorDot;
     ColorDot = Color.x * Color2.x + Color.y * Color2.y;
     return ColorDot;
 }
 
-static CGU_Vec2f abs(CMP_IN CGU_Vec2f Color)
-{
+static CGU_Vec2f abs(CMP_IN CGU_Vec2f Color) {
     CGU_Vec2f  ColorAbs;
     ColorAbs.x = std::abs(Color.x);
     ColorAbs.y = std::abs(Color.y);
     return ColorAbs;
 }
 
-static CGU_Vec3f fabs(CMP_IN CGU_Vec3f Color)
-{
+static CGU_Vec3f fabs(CMP_IN CGU_Vec3f Color) {
     CGU_Vec3f  ColorAbs;
     ColorAbs.x = std::abs(Color.x);
     ColorAbs.y = std::abs(Color.y);
@@ -84,8 +81,7 @@ static CGU_Vec3f fabs(CMP_IN CGU_Vec3f Color)
     return ColorAbs;
 }
 
-static CGU_Vec3f round(CMP_IN CGU_Vec3f Color)
-{
+static CGU_Vec3f round(CMP_IN CGU_Vec3f Color) {
     CGU_Vec3f ColorRound;
     ColorRound.x = std::round(Color.x);
     ColorRound.y = std::round(Color.y);
@@ -93,16 +89,14 @@ static CGU_Vec3f round(CMP_IN CGU_Vec3f Color)
     return ColorRound;
 }
 
-static CGU_Vec2f round(CMP_IN CGU_Vec2f Color)
-{
+static CGU_Vec2f round(CMP_IN CGU_Vec2f Color) {
     CGU_Vec2f ColorRound;
     ColorRound.x = std::round(Color.x);
     ColorRound.y = std::round(Color.y);
     return ColorRound;
 }
 
-static CGU_Vec3f ceil(CMP_IN CGU_Vec3f Color)
-{
+static CGU_Vec3f ceil(CMP_IN CGU_Vec3f Color) {
     CGU_Vec3f ColorCeil;
     ColorCeil.x = std::ceil(Color.x);
     ColorCeil.y = std::ceil(Color.y);
@@ -110,8 +104,7 @@ static CGU_Vec3f ceil(CMP_IN CGU_Vec3f Color)
     return ColorCeil;
 }
 
-static CGU_Vec3f floor(CMP_IN CGU_Vec3f Color)
-{
+static CGU_Vec3f floor(CMP_IN CGU_Vec3f Color) {
     CGU_Vec3f Colorfloor;
     Colorfloor.x = std::floor(Color.x);
     Colorfloor.y = std::floor(Color.y);
@@ -119,19 +112,15 @@ static CGU_Vec3f floor(CMP_IN CGU_Vec3f Color)
     return Colorfloor;
 }
 
-static CGU_Vec3f saturate(CGU_Vec3f value)
-{
+static CGU_Vec3f saturate(CGU_Vec3f value) {
     if (value.x > 1.0f) value.x = 1.0f;
-    else
-    if (value.x < 0.0f) value.x = 0.0f;
+    else if (value.x < 0.0f) value.x = 0.0f;
 
     if (value.y > 1.0f) value.y = 1.0f;
-    else
-    if (value.y < 0.0f) value.y = 0.0f;
+    else if (value.y < 0.0f) value.y = 0.0f;
 
     if (value.z > 1.0f) value.z = 1.0f;
-    else
-    if (value.z < 0.0f) value.z = 0.0f;
+    else if (value.z < 0.0f) value.z = 0.0f;
 
     return value;
 }

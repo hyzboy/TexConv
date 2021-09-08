@@ -9,10 +9,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -28,26 +28,23 @@
 //////////////////////////////////////////////////////////////////////////////
 #pragma warning(disable:4100)
 
-#include "Common.h"
-#include "Codec_ATC_RGBA_Interpolated.h"
+#include "common.h"
+#include "codec_atc_rgba_interpolated.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////////////
 
 CCodec_ATC_RGBA_Interpolated::CCodec_ATC_RGBA_Interpolated() :
-CCodec_ATC(CT_ATC_RGBA_Interpolated)
-{
+    CCodec_ATC(CT_ATC_RGBA_Interpolated) {
 
 }
 
-CCodec_ATC_RGBA_Interpolated::~CCodec_ATC_RGBA_Interpolated()
-{
+CCodec_ATC_RGBA_Interpolated::~CCodec_ATC_RGBA_Interpolated() {
 
 }
 
-CodecError CCodec_ATC_RGBA_Interpolated::Compress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut, Codec_Feedback_Proc pFeedbackProc, CMP_DWORD_PTR pUser1, CMP_DWORD_PTR pUser2)
-{
+CodecError CCodec_ATC_RGBA_Interpolated::Compress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut, Codec_Feedback_Proc pFeedbackProc, CMP_DWORD_PTR pUser1, CMP_DWORD_PTR pUser2) {
     assert(bufferIn.GetWidth() == bufferOut.GetWidth());
     assert(bufferIn.GetHeight() == bufferOut.GetHeight());
 
@@ -60,16 +57,13 @@ CodecError CCodec_ATC_RGBA_Interpolated::Compress(CCodecBuffer& bufferIn, CCodec
     CMP_BYTE srcBlock[BLOCK_SIZE_4X4X4];
     CMP_DWORD compressedBlock[4];
     bufferIn.m_bSwizzle = false; // Processing RGBA_8888
-    for(CMP_DWORD j = 0; j < dwBlocksY; j++)
-    {
-        for(CMP_DWORD i = 0; i < dwBlocksX; i++)
-        {
+    for(CMP_DWORD j = 0; j < dwBlocksY; j++) {
+        for(CMP_DWORD i = 0; i < dwBlocksX; i++) {
             bufferIn.ReadBlockRGBA(i*4, j*4, 4, 4, srcBlock);
             CompressRGBABlock_InterpolatedAlpha(srcBlock, compressedBlock);
             bufferOut.WriteBlock(i*4, j*4, compressedBlock, 4);
         }
-        if(pFeedbackProc)
-        {
+        if(pFeedbackProc) {
             float fProgress = 100.f * (j * dwBlocksX) / (dwBlocksX * dwBlocksY);
             if(pFeedbackProc(fProgress, pUser1, pUser2))
                 return CE_Aborted;
@@ -79,8 +73,7 @@ CodecError CCodec_ATC_RGBA_Interpolated::Compress(CCodecBuffer& bufferIn, CCodec
     return CE_OK;
 }
 
-CodecError CCodec_ATC_RGBA_Interpolated::Decompress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut, Codec_Feedback_Proc pFeedbackProc, CMP_DWORD_PTR pUser1, CMP_DWORD_PTR pUser2)
-{
+CodecError CCodec_ATC_RGBA_Interpolated::Decompress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut, Codec_Feedback_Proc pFeedbackProc, CMP_DWORD_PTR pUser1, CMP_DWORD_PTR pUser2) {
     assert(bufferIn.GetWidth() == bufferOut.GetWidth());
     assert(bufferIn.GetHeight() == bufferOut.GetHeight());
 
@@ -93,20 +86,16 @@ CodecError CCodec_ATC_RGBA_Interpolated::Decompress(CCodecBuffer& bufferIn, CCod
 
     CMP_DWORD compressedBlock[4];
     CMP_BYTE destBlock[BLOCK_SIZE_4X4X4];
-    for(CMP_DWORD j = 0; j < dwBlocksY; j++)
-    {
-        for(CMP_DWORD i = 0; i < dwBlocksX; i++)
-        {
+    for(CMP_DWORD j = 0; j < dwBlocksY; j++) {
+        for(CMP_DWORD i = 0; i < dwBlocksX; i++) {
             bufferIn.ReadBlock(i*4, j*4, compressedBlock, 4);
             DecompressRGBABlock_InterpolatedAlpha(destBlock, compressedBlock);
             bufferOut.WriteBlockRGBA(i*4, j*4, 4, 4, destBlock);
         }
 
-        if (pFeedbackProc)
-        {
+        if (pFeedbackProc) {
             float fProgress = 100.f * (j * dwBlocksX) / dwBlocksXY;
-            if (pFeedbackProc(fProgress, pUser1, pUser2))
-            {
+            if (pFeedbackProc(fProgress, pUser1, pUser2)) {
                 return CE_Aborted;
             }
         }

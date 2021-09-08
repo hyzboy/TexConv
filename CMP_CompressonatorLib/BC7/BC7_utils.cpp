@@ -9,10 +9,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -23,8 +23,8 @@
 //
 
 #include <math.h>
-#include "BC7_Definitions.h"
-#include "BC7_utils.h"
+#include "bc7_definitions.h"
+#include "bc7_utils.h"
 #include "debug.h"
 
 //
@@ -35,8 +35,7 @@
 // Called many times optimize bit writes
 void    WriteBit(CMP_BYTE   *base,
                  int  offset,
-    CMP_BYTE   bitVal)
-{
+                 CMP_BYTE   bitVal) {
 // #ifdef USE_DBGTRACE
 //     DbgTrace(());
 // #endif
@@ -59,23 +58,26 @@ void    WriteBit(CMP_BYTE   *base,
 
 
 // Used by BC7_Decode
-const double  rampLerpWeights[5][1<<MAX_INDEX_BITS] =
-{
+const double  rampLerpWeights[5][1<<MAX_INDEX_BITS] = {
 #if USE_FINAL_BC7_WEIGHTS
     {0.0},  // 0 bit index
     {0.0, 1.0}, // 1 bit index
     {0.0, 21.0/64.0, 43.0/64.0, 1.0}, // 2 bit index
     {0.0, 9.0/64.0, 18.0/64.0, 27.0/64.0, 37.0/64.0, 46.0/64.0, 55.0/64.0, 1.0}, // 3 bit index
-    {0.0, 4.0/64.0, 9.0/64.0, 13.0/64.0, 17.0/64.0, 21.0/64.0, 26.0/64.0, 30.0/64.0,
-     34.0/64.0, 38.0/64.0, 43.0/64.0, 47.0/64.0, 51.0/64.0, 55.0/64.0, 60.0/64.0, 1.0} // 4 bit index
+    {
+        0.0, 4.0/64.0, 9.0/64.0, 13.0/64.0, 17.0/64.0, 21.0/64.0, 26.0/64.0, 30.0/64.0,
+        34.0/64.0, 38.0/64.0, 43.0/64.0, 47.0/64.0, 51.0/64.0, 55.0/64.0, 60.0/64.0, 1.0
+    } // 4 bit index
 #else
     // Pure linear weights
     {0.0},  // 0 bit index
     {0.0, 1.0}, // 1 bit index
     {0.0, 1.0/3.0, 2.0/3.0, 1.0}, // 2 bit index
     {0.0, 1.0/7.0, 2.0/7.0, 3.0/7.0, 4.0/7.0, 5.0/7.0, 6.0/7.0, 1.0}, // 3 bit index
-    {0.0, 1.0/15.0, 2.0/15.0, 3.0/15.0, 4.0/15.0, 5.0/15.0, 6.0/15.0, 7.0/15.0,
-     8.0/15.0, 9.0/15.0, 10.0/15.0, 11.0/15.0, 12.0/15.0, 13.0/15.0, 14.0/15.0, 1.0} // 4 bit index
+    {
+        0.0, 1.0/15.0, 2.0/15.0, 3.0/15.0, 4.0/15.0, 5.0/15.0, 6.0/15.0, 7.0/15.0,
+        8.0/15.0, 9.0/15.0, 10.0/15.0, 11.0/15.0, 12.0/15.0, 13.0/15.0, 14.0/15.0, 1.0
+    } // 4 bit index
 #endif
 };
 
@@ -92,8 +94,7 @@ uint16_t aWeight2[] = { 0, 21, 43, 64 };
 uint16_t aWeight3[] = { 0, 9, 18, 27, 37, 46, 55, 64 };
 uint16_t aWeight4[] = { 0, 4, 9, 13, 17, 21, 26, 30, 34, 38, 43, 47, 51, 55, 60, 64 };
 
-uint8_t interpolate(uint8_t e0, uint8_t e1, uint8_t index, uint8_t indexprecision)
-{
+uint8_t interpolate(uint8_t e0, uint8_t e1, uint8_t index, uint8_t indexprecision) {
     if (indexprecision == 2)
         return (uint8_t)(((64 - aWeight2[index])*uint16_t(e0) + aWeight2[index] * uint16_t(e1) + 32) >> 6);
     else if (indexprecision == 3)
@@ -104,9 +105,8 @@ uint8_t interpolate(uint8_t e0, uint8_t e1, uint8_t index, uint8_t indexprecisio
 #endif
 
 void DecodeEndPoints(CMP_DWORD endpoint[][MAX_DIMENSION_BIG],
-    CMP_DWORD componentBits[MAX_DIMENSION_BIG],
-    float ep[][MAX_DIMENSION_BIG])
-{
+                     CMP_DWORD componentBits[MAX_DIMENSION_BIG],
+                     float ep[][MAX_DIMENSION_BIG]) {
 #ifdef USE_DBGTRACE
     DbgTrace(());
 #endif
@@ -115,35 +115,31 @@ void DecodeEndPoints(CMP_DWORD endpoint[][MAX_DIMENSION_BIG],
     // Expand each endpoint component to 8 bits by shifting the MSB to bit 7
     // and then replicating the high bits to the low bits revealed by
     // the shift
-    for (i = 0; i < MAX_DIMENSION_BIG; i++)
-    {
+    for (i = 0; i < MAX_DIMENSION_BIG; i++) {
         ep[0][i] = 0.;
         ep[1][i] = 0.;
-        if (componentBits[i])
-        {
+        if (componentBits[i]) {
             ep[0][i]  = (float)(endpoint[0][i] << (8 - componentBits[i]));
             ep[1][i]  = (float)(endpoint[1][i] << (8 - componentBits[i]));
             ep[0][i] += (float)((CMP_DWORD)ep[0][i] >> componentBits[i]);
             ep[1][i] += (float)((CMP_DWORD)ep[1][i] >> componentBits[i]);
 
-            ep[0][i] = (float)min(255., max(0., ep[0][i]));
-            ep[1][i] = (float)min(255., max(0., ep[1][i]));
+            ep[0][i] = (float)cmp_minT(255., cmp_maxT(0., ep[0][i]));
+            ep[1][i] = (float)cmp_minT(255., cmp_maxT(0., ep[1][i]));
         }
     }
 
     // If this block type has no explicit alpha channel
     // then make sure alpha is 1.0 for all points on the ramp
-    if (!componentBits[COMP_ALPHA])
-    {
+    if (!componentBits[COMP_ALPHA]) {
         ep[0][COMP_ALPHA] = ep[1][COMP_ALPHA] = 255.;
     }
 }
 
 void GetRamp(CMP_DWORD endpoint[][MAX_DIMENSION_BIG],
              double ramp[MAX_DIMENSION_BIG][(1<<MAX_INDEX_BITS)],
-    CMP_DWORD clusters[2],
-    CMP_DWORD componentBits[MAX_DIMENSION_BIG])
-{
+             CMP_DWORD clusters[2],
+             CMP_DWORD componentBits[MAX_DIMENSION_BIG]) {
 #ifdef USE_DBGTRACE
     DbgTrace(());
 #endif
@@ -153,26 +149,23 @@ void GetRamp(CMP_DWORD endpoint[][MAX_DIMENSION_BIG],
     // Expand each endpoint component to 8 bits by shifting the MSB to bit 7
     // and then replicating the high bits to the low bits revealed by
     // the shift
-    for(i=0; i<MAX_DIMENSION_BIG; i++)
-    {
+    for(i=0; i<MAX_DIMENSION_BIG; i++) {
         ep[0][i] = 0.;
         ep[1][i] = 0.;
-        if(componentBits[i])
-        {
+        if(componentBits[i]) {
             ep[0][i] = (double)(endpoint[0][i] << (8 - componentBits[i]));
             ep[1][i] = (double)(endpoint[1][i] << (8 - componentBits[i]));
             ep[0][i] += (double)((CMP_DWORD)ep[0][i] >> componentBits[i]);
             ep[1][i] += (double)((CMP_DWORD)ep[1][i] >> componentBits[i]);
 
-            ep[0][i] = min(255., max(0., ep[0][i]));
-            ep[1][i] = min(255., max(0., ep[1][i]));
+            ep[0][i] = cmp_minT(255., cmp_maxT(0., ep[0][i]));
+            ep[1][i] = cmp_minT(255., cmp_maxT(0., ep[1][i]));
         }
     }
 
     // If this block type has no explicit alpha channel
     // then make sure alpha is 1.0 for all points on the ramp
-    if(!componentBits[COMP_ALPHA])
-    {
+    if(!componentBits[COMP_ALPHA]) {
         ep[0][COMP_ALPHA] = ep[1][COMP_ALPHA] = 255.;
     }
 
@@ -181,18 +174,17 @@ void GetRamp(CMP_DWORD endpoint[][MAX_DIMENSION_BIG],
     rampIndex = (CMP_DWORD)(log((double)rampIndex) / log(2.0));
 
     // Generate colours for the RGB ramp
-    for(i=0; i < clusters[0]; i++)
-    {
+    for(i=0; i < clusters[0]; i++) {
 #ifdef USE_HIGH_PRECISION_INTERPOLATION_BC7
         ramp[COMP_RED][i] = floor((ep[0][COMP_RED] * (1.0-rampLerpWeights[rampIndex][i])) +
                                   (ep[1][COMP_RED] * rampLerpWeights[rampIndex][i]) + 0.5);
-        ramp[COMP_RED][i] = min(255.0, max(0., ramp[COMP_RED][i]));
+        ramp[COMP_RED][i]   = cmp_minT(255.0, cmp_maxT(0., ramp[COMP_RED][i]));
         ramp[COMP_GREEN][i] = floor((ep[0][COMP_GREEN] * (1.0-rampLerpWeights[rampIndex][i])) +
-                                  (ep[1][COMP_GREEN] * rampLerpWeights[rampIndex][i]) + 0.5);
-        ramp[COMP_GREEN][i] = min(255.0, max(0., ramp[COMP_GREEN][i]));
+                                    (ep[1][COMP_GREEN] * rampLerpWeights[rampIndex][i]) + 0.5);
+        ramp[COMP_GREEN][i] = cmp_minT(255.0, cmp_maxT(0., ramp[COMP_GREEN][i]));
         ramp[COMP_BLUE][i] = floor((ep[0][COMP_BLUE] * (1.0-rampLerpWeights[rampIndex][i])) +
-                                  (ep[1][COMP_BLUE] * rampLerpWeights[rampIndex][i]) + 0.5);
-        ramp[COMP_BLUE][i] = min(255.0, max(0., ramp[COMP_BLUE][i]));
+                                   (ep[1][COMP_BLUE] * rampLerpWeights[rampIndex][i]) + 0.5);
+        ramp[COMP_BLUE][i]  = cmp_minT(255.0, cmp_maxT(0., ramp[COMP_BLUE][i]));
 #else
         ramp[COMP_RED][i] = interpolate(ep[0][COMP_RED], ep[1][COMP_RED], i, rampIndex);
         ramp[COMP_GREEN][i] = interpolate(ep[0][COMP_GREEN], ep[1][COMP_GREEN], i, rampIndex);
@@ -204,23 +196,18 @@ void GetRamp(CMP_DWORD endpoint[][MAX_DIMENSION_BIG],
     rampIndex = clusters[1];
     rampIndex = (CMP_DWORD)(log((double)rampIndex) / log(2.0));
 
-    if(!componentBits[COMP_ALPHA])
-    {
-        for(i=0; i < clusters[1]; i++)
-        {
+    if(!componentBits[COMP_ALPHA]) {
+        for(i=0; i < clusters[1]; i++) {
             ramp[COMP_ALPHA][i] = 255.;
         }
-    }
-    else
-    {
+    } else {
 
         // Generate alphas
-        for(i=0; i < clusters[1]; i++)
-        {
+        for(i=0; i < clusters[1]; i++) {
 #ifdef USE_HIGH_PRECISION_INTERPOLATION_BC7
             ramp[COMP_ALPHA][i] = floor((ep[0][COMP_ALPHA] * (1.0-rampLerpWeights[rampIndex][i])) +
                                         (ep[1][COMP_ALPHA] * rampLerpWeights[rampIndex][i]) + 0.5);
-            ramp[COMP_ALPHA][i] = min(255.0, max(0., ramp[COMP_ALPHA][i]));
+            ramp[COMP_ALPHA][i] = cmp_minT(255.0, cmp_maxT(0., ramp[COMP_ALPHA][i]));
 #else
             ramp[COMP_ALPHA][i] = interpolate(ep[0][COMP_ALPHA], ep[1][COMP_ALPHA], i, rampIndex);
 #endif

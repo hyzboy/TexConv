@@ -1,5 +1,5 @@
 // AMD AMDUtils code
-// 
+//
 // Copyright(c) 2017 Advanced Micro Devices, Inc.All rights reserved.
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
@@ -18,31 +18,34 @@
 // THE SOFTWARE.
 #pragma once
 
-#include "GltfCommon.h"
-
-#include "DynamicBufferRingVK.h"
-#include "StaticBufferPoolVK.h"
-#include "Camera.h"
+#include "gltfstructures.h"
 
 #include <glm/mat4x4.hpp>
 
+#include <vulkan/vulkan.h>
+
+#include <vector>
+
+// Forward Declaration
+class DynamicBufferRingVK;
+class StaticBufferPoolVK;
+class GLTFCommon;
+
 // This class takes a GltfCommon class (that holds all the non-GPU specific data) as an input and loads all the GPU specific data
 //
-struct Primitives
-{
+struct Primitives {
     VkIndexType m_indexType;
-    UINT m_NumIndices;
+    uint32_t m_NumIndices;
     VkDescriptorBufferInfo m_IBV;
     std::vector<VkDescriptorBufferInfo> m_VBV;
 };
 
-class GltfTechnique
-{
-public:
+class GltfTechnique {
+  public:
     virtual void OnDestroy() = 0;
     void Draw(VkCommandBuffer cmd_buf);
 
-protected:
+  protected:
     GLTFCommon *m_pGLTFData;
 
     DynamicBufferRingVK *m_pDynamicBufferRing;

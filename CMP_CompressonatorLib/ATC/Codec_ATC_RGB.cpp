@@ -9,10 +9,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -22,15 +22,15 @@
 // THE SOFTWARE.
 //
 //
-//  File Name:   Codec_ATC.cpp  
+//  File Name:   Codec_ATC.cpp
 //  Description: implementation of the CCodec_ATC class
 //
 //////////////////////////////////////////////////////////////////////////////
 #pragma warning(disable:4100)
 
-#include "Common.h"
-#include "Codec_ATC_RGB.h"
-#include "Compressonator_tc.h"
+#include "common.h"
+#include "codec_atc_rgb.h"
+#include "compressonator_tc.h"
 
 using namespace CMP;
 
@@ -39,25 +39,21 @@ using namespace CMP;
 //////////////////////////////////////////////////////////////////////////////
 
 CCodec_ATC_RGB::CCodec_ATC_RGB() :
-CCodec_ATC(CT_ATC_RGB)
-{
+    CCodec_ATC(CT_ATC_RGB) {
 
 }
 
-CCodec_ATC_RGB::~CCodec_ATC_RGB()
-{
+CCodec_ATC_RGB::~CCodec_ATC_RGB() {
 
 }
 
 CCodecBuffer* CCodec_ATC_RGB::CreateBuffer(
     CMP_BYTE nBlockWidth, CMP_BYTE nBlockHeight, CMP_BYTE nBlockDepth,
-    CMP_DWORD dwWidth, CMP_DWORD dwHeight, CMP_DWORD dwPitch, CMP_BYTE* pData,CMP_DWORD dwDataSize) const
-{
+    CMP_DWORD dwWidth, CMP_DWORD dwHeight, CMP_DWORD dwPitch, CMP_BYTE* pData,CMP_DWORD dwDataSize) const {
     return CreateCodecBuffer(CBT_4x4Block_4BPP, 4,4,1,dwWidth, dwHeight, dwPitch, pData,dwDataSize);
 }
 
-CodecError CCodec_ATC_RGB::Compress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut, Codec_Feedback_Proc pFeedbackProc, DWORD_PTR pUser1, DWORD_PTR pUser2)
-{
+CodecError CCodec_ATC_RGB::Compress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut, Codec_Feedback_Proc pFeedbackProc, DWORD_PTR pUser1, DWORD_PTR pUser2) {
     assert(bufferIn.GetWidth() == bufferOut.GetWidth());
     assert(bufferIn.GetHeight() == bufferOut.GetHeight());
 
@@ -72,16 +68,13 @@ CodecError CCodec_ATC_RGB::Compress(CCodecBuffer& bufferIn, CCodecBuffer& buffer
 
     bufferIn.m_bSwizzle = false; // Processing RGBA_8888
 
-    for(CMP_DWORD j = 0; j < dwBlocksY; j++)
-    {
-        for(CMP_DWORD i = 0; i < dwBlocksX; i++)
-        {
+    for(CMP_DWORD j = 0; j < dwBlocksY; j++) {
+        for(CMP_DWORD i = 0; i < dwBlocksX; i++) {
             bufferIn.ReadBlockRGBA(i*4, j*4, 4, 4, srcBlock);
             CompressRGBBlock(srcBlock, compressedBlock);
             bufferOut.WriteBlock(i*4, j*4, compressedBlock, 2);
         }
-        if(pFeedbackProc)
-        {
+        if(pFeedbackProc) {
             float fProgress = 100.f * (j * dwBlocksX) / (dwBlocksX * dwBlocksY);
             if(pFeedbackProc(fProgress, pUser1, pUser2))
                 return CE_Aborted;
@@ -91,8 +84,7 @@ CodecError CCodec_ATC_RGB::Compress(CCodecBuffer& bufferIn, CCodecBuffer& buffer
     return CE_OK;
 }
 
-CodecError CCodec_ATC_RGB::Decompress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut, Codec_Feedback_Proc pFeedbackProc, DWORD_PTR pUser1, DWORD_PTR pUser2)
-{
+CodecError CCodec_ATC_RGB::Decompress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut, Codec_Feedback_Proc pFeedbackProc, DWORD_PTR pUser1, DWORD_PTR pUser2) {
     assert(bufferIn.GetWidth() == bufferOut.GetWidth());
     assert(bufferIn.GetHeight() == bufferOut.GetHeight());
 
@@ -106,20 +98,16 @@ CodecError CCodec_ATC_RGB::Decompress(CCodecBuffer& bufferIn, CCodecBuffer& buff
     CMP_DWORD compressedBlock[2];
     CMP_BYTE destBlock[BLOCK_SIZE_4X4X4];
     memset(destBlock, 0xFF, BLOCK_SIZE_4X4X4);
-    for(CMP_DWORD j = 0; j < dwBlocksY; j++)
-    {
-        for(CMP_DWORD i = 0; i < dwBlocksX; i++)
-        {
+    for(CMP_DWORD j = 0; j < dwBlocksY; j++) {
+        for(CMP_DWORD i = 0; i < dwBlocksX; i++) {
             bufferIn.ReadBlock(i*4, j*4, compressedBlock, 2);
             DecompressRGBBlock(destBlock, compressedBlock);
             bufferOut.WriteBlockRGBA(i*4, j*4, 4, 4, destBlock);
         }
 
-        if (pFeedbackProc)
-        {
+        if (pFeedbackProc) {
             float fProgress = 100.f * (j * dwBlocksX) / dwBlocksXY;
-            if (pFeedbackProc(fProgress, pUser1, pUser2))
-            {
+            if (pFeedbackProc(fProgress, pUser1, pUser2)) {
                 return CE_Aborted;
             }
         }

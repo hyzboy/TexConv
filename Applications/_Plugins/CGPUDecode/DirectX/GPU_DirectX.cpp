@@ -7,10 +7,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -19,18 +19,19 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
+//--------------------------------------------------------------------------------------
 
 // #define DECOMPRESS_SAVE_TO_BMP
 
-#include "GPU_DirectX.h"
+#include "gpu_directx.h"
 #include "directx_shaders\vs.h"
-#include "directx_shaders\ps1D.h"
-#include "directx_shaders\\ps1Darray.h"
-#include "directx_shaders\\ps2D.h"
-#include "directx_shaders\ps2Darray.h"
-#include "directx_shaders\ps3D.h"
-#include "directx_shaders\psCube.h"
-#include "D3D11.h"
+#include "directx_shaders\ps1d.h"
+#include "directx_shaders\\ps1darray.h"
+#include "directx_shaders\\ps2d.h"
+#include "directx_shaders\ps2darray.h"
+#include "directx_shaders\ps3d.h"
+#include "directx_shaders\pscube.h"
+#include "d3d11.h"
 
 using namespace DirectX;
 using namespace GPU_Decode;
@@ -39,14 +40,12 @@ using namespace GPU_Decode;
 #pragma comment(lib, "D3D11.lib")
 
 #pragma pack(push,1)
-struct SimpleVertex
-{
+struct SimpleVertex {
     XMFLOAT4 Pos;
     XMFLOAT4 Tex;
 };
 
-struct CBArrayControl
-{
+struct CBArrayControl {
     float Index;
     float pad[3];
 };
@@ -57,20 +56,18 @@ struct CBArrayControl
 //--------------------------------------------------------------------------------------
 
 
-char *GPU_DirectX::hResultErr(HRESULT hr)
-{
-   FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM,
-       NULL, hr,
-       MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-       m_err_str,
-       MAX_ERR_STR,
-       NULL );
-   return(m_err_str);
+char *GPU_DirectX::hResultErr(HRESULT hr) {
+    FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM,
+                   NULL, hr,
+                   MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                   m_err_str,
+                   MAX_ERR_STR,
+                   NULL );
+    return(m_err_str);
 }
 
 //---------------------------------------------------------------------------------
-GPU_DirectX::GPU_DirectX(CMP_DWORD Width, CMP_DWORD Height, WNDPROC callback):RenderWindow("DirectX")
-{
+GPU_DirectX::GPU_DirectX(CMP_DWORD Width, CMP_DWORD Height, WNDPROC callback):RenderWindow("DirectX") {
     m_driverType = D3D_DRIVER_TYPE_NULL;
     m_featureLevel = D3D_FEATURE_LEVEL_11_0;
     m_pd3dDevice = nullptr;
@@ -99,13 +96,12 @@ GPU_DirectX::GPU_DirectX(CMP_DWORD Width, CMP_DWORD Height, WNDPROC callback):Re
     if (Height <= 0)
         Height = 480;
 
-    // Allign data 
+    // Allign data
     m_width  = ((Width  + 3) / 4) * 4;
     m_height = ((Height + 3) / 4) * 4;
 
     HRESULT hr = InitWindow(Width, Height, callback);
-    if (FAILED(hr))
-    {
+    if (FAILED(hr)) {
         fprintf(stderr, "[DirectX] Failed InitWindow: %s\n",hResultErr(hr));
         assert(0);
     }
@@ -114,8 +110,7 @@ GPU_DirectX::GPU_DirectX(CMP_DWORD Width, CMP_DWORD Height, WNDPROC callback):Re
 }
 
 
-GPU_DirectX::~GPU_DirectX()
-{
+GPU_DirectX::~GPU_DirectX() {
 }
 
 
@@ -124,8 +119,7 @@ GPU_DirectX::~GPU_DirectX()
 //--------------------------------------------------------------------------------------
 
 
-HRESULT GPU_DirectX::InitDevice(const TexMetadata& mdata, CMP_FORMAT cmp_format)
-{
+HRESULT GPU_DirectX::InitDevice(const TexMetadata& mdata, CMP_FORMAT cmp_format) {
     HRESULT hr = S_OK;
 
     RECT rc;
@@ -138,16 +132,14 @@ HRESULT GPU_DirectX::InitDevice(const TexMetadata& mdata, CMP_FORMAT cmp_format)
     createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
 
-    D3D_DRIVER_TYPE driverTypes[] =
-    {
+    D3D_DRIVER_TYPE driverTypes[] = {
         D3D_DRIVER_TYPE_HARDWARE,
         D3D_DRIVER_TYPE_WARP,
         D3D_DRIVER_TYPE_REFERENCE,
     };
     UINT numDriverTypes = ARRAYSIZE(driverTypes);
 
-    D3D_FEATURE_LEVEL featureLevels[] =
-    {
+    D3D_FEATURE_LEVEL featureLevels[] = {
         D3D_FEATURE_LEVEL_11_0,
         D3D_FEATURE_LEVEL_10_1,
         D3D_FEATURE_LEVEL_10_0,
@@ -171,33 +163,29 @@ HRESULT GPU_DirectX::InitDevice(const TexMetadata& mdata, CMP_FORMAT cmp_format)
     sd.SampleDesc.Quality = 0;
     sd.Windowed = TRUE;
 
-    for (UINT driverTypeIndex = 0; driverTypeIndex < numDriverTypes; driverTypeIndex++)
-    {
+    for (UINT driverTypeIndex = 0; driverTypeIndex < numDriverTypes; driverTypeIndex++) {
         m_driverType = driverTypes[driverTypeIndex];
         hr = D3D11CreateDeviceAndSwapChain(nullptr, m_driverType, nullptr, createDeviceFlags, featureLevels, numFeatureLevels,
-            D3D11_SDK_VERSION, &sd, &m_pSwapChain, &m_pd3dDevice, &m_featureLevel, &m_pImmediateContext);
+                                           D3D11_SDK_VERSION, &sd, &m_pSwapChain, &m_pd3dDevice, &m_featureLevel, &m_pImmediateContext);
         if (SUCCEEDED(hr))
             break;
     }
-    if (FAILED(hr))
-    {
-       fprintf(stderr, "[DirectX] Failed D3D11CreateDeviceAndSwapChain: %s\n",hResultErr(hr));
-       return hr;
+    if (FAILED(hr)) {
+        fprintf(stderr, "[DirectX] Failed D3D11CreateDeviceAndSwapChain: %s\n",hResultErr(hr));
+        return hr;
     }
 
     // Create a render target view
     ID3D11Texture2D* pBackBuffer = nullptr;
     hr = m_pSwapChain->GetBuffer(0, IID_PPV_ARGS(&pBackBuffer));
-    if (FAILED(hr))
-    {
+    if (FAILED(hr)) {
         fprintf(stderr, "[DirectX] Failed GetBuffer: %s\n",hResultErr(hr));
         return hr;
     }
 
     hr = m_pd3dDevice->CreateRenderTargetView(pBackBuffer, nullptr, &m_pRenderTargetView);
     pBackBuffer->Release();
-    if (FAILED(hr))
-    {
+    if (FAILED(hr)) {
         fprintf(stderr, "[DirectX] Failed CreateRenderTargetView: %s\n",hResultErr(hr));
         return hr;
     }
@@ -217,8 +205,7 @@ HRESULT GPU_DirectX::InitDevice(const TexMetadata& mdata, CMP_FORMAT cmp_format)
     descDepth.CPUAccessFlags = 0;
     descDepth.MiscFlags = 0;
     hr = m_pd3dDevice->CreateTexture2D(&descDepth, nullptr, &m_pDepthStencil);
-    if (FAILED(hr))
-    {
+    if (FAILED(hr)) {
         fprintf(stderr, "[DirectX] Failed CreateTexture2D: %s\n",hResultErr(hr));
         return hr;
     }
@@ -230,8 +217,7 @@ HRESULT GPU_DirectX::InitDevice(const TexMetadata& mdata, CMP_FORMAT cmp_format)
     descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
     descDSV.Texture2D.MipSlice = 0;
     hr = m_pd3dDevice->CreateDepthStencilView(m_pDepthStencil, &descDSV, &m_pDepthStencilView);
-    if (FAILED(hr))
-    {
+    if (FAILED(hr)) {
         fprintf(stderr, "[DirectX] Failed CreateDepthStencilView: %s\n",hResultErr(hr));
         return hr;
     }
@@ -250,15 +236,13 @@ HRESULT GPU_DirectX::InitDevice(const TexMetadata& mdata, CMP_FORMAT cmp_format)
 
     // Create the vertex shader
     hr = m_pd3dDevice->CreateVertexShader(g_VS, sizeof(g_VS), nullptr, &m_pVertexShader);
-    if (FAILED(hr))
-    {
+    if (FAILED(hr)) {
         fprintf(stderr, "[DirectX] Failed CreateVertexShader: %s\n",hResultErr(hr));
         return hr;
     }
 
     // Define the input layout
-    D3D11_INPUT_ELEMENT_DESC layout[] =
-    {
+    D3D11_INPUT_ELEMENT_DESC layout[] = {
         { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
         { "TEXCOORD", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, sizeof(XMFLOAT4), D3D11_INPUT_PER_VERTEX_DATA, 0 },
     };
@@ -266,8 +250,7 @@ HRESULT GPU_DirectX::InitDevice(const TexMetadata& mdata, CMP_FORMAT cmp_format)
 
     // Create the input layout
     hr = m_pd3dDevice->CreateInputLayout(layout, numElements, g_VS, sizeof(g_VS), &m_pVertexLayout);
-    if (FAILED(hr))
-    {
+    if (FAILED(hr)) {
         fprintf(stderr, "[DirectX] Failed CreateInputLayout: %s\n",hResultErr(hr));
         return hr;
     }
@@ -285,16 +268,12 @@ HRESULT GPU_DirectX::InitDevice(const TexMetadata& mdata, CMP_FORMAT cmp_format)
     //------------------------------------------------
     // Enable the code as needed for each new case
     //------------------------------------------------
-    switch (mdata.dimension)
-    {
+    switch (mdata.dimension) {
     case TEX_DIMENSION_TEXTURE1D:
-        if (mdata.arraySize > 1)
-        {
+        if (mdata.arraySize > 1) {
             pshader = g_PS_1DArray;
             pshader_size = sizeof(g_PS_1DArray);
-        }
-        else
-        {
+        } else {
             pshader = g_PS_1D;
             pshader_size = sizeof(g_PS_1D);
         }
@@ -302,22 +281,16 @@ HRESULT GPU_DirectX::InitDevice(const TexMetadata& mdata, CMP_FORMAT cmp_format)
         break;
 
     case TEX_DIMENSION_TEXTURE2D:
-        if (mdata.miscFlags & TEX_MISC_TEXTURECUBE)
-        {
+        if (mdata.miscFlags & TEX_MISC_TEXTURECUBE) {
             pshader = g_PS_Cube;
             pshader_size = sizeof(g_PS_Cube);
             isCubeMap = true;
-        }
-        else 
-        if (mdata.arraySize > 1)
-        {
+        } else if (mdata.arraySize > 1) {
             pshader = g_PS_2DArray;
             pshader_size = sizeof(g_PS_2DArray);
-        }
-        else
-        {
-         pshader = g_PS_2D;
-         pshader_size = sizeof(g_PS_2D);
+        } else {
+            pshader = g_PS_2D;
+            pshader_size = sizeof(g_PS_2D);
         }
         break;
 
@@ -343,8 +316,7 @@ HRESULT GPU_DirectX::InitDevice(const TexMetadata& mdata, CMP_FORMAT cmp_format)
     D3D11_SUBRESOURCE_DATA InitData;
     ZeroMemory(&InitData, sizeof(InitData));
 
-    static const SimpleVertex verticesCube[] =
-    {
+    static const SimpleVertex verticesCube[] = {
         // Render cubemaps as horizontal cross
 
         // XPOS
@@ -384,34 +356,27 @@ HRESULT GPU_DirectX::InitDevice(const TexMetadata& mdata, CMP_FORMAT cmp_format)
         { XMFLOAT4(-.5f, -.25f, 0.f, 1.f), XMFLOAT4(1.f, 1.f, 5.f, 0.f) },
     };
 
-    static const SimpleVertex vertices[] =
-    {
+    static const SimpleVertex vertices[] = {
         { XMFLOAT4(-1.f, 1.f, 0.f, 1.f), XMFLOAT4(0.f, 0.f, 0.f, 0.f) },
         { XMFLOAT4(1.f, 1.f, 0.f, 1.f), XMFLOAT4(1.f, 0.f, 0.f, 0.f) },
         { XMFLOAT4(-1.f, -1.f, 0.f, 1.f), XMFLOAT4(0.f, 1.f, 0.f, 0.f) },
         { XMFLOAT4(1.f, -1.f, 0.f, 1.f), XMFLOAT4(1.f, 1.f, 0.f, 0.f) },
     };
 
-    static const SimpleVertex vertices1D[] =
-    {
+    static const SimpleVertex vertices1D[] = {
         { XMFLOAT4(-1.f, .05f, 0.f, 1.f), XMFLOAT4(0.f, 0.f, 0.f, 0.f) },
         { XMFLOAT4(1.f, .05f, 0.f, 1.f), XMFLOAT4(1.f, 0.f, 0.f, 0.f) },
         { XMFLOAT4(-1.f, -.05f, 0.f, 1.f), XMFLOAT4(0.f, 0.f, 0.f, 0.f) },
         { XMFLOAT4(1.f, -.05f, 0.f, 1.f), XMFLOAT4(1.f, 0.f, 0.f, 0.f) },
     };
 
-    if (isCubeMap)
-    {
+    if (isCubeMap) {
         nverts = _countof(verticesCube);
         InitData.pSysMem = verticesCube;
-    }
-    else if (is1D)
-    {
+    } else if (is1D) {
         nverts = _countof(vertices1D);
         InitData.pSysMem = vertices1D;
-    }
-    else
-    {
+    } else {
         nverts = _countof(vertices);
         InitData.pSysMem = vertices;
     }
@@ -423,8 +388,7 @@ HRESULT GPU_DirectX::InitDevice(const TexMetadata& mdata, CMP_FORMAT cmp_format)
     bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
     bd.CPUAccessFlags = 0;
     hr = m_pd3dDevice->CreateBuffer(&bd, &InitData, &m_pVertexBuffer);
-    if (FAILED(hr))
-    {
+    if (FAILED(hr)) {
         fprintf(stderr, "[DirectX] Failed CreateBuffer 1 : %s\n",hResultErr(hr));
         return hr;
     }
@@ -435,8 +399,7 @@ HRESULT GPU_DirectX::InitDevice(const TexMetadata& mdata, CMP_FORMAT cmp_format)
     m_pImmediateContext->IASetVertexBuffers(0, 1, &m_pVertexBuffer, &stride, &offset);
 
     // Create index buffer
-    static const WORD indicesCube[] =
-    {
+    static const WORD indicesCube[] = {
         0, 1, 2,
         2, 1, 3,
         4, 5, 6,
@@ -451,19 +414,15 @@ HRESULT GPU_DirectX::InitDevice(const TexMetadata& mdata, CMP_FORMAT cmp_format)
         22, 21, 23
     };
 
-    static const WORD indices[] =
-    {
+    static const WORD indices[] = {
         0, 1, 2,
         2, 1, 3
     };
 
-    if (isCubeMap)
-    {
+    if (isCubeMap) {
         m_iIndices = _countof(indicesCube);
         InitData.pSysMem = indicesCube;
-    }
-    else
-    {
+    } else {
         m_iIndices = _countof(indices);
         InitData.pSysMem = indices;
     }
@@ -473,8 +432,7 @@ HRESULT GPU_DirectX::InitDevice(const TexMetadata& mdata, CMP_FORMAT cmp_format)
     bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
     bd.CPUAccessFlags = 0;
     hr = m_pd3dDevice->CreateBuffer(&bd, &InitData, &m_pIndexBuffer);
-    if (FAILED(hr))
-    {
+    if (FAILED(hr)) {
         fprintf(stderr, "[DirectX] Failed CreateBuffer 2 : %s\n",hResultErr(hr));
         return hr;
     }
@@ -491,8 +449,7 @@ HRESULT GPU_DirectX::InitDevice(const TexMetadata& mdata, CMP_FORMAT cmp_format)
     bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     bd.CPUAccessFlags = 0;
     hr = m_pd3dDevice->CreateBuffer(&bd, nullptr, &m_pCBArrayControl);
-    if (FAILED(hr))
-    {
+    if (FAILED(hr)) {
         fprintf(stderr, "[DirectX] Failed CreateBuffer 3 : %s\n",hResultErr(hr));
         return hr;
     }
@@ -511,8 +468,7 @@ HRESULT GPU_DirectX::InitDevice(const TexMetadata& mdata, CMP_FORMAT cmp_format)
     if (FAILED(hr))
         return hr;
 
-    D3D11_BLEND_DESC dsc =
-    {
+    D3D11_BLEND_DESC dsc = {
         false,
         false,
         {
@@ -527,8 +483,7 @@ HRESULT GPU_DirectX::InitDevice(const TexMetadata& mdata, CMP_FORMAT cmp_format)
         }
     };
     hr = m_pd3dDevice->CreateBlendState(&dsc, &m_AlphaBlendState);
-    if (FAILED(hr))
-    {
+    if (FAILED(hr)) {
         fprintf(stderr, "[DirectX] Failed CreateBlendState: %s\n",hResultErr(hr));
         return hr;
     }
@@ -539,8 +494,7 @@ HRESULT GPU_DirectX::InitDevice(const TexMetadata& mdata, CMP_FORMAT cmp_format)
 
 
 //--------------------------------------------------------------------------------------
-void GPU_DirectX::Render()
-{
+void GPU_DirectX::Render() {
     float ClearColor[4] = { 0.f, 0.f, 0.f, 1.0f }; //red,green,blue,alpha
     m_pImmediateContext->ClearRenderTargetView(m_pRenderTargetView, ClearColor);
     m_pImmediateContext->ClearDepthStencilView(m_pDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
@@ -565,8 +519,7 @@ void GPU_DirectX::Render()
 
 
 //--------------------------------------------------------------------------------------
-void GPU_DirectX::CleanupDevice()
-{
+void GPU_DirectX::CleanupDevice() {
     if (m_pImmediateContext) m_pImmediateContext->ClearState();
 
     if (m_pSamplerLinear) m_pSamplerLinear->Release();
@@ -588,44 +541,48 @@ void GPU_DirectX::CleanupDevice()
 }
 
 
-DXGI_FORMAT GPU_DirectX::CMP2DXGIFormat(CMP_FORMAT cmp_format)
-{
+DXGI_FORMAT GPU_DirectX::CMP2DXGIFormat(CMP_FORMAT cmp_format) {
     DXGI_FORMAT dxgi_format;
 
-    switch (cmp_format)
-    {
+    switch (cmp_format) {
     // Compression formats ----------
     case CMP_FORMAT_BC1:
     case CMP_FORMAT_DXT1:
-                            dxgi_format = DXGI_FORMAT_BC1_UNORM;
-                            break;
+        dxgi_format = DXGI_FORMAT_BC1_UNORM;
+        break;
     case CMP_FORMAT_BC2:
     case CMP_FORMAT_DXT3:
-                            dxgi_format = DXGI_FORMAT_BC2_UNORM;
-                            break;
+        dxgi_format = DXGI_FORMAT_BC2_UNORM;
+        break;
     case CMP_FORMAT_BC3:
     case CMP_FORMAT_DXT5:
-                            dxgi_format = DXGI_FORMAT_BC3_UNORM;
-                            break;
+        dxgi_format = DXGI_FORMAT_BC3_UNORM;
+        break;
     case CMP_FORMAT_BC4:
     case CMP_FORMAT_ATI1N:
-                            dxgi_format = DXGI_FORMAT_BC4_UNORM;
-                            break;
+        dxgi_format = DXGI_FORMAT_BC4_UNORM;
+        break;
+    case CMP_FORMAT_BC4_S:
+        dxgi_format = DXGI_FORMAT_BC4_SNORM;
+        break;
     case CMP_FORMAT_BC5:
     case CMP_FORMAT_ATI2N:
     case CMP_FORMAT_ATI2N_XY:
     case CMP_FORMAT_ATI2N_DXT5:
-                            dxgi_format = DXGI_FORMAT_BC5_UNORM;
-                            break;
+        dxgi_format = DXGI_FORMAT_BC5_UNORM;
+        break;
+    case CMP_FORMAT_BC5_S:
+        dxgi_format = DXGI_FORMAT_BC5_SNORM;
+        break;
     case CMP_FORMAT_BC6H:
-                            dxgi_format = DXGI_FORMAT_BC6H_UF16;
-                            break;
+        dxgi_format = DXGI_FORMAT_BC6H_UF16;
+        break;
     case CMP_FORMAT_BC6H_SF:
-                            dxgi_format = DXGI_FORMAT_BC6H_SF16;
-                            break;
+        dxgi_format = DXGI_FORMAT_BC6H_SF16;
+        break;
     case CMP_FORMAT_BC7:
-                            dxgi_format = DXGI_FORMAT_BC7_UNORM;
-                            break;
+        dxgi_format = DXGI_FORMAT_BC7_UNORM;
+        break;
 
     // Unknown compression mapping to Direct X
     case CMP_FORMAT_ASTC:
@@ -642,13 +599,16 @@ DXGI_FORMAT GPU_DirectX::CMP2DXGIFormat(CMP_FORMAT cmp_format)
     case CMP_FORMAT_ETC2_RGB:
     case CMP_FORMAT_ETC2_RGBA:
     case CMP_FORMAT_ETC2_RGBA1:
+#ifdef USE_APC
+    case CMP_FORMAT_APC:
+#endif
 #ifdef USE_GTC
     case CMP_FORMAT_GTC:
 #endif
 #ifdef USE_BASIS
     case CMP_FORMAT_BASIS:
 #endif
-        // -----------------------------------
+    // -----------------------------------
     case CMP_FORMAT_Unknown:
     default:
         dxgi_format = DXGI_FORMAT_UNKNOWN;
@@ -664,8 +624,7 @@ DXGI_FORMAT GPU_DirectX::CMP2DXGIFormat(CMP_FORMAT cmp_format)
 CMP_ERROR WINAPI GPU_DirectX::Decompress(
     const CMP_Texture* pSourceTexture,
     CMP_Texture* pDestTexture
-    )
-{
+) {
     HRESULT hr;
 
     TexMetadata mdata;
@@ -679,64 +638,56 @@ CMP_ERROR WINAPI GPU_DirectX::Decompress(
     mdata.dimension = TEX_DIMENSION_TEXTURE2D;
     mdata.format = CMP2DXGIFormat(pSourceTexture->format);
 
-/***  Use this for debugging DDS file loads
-    LPWSTR lpImageSrc = L"";
-    ScratchImage image;
-    hr = LoadFromDDSFile(lpImageSrc, DDS_FLAGS_NONE, &mdata, image);
-    if (FAILED(hr))
-    {
-        wchar_t buff[2048] = { 0 };
-        swprintf_s(buff, "Failed to load texture file\n\nFilename = %ls\nHRESULT %08X", lpImageSrc, hr);
-        return 0;
-    }
-***/
+    /***  Use this for debugging DDS file loads
+        LPWSTR lpImageSrc = L"";
+        ScratchImage image;
+        hr = LoadFromDDSFile(lpImageSrc, DDS_FLAGS_NONE, &mdata, image);
+        if (FAILED(hr))
+        {
+            wchar_t buff[2048] = { 0 };
+            swprintf_s(buff, "Failed to load texture file\n\nFilename = %ls\nHRESULT %08X", lpImageSrc, hr);
+            return 0;
+        }
+    ***/
 
-    if (FAILED(InitDevice(mdata, pDestTexture->format)))
-    {
+    if (FAILED(InitDevice(mdata, pDestTexture->format))) {
         CleanupDevice();
         return CMP_ERR_UNABLE_TO_INIT_DECOMPRESSLIB;
     }
 
-    if (mdata.dimension == TEX_DIMENSION_TEXTURE3D)
-    {
-            wchar_t buff[2048] = { 0 };
-            swprintf_s(buff, L"Arrays of volume textures are not supported\n\nArray size %Iu", mdata.arraySize);
-            return CMP_ERR_GENERIC;
-    }
-    else
-    {
+    if (mdata.dimension == TEX_DIMENSION_TEXTURE3D) {
+        wchar_t buff[2048] = { 0 };
+        swprintf_s(buff, L"Arrays of volume textures are not supported\n\nArray size %Iu", mdata.arraySize);
+        return CMP_ERR_GENERIC;
+    } else {
         m_iMaxIndex = static_cast<UINT>(mdata.arraySize);
     }
 
-    switch (mdata.format)
-    {
-        case DXGI_FORMAT_BC6H_TYPELESS:
-        case DXGI_FORMAT_BC6H_UF16:
-        case DXGI_FORMAT_BC6H_SF16:
-        case DXGI_FORMAT_BC7_TYPELESS:
-        case DXGI_FORMAT_BC7_UNORM:
-        case DXGI_FORMAT_BC7_UNORM_SRGB:
-            if (m_featureLevel < D3D_FEATURE_LEVEL_11_0)
-            {
-                wchar_t buff[2048] = { 0 };
-                swprintf_s(buff, L"BC6H/BC7 requires DirectX 11 hardware\n\nDXGI Format %d\nFeature Level %d", 
-                                 pSourceTexture->format, m_featureLevel);
-                return CMP_ERR_GENERIC;
-            }
-            break;
-
-        default:
-        {
-            UINT flags = 0;
-            hr = m_pd3dDevice->CheckFormatSupport(mdata.format, &flags);
-            if (FAILED(hr) || !(flags & (D3D11_FORMAT_SUPPORT_TEXTURE1D | D3D11_FORMAT_SUPPORT_TEXTURE2D | D3D11_FORMAT_SUPPORT_TEXTURE3D)))
-            {
-                wchar_t buff[2048] = { 0 };
-                swprintf_s(buff, L"Format not supported by DirectX hardware\n\nDXGI Format %d\nFeature Level %d\nHRESULT = %08X", mdata.format, m_featureLevel, hr);
-                return CMP_ERR_GENERIC;
-            }
+    switch (mdata.format) {
+    case DXGI_FORMAT_BC6H_TYPELESS:
+    case DXGI_FORMAT_BC6H_UF16:
+    case DXGI_FORMAT_BC6H_SF16:
+    case DXGI_FORMAT_BC7_TYPELESS:
+    case DXGI_FORMAT_BC7_UNORM:
+    case DXGI_FORMAT_BC7_UNORM_SRGB:
+        if (m_featureLevel < D3D_FEATURE_LEVEL_11_0) {
+            wchar_t buff[2048] = { 0 };
+            swprintf_s(buff, L"BC6H/BC7 requires DirectX 11 hardware\n\nDXGI Format %d\nFeature Level %d",
+                       pSourceTexture->format, m_featureLevel);
+            return CMP_ERR_GENERIC;
         }
         break;
+
+    default: {
+        UINT flags = 0;
+        hr = m_pd3dDevice->CheckFormatSupport(mdata.format, &flags);
+        if (FAILED(hr) || !(flags & (D3D11_FORMAT_SUPPORT_TEXTURE1D | D3D11_FORMAT_SUPPORT_TEXTURE2D | D3D11_FORMAT_SUPPORT_TEXTURE3D))) {
+            wchar_t buff[2048] = { 0 };
+            swprintf_s(buff, L"Format not supported by DirectX hardware\n\nDXGI Format %d\nFeature Level %d\nHRESULT = %08X", mdata.format, m_featureLevel, hr);
+            return CMP_ERR_GENERIC;
+        }
+    }
+    break;
     }
 
     // Special case to make sure Texture cubes remain arrays
@@ -755,9 +706,8 @@ CMP_ERROR WINAPI GPU_DirectX::Decompress(
     ComputePitch(mdata.format, srcImage.width, srcImage.height, srcImage.rowPitch, srcImage.slicePitch, CP_FLAGS_NONE);
 
     hr = CreateShaderResourceView(m_pd3dDevice, &srcImage, 1, mdata, &m_pSRV);
-    if (FAILED(hr))
-    {
-         return CMP_ERR_GENERIC;
+    if (FAILED(hr)) {
+        return CMP_ERR_GENERIC;
     }
 
 #ifdef SHOW_WINDOW
@@ -769,15 +719,11 @@ CMP_ERROR WINAPI GPU_DirectX::Decompress(
 
     MSG msg = { 0 };
 
-    while (WM_QUIT != msg.message)
-    {
-        if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
-        {
+    while (WM_QUIT != msg.message) {
+        if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
-        }
-        else
-        {
+        } else {
             Render();
             break;
         }
@@ -790,12 +736,23 @@ CMP_ERROR WINAPI GPU_DirectX::Decompress(
     size_t pxsize    = sratchimage.GetPixelsSize();
 
     // Check the size matches our output
-    if (pxsize >= pDestTexture->dwDataSize)
-    {
+    if (pxsize >= pDestTexture->dwDataSize) {
         //pDestTexture->dwWidth  = m_width;
         //pDestTexture->dwHeight = m_height;
         uint8_t *pxdata = sratchimage.GetPixels();
         memcpy(pDestTexture->pData, pxdata, pDestTexture->dwDataSize);
+
+        // handle special cases
+        // adjust destination format as described by the captured buffers meta data
+        TexMetadata mdata = sratchimage.GetMetadata();
+        if (pDestTexture->format == CMP_FORMAT_RGBA_8888_S)
+        {
+            // switch data type as captured data is not snorm
+            // This case should be handled properly, code is needed to setup snorm captures
+            if (mdata.format == DXGI_FORMAT_R8G8B8A8_UNORM)
+                pDestTexture->format = CMP_FORMAT_ARGB_8888;
+        }
+
     }
 
     CleanupDevice();

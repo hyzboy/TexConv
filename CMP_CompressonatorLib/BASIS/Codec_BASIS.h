@@ -8,10 +8,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -28,16 +28,15 @@
 #ifndef _CODEC_BASIS_H_INCLUDED_
 #define _CODEC_BASIS_H_INCLUDED_
 
-#include "Compressonator.h"
+#include "compressonator.h"
 
 #ifdef USE_BASIS
 
-#include "Codec_DXTC.h"
+#include "codec_dxtc.h"
 
-class CCodec_BASIS : public CCodec_DXTC
-{
-public:
-     CCodec_BASIS();
+class CCodec_BASIS : public CCodec_DXTC {
+  public:
+    CCodec_BASIS();
     ~CCodec_BASIS();
 
     virtual bool SetParameter(const CMP_CHAR* pszParamName, CMP_CHAR* sValue);
@@ -51,7 +50,7 @@ public:
     virtual CodecError Decompress           (CCodecBuffer& bufferIn, CCodecBuffer& bufferOut, Codec_Feedback_Proc pFeedbackProc = NULL, CMP_DWORD_PTR pUser1 = NULL, CMP_DWORD_PTR pUser2 = NULL);
 
 
-private:
+  private:
 
     // BASIS Quality level
     float m_quality;
@@ -61,8 +60,8 @@ private:
     // Encoder interfaces
     CodecError    InitializeBASISLibrary();
     CodecError    EncodeBASISBlock(
-                                    CMP_BYTE   *in, //[MAX_SUBSET_SIZE][MAX_DIMENSION_BIG],
-                                    CMP_BYTE   *out
+        CMP_BYTE   *in, //[MAX_SUBSET_SIZE][MAX_DIMENSION_BIG],
+        CMP_BYTE   *out
     );
     CodecError    FinishBASISEncoding(void);
 };

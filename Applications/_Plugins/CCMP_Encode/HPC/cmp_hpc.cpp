@@ -7,7 +7,7 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
 //
@@ -23,16 +23,16 @@
 // Ref: GPUOpen-Tools/Compressonator
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2016, Intel Corporation
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
-// documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
+// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+// documentation files (the "Software"), to deal in the Software without restriction, including without limitation
 // the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
 // permit persons to whom the Software is furnished to do so, subject to the following conditions:
-// The above copyright notice and this permission notice shall be included in all copies or substantial portions of 
+// The above copyright notice and this permission notice shall be included in all copies or substantial portions of
 // the Software.
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
-// THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
-// TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
+// THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+// TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -92,34 +92,29 @@ DWORD   dwThreadIdArray[kMaxWinThreads];
 HANDLE  hThreadArray[kMaxWinThreads];
 
 
-void DestroyThreads()
-{
-    if(gMultithreaded) 
-    {
+void DestroyThreads() {
+    if(gMultithreaded) {
         // Release all windows threads that may be active...
         for(int i=0; i < gNumWinThreads; i++) {
             gWinThreadData[i].state = eThreadState_Done;
         }
 
         // Send the event for the threads to start.
-        if (ResetEvent(gWinThreadDoneEvent) == NULL)
-        {
-             printf("DestroyThreads Error 1\n");
+        if (ResetEvent(gWinThreadDoneEvent) == NULL) {
+            printf("DestroyThreads Error 1\n");
         }
 
-        if (SetEvent(gWinThreadStartEvent) == NULL)
-        {
-             printf("DestroyThreads Error 2\n");
+        if (SetEvent(gWinThreadStartEvent) == NULL) {
+            printf("DestroyThreads Error 2\n");
         }
 
         // Wait for all the threads to finish....
         DWORD dwWaitRet = WaitForMultipleObjects(gNumWinThreads, hThreadArray, TRUE, INFINITE);
-        if(WAIT_FAILED == dwWaitRet)
-        {
+        if(WAIT_FAILED == dwWaitRet) {
             printf("DestroyThreads() Error: WaitForMultipleObjects\n");
         }
 
-       // !HACK! This doesn't actually do anything. There is either a bug in the 
+        // !HACK! This doesn't actually do anything. There is either a bug in the
         // Intel compiler or the windows run-time that causes the threads to not
         // be cleaned up properly if the following two lines of code are not present.
         // Since we're passing INFINITE to WaitForMultipleObjects, that function will
@@ -132,48 +127,40 @@ void DestroyThreads()
             OutputDebugString("DestroyThreads() -- WaitForMultipleObjects -- TIMEOUT");
 
         // Reset the start event
-        if (ResetEvent(gWinThreadStartEvent) == NULL)
-        {
+        if (ResetEvent(gWinThreadStartEvent) == NULL) {
             printf("DestroyThreads() Error:2\n");
         }
-        
-        if (SetEvent(gWinThreadDoneEvent) == NULL)
-        {
+
+        if (SetEvent(gWinThreadDoneEvent) == NULL) {
             printf("DestroyThreads() Error:3\n");
         }
 
         // Close all thread handles.
-        for(int i=0; i < gNumWinThreads; i++)
-        {
-            if (CloseHandle(hThreadArray[i]) == NULL)
-            {
+        for(int i=0; i < gNumWinThreads; i++) {
+            if (CloseHandle(hThreadArray[i]) == NULL) {
                 printf("DestroyThreads() Error:3\n");
             }
         }
 
-        for(int i =0; i < kMaxWinThreads; i++ ){
+        for(int i =0; i < kMaxWinThreads; i++ ) {
             hThreadArray[i] = NULL;
         }
 
         // Close all event handles...
-        if (CloseHandle(gWinThreadDoneEvent) == NULL)
-        {
-                printf("DestroyThreads() Error:4\n");
+        if (CloseHandle(gWinThreadDoneEvent) == NULL) {
+            printf("DestroyThreads() Error:4\n");
         }
-        
+
         gWinThreadDoneEvent = NULL;
-            
-        if (CloseHandle(gWinThreadStartEvent) == NULL)
-        {
-                printf("DestroyThreads() Error:5\n");
+
+        if (CloseHandle(gWinThreadStartEvent) == NULL) {
+            printf("DestroyThreads() Error:5\n");
         }
 
         gWinThreadStartEvent = NULL;
 
-        for(int i = 0; i < gNumWinThreads; i++) 
-        {
-            if (CloseHandle(gWinThreadWorkEvent[i]) == NULL)
-            {
+        for(int i = 0; i < gNumWinThreads; i++) {
+            if (CloseHandle(gWinThreadWorkEvent[i]) == NULL) {
                 printf("DestroyThreads() Error:6\n");
             }
         }
@@ -186,8 +173,7 @@ void DestroyThreads()
     }
 }
 
-void CompressImageST(const texture_surface* input, BYTE* output) 
-{
+void CompressImageST(const texture_surface* input, BYTE* output) {
     if(gCompressionFunc == NULL) {
         printf("CompressImageST Error\n");
         return;
@@ -197,8 +183,7 @@ void CompressImageST(const texture_surface* input, BYTE* output)
     (*gCompressionFunc)(input, output);
 }
 
-VOID CompressImageMT(const texture_surface* input, BYTE* output) 
-{
+VOID CompressImageMT(const texture_surface* input, BYTE* output) {
     const int numThreads = gNumWinThreads;
     const int bytesPerBlock = 16;  // BC3, BC7 128 bits compressed , BC1 is 64 bits = 8 Bytes
 
@@ -211,12 +196,11 @@ VOID CompressImageMT(const texture_surface* input, BYTE* output)
     }
 
     // Load the threads.
-    for(int threadIdx = 0; threadIdx < numThreads; threadIdx++) 
-    {
+    for(int threadIdx = 0; threadIdx < numThreads; threadIdx++) {
         int y_start = (linesPerThread*threadIdx)/4*4;
         int y_end = (linesPerThread*(threadIdx+1))/4*4;
         if (y_end > input->height) y_end = input->height;
-        
+
         WinThreadData *data = &gWinThreadData[threadIdx];
         data->input = *input;
         data->input.ptr = input->ptr + y_start * input->stride;
@@ -228,27 +212,23 @@ VOID CompressImageMT(const texture_surface* input, BYTE* output)
     }
 
     // Send the event for the threads to start.
-    if (ResetEvent(gWinThreadDoneEvent) == NULL)
-    {
+    if (ResetEvent(gWinThreadDoneEvent) == NULL) {
         printf("CompressImageMT Error 1\n");
     }
-    
-    if (SetEvent(gWinThreadStartEvent) == NULL)
-    {
+
+    if (SetEvent(gWinThreadStartEvent) == NULL) {
         printf("CompressImageMT Error 2\n");
     }
 
     // Wait for all the threads to finish
     if(WAIT_FAILED == WaitForMultipleObjects(numThreads, gWinThreadWorkEvent, TRUE, INFINITE))
-            printf("CompressImageDXTWIN -- WaitForMultipleObjects\n");
+        printf("CompressImageDXTWIN -- WaitForMultipleObjects\n");
 
     // Reset the start event
-    if (ResetEvent(gWinThreadStartEvent) == NULL)
-    {
+    if (ResetEvent(gWinThreadStartEvent) == NULL) {
     }
-    
-    if (SetEvent(gWinThreadDoneEvent) == NULL)
-    {
+
+    if (SetEvent(gWinThreadDoneEvent) == NULL) {
     }
 }
 
@@ -270,14 +250,13 @@ DWORD WINAPI CompressImageMT_Thread( LPVOID lpParam ) {
 
         HANDLE workEvent = gWinThreadWorkEvent[data->threadIdx];
         if(WAIT_FAILED == SignalObjectAndWait(workEvent, gWinThreadDoneEvent, INFINITE, FALSE))
-             printf("CompressImageMT_Thread Error 2\n");
+            printf("CompressImageMT_Thread Error 2\n");
     }
 
     return 0;
 }
 
-void Initialize()
-{
+void Initialize() {
     // Make sure that the event array is set to null...
     memset(gWinThreadWorkEvent, 0, sizeof(gWinThreadWorkEvent));
 
@@ -292,12 +271,11 @@ void Initialize()
     }
 }
 
-void InitWin32Threads(int numThreads) 
-{
+void InitWin32Threads(int numThreads) {
     if(gNumWinThreads > 0) {
         return;
     }
-    
+
     SetLastError(0);
 
     // Each Processor is assigned 2 threads by default!
@@ -310,53 +288,43 @@ void InitWin32Threads(int numThreads)
 
 
     // Create the synchronization events.
-    for(int i = 0; i < gNumWinThreads; i++) 
-    {
+    for(int i = 0; i < gNumWinThreads; i++) {
         gWinThreadWorkEvent[i] = CreateEvent(NULL, FALSE, FALSE, NULL);
-        if (gWinThreadWorkEvent[i] == NULL)
-        {
+        if (gWinThreadWorkEvent[i] == NULL) {
             printf("InitWin32Threads Error 1\n");
         }
     }
 
     gWinThreadStartEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-    if (gWinThreadStartEvent == NULL)
-    {
-           printf("InitWin32Threads Error 2\n");
+    if (gWinThreadStartEvent == NULL) {
+        printf("InitWin32Threads Error 2\n");
 
     }
 
     gWinThreadDoneEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-    if (gWinThreadDoneEvent == NULL)
-    {
-            printf("InitWin32Threads Error 3\n");
+    if (gWinThreadDoneEvent == NULL) {
+        printf("InitWin32Threads Error 3\n");
     }
 
 
     // Create threads
-    for(int threadIdx = 0; threadIdx < gNumWinThreads; threadIdx++) 
-    {
+    for(int threadIdx = 0; threadIdx < gNumWinThreads; threadIdx++) {
         gWinThreadData[threadIdx].state = eThreadState_WaitForData;
         hThreadArray[threadIdx] = CreateThread(NULL, 0, CompressImageMT_Thread, &gWinThreadData[threadIdx], 0, &dwThreadIdArray[threadIdx]);
-        if (  hThreadArray[threadIdx] == NULL)
-        {
+        if (  hThreadArray[threadIdx] == NULL) {
             printf("InitWin32Threads Error 4\n");
         }
     }
 }
 
 
-VOID CompressSTMT(const texture_surface* input, BYTE* output, int threads) 
-{
+VOID CompressSTMT(const texture_surface* input, BYTE* output, int threads) {
     //printf("CompressSTMT %d %d\n",gNumProcessors,threads);
     // If we aren't multi-cored, then just run everything serially.
-    if ( (gNumProcessors < 2) || (threads == 1) )
-    {
+    if ( (gNumProcessors < 2) || (threads == 1) ) {
         gMultithreaded = false;
         CompressImageST(input, output);
-    }
-    else
-    {
+    } else {
         gMultithreaded = true;
         CompressImageMT(input, output);
     }

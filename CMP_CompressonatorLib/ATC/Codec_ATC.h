@@ -9,10 +9,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -25,18 +25,17 @@
 #ifndef _CODEC_ATC_H_INCLUDED_
 #define _CODEC_ATC_H_INCLUDED_
 
-#include "Codec_Block_4x4.h"
+#include "codec_block_4x4.h"
 
 #define ATC_OFFSET_ALPHA 0
 #define ATC_OFFSET_RGB 2
 
-class CCodec_ATC : public CCodec_Block_4x4  
-{
-public:
+class CCodec_ATC : public CCodec_Block_4x4 {
+  public:
     CCodec_ATC(CodecType codecType);
     virtual ~CCodec_ATC();
 
-protected:
+  protected:
     CodecError CompressRGBBlock(CMP_BYTE rgbBlock[BLOCK_SIZE_4X4X4], CMP_DWORD compressedBlock[2]);
     CodecError CompressRGBABlock_ExplicitAlpha(CMP_BYTE rgbaBlock[BLOCK_SIZE_4X4X4], CMP_DWORD compressedBlock[4]);
     CodecError CompressRGBABlock_InterpolatedAlpha(CMP_BYTE rgbaBlock[BLOCK_SIZE_4X4X4], CMP_DWORD compressedBlock[4]);

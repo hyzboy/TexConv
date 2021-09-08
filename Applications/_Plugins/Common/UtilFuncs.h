@@ -30,12 +30,14 @@
 #include <string>
 
 #ifdef _WIN32
-#include <Windows.h>
+#include <windows.h>
 #include <stdio.h>
 #include <fstream>
 #include <iostream>
 HWND FindTopLevelWindow(TCHAR *pszName);
 #endif
+
+#include "cmp_fileio.h"
 
 #define CMP_STATENUM 14 //14 characters for the state
 #define CMP_COPY "# CMP_filecopy"
@@ -45,8 +47,8 @@ HWND FindTopLevelWindow(TCHAR *pszName);
 
 void SwizzleBytes(void *src, unsigned long numBytes);
 float HalfToFloat(uint16_t h);
-#ifdef _WIN32
 void getFileNameExt(const char *FilePathName, char *fnameExt, int maxbuffsize);
+#ifdef _WIN32
 bool writeObjFileState(std::string filename, std::string state);
 std::string readObjFileState(std::string filename);
 #endif

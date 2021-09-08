@@ -1,5 +1,5 @@
 // AMD AMDUtils code
-// 
+//
 // Copyright(c) 2017 Advanced Micro Devices, Inc.All rights reserved.
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
@@ -18,48 +18,45 @@
 // THE SOFTWARE.
 
 
-#include "GltfTechnique.h"
+#include "gltftechnique.h"
 
-void GltfTechnique::Draw(VkCommandBuffer cmd_buf)
-{
-    CMP_DWORD dwNodesVisible;
+#include "gltfcommon.h"
+
+#include "dynamicbufferringvk.h"
+#include "staticbufferpoolvk.h"
+
+void GltfTechnique::Draw(VkCommandBuffer cmd_buf) {
+    std::uint32_t dwNodesVisible;
     std::vector<NodeMatrixPostTransform> nodes(m_pGLTFData->GetNodeCount());
     m_pGLTFData->TransformNodes(nodes.data(), &dwNodesVisible);
 
-    for (std::uint32_t i = 0; i < dwNodesVisible; i++)
-    {
+    for (std::uint32_t i = 0; i < dwNodesVisible; i++) {
         tfNode *pNode = nodes[i].pN;
-        if (pNode != NULL && pNode->meshIndex >= 0)
-        {
+        if (pNode != NULL && pNode->meshIndex >= 0) {
             DrawMesh(cmd_buf, pNode->meshIndex, nodes[i].m);
         }
     }
 }
 
-void GltfTechnique::CreateGeometry(tfAccessor indexBuffer, std::vector<tfAccessor> &vertexBuffers, Primitives *pPrimitive)
-{
+void GltfTechnique::CreateGeometry(tfAccessor indexBuffer, std::vector<tfAccessor> &vertexBuffers, Primitives *pPrimitive) {
     pPrimitive->m_NumIndices = indexBuffer.m_count;
 
     pPrimitive->m_indexType = (indexBuffer.m_stride == 4) ? VK_INDEX_TYPE_UINT32 : VK_INDEX_TYPE_UINT16;
 
     void *pDest;
-    if (indexBuffer.m_stride == 1)
-    {
+    if (indexBuffer.m_stride == 1) {
         // apparently some exporters use 8bit indices
         m_pStaticBufferPool->AllocIndexBuffer(indexBuffer.m_count, 2 * indexBuffer.m_stride, &pDest, &pPrimitive->m_IBV);
         for (int i = 0; i < indexBuffer.m_count; i++)
             ((short*)pDest)[i] = ((unsigned char*)indexBuffer.m_data)[i];
-    }
-    else
-    {
+    } else {
         m_pStaticBufferPool->AllocIndexBuffer(indexBuffer.m_count, indexBuffer.m_stride, &pDest, &pPrimitive->m_IBV);
         memcpy(pDest, indexBuffer.m_data, indexBuffer.m_stride*indexBuffer.m_count);
     }
 
     // load those buffers into the GPU
     pPrimitive->m_VBV.resize(vertexBuffers.size());
-    for (unsigned int i = 0; i < vertexBuffers.size(); i++)
-    {
+    for (unsigned int i = 0; i < vertexBuffers.size(); i++) {
         tfAccessor *pVertexAccessor = &vertexBuffers[i];
 
         void *pDest;

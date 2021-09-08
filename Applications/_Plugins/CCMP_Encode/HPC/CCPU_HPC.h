@@ -7,10 +7,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -26,16 +26,15 @@
 
 #pragma once
 
-#define WIN32_LEAN_AND_MEAN        // Exclude rarely-used stuff from Windows headers
 #ifdef _WIN32
 #include <tchar.h>
 #endif
 #include <assert.h>
 
-#include "Compute_Base.h"
-#include "Compute_CPU_HPC.h"
-#include "Compressonator.h"
-#include "PluginInterface.h"
+#include "compute_base.h"
+#include "compute_cpu_hpc.h"
+#include "compressonator.h"
+#include "plugininterface.h"
 #include "cmp_math_common.h"
 //#include "debug.h"
 
@@ -51,29 +50,28 @@ static const GUID g_GUID_CPU_HPC = {0};
 
 using namespace CMP_Compute_Base;
 
-class Plugin_CCPU_HPC : public PluginInterface_Pipeline
-{
-public: 
-        Plugin_CCPU_HPC();
-        virtual ~Plugin_CCPU_HPC();
-        int             TC_PluginGetVersion(TC_PluginVersion* pPluginVersion);
-        int             TC_Init(void  *kernel_options);
-        int             TC_PluginSetSharedIO(void* Shared);
-        CMP_ERROR       TC_Compress(void  *kernel_options, MipSet  &SrcTexture, MipSet  &destTexture,CMP_Feedback_Proc pFeedback);
-        void            TC_SetComputeOptions(void *options);
-        char            *TC_ComputeSourceFile();
-        CMP_ERROR       TC_GetPerformanceStats(void* pPerfStats);
-        CMP_ERROR       TC_GetDeviceInfo(void* pDeviceInfo);
-        int             TC_Close();
+class Plugin_CCPU_HPC : public PluginInterface_Pipeline {
+  public:
+    Plugin_CCPU_HPC();
+    virtual ~Plugin_CCPU_HPC();
+    int             TC_PluginGetVersion(TC_PluginVersion* pPluginVersion);
+    int             TC_Init(void  *kernel_options);
+    int             TC_PluginSetSharedIO(void* Shared);
+    CMP_ERROR       TC_Compress(void  *kernel_options, MipSet  &SrcTexture, MipSet  &destTexture,CMP_Feedback_Proc pFeedback);
+    void            TC_SetComputeOptions(void *options);
+    char            *TC_ComputeSourceFile();
+    CMP_ERROR       TC_GetPerformanceStats(void* pPerfStats);
+    CMP_ERROR       TC_GetDeviceInfo(void* pDeviceInfo);
+    int             TC_Close();
 
-private:
-        ComputeBase  *m_pComputeBase;
+  private:
+    ComputeBase  *m_pComputeBase;
 #ifdef ENABLE_MAKE_COMPATIBLE_API
-        bool IsFloatFormat(CMP_FORMAT InFormat);
-        float findKneeValueHPC(float x, float y);
-        CMP_ERROR Byte2HalfShort(CMP_HALFSHORT* hfBlock, CMP_BYTE* cBlock, CMP_DWORD dwBlockSize);
-        CMP_ERROR Float2Byte(CMP_BYTE cBlock[], CMP_FLOAT* fBlock, MipSet& srcTexture, const CMP_CompressOptions* pOptions);
-        CMP_ERROR CF_16BitTo8Bit(CMP_WORD* sBlock, CMP_BYTE* cBlock, CMP_DWORD dwBlockSize);
+    bool IsFloatFormat(CMP_FORMAT InFormat);
+    float findKneeValueHPC(float x, float y);
+    CMP_ERROR Byte2HalfShort(CMP_HALFSHORT* hfBlock, CMP_BYTE* cBlock, CMP_DWORD dwBlockSize);
+    CMP_ERROR Float2Byte(CMP_BYTE cBlock[], CMP_FLOAT* fBlock, MipSet& srcTexture, const CMP_CompressOptions* pOptions);
+    CMP_ERROR CF_16BitTo8Bit(CMP_WORD* sBlock, CMP_BYTE* cBlock, CMP_DWORD dwBlockSize);
 #endif
 };
 

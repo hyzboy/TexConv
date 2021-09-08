@@ -7,10 +7,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -25,7 +25,7 @@
 #ifndef CMP_MATH_COMMON_H
 #define CMP_MATH_COMMON_H
 
-#include "Common_Def.h"
+#include "common_def.h"
 
 #ifndef ASPM_GPU
 
@@ -43,9 +43,11 @@
 typedef unsigned char CMP_MATH_BYTE;
 typedef unsigned int  CMP_MATH_DWORD;
 
-#ifndef _LINUX
+#ifdef CMP_USE_XMMINTRIN
+#ifndef __linux__
 extern void cmp_set_fma3_features();
 extern void cmp_set_sse2_features();
+#endif
 #endif
 
 extern void cmp_set_cpu_features();
@@ -61,7 +63,7 @@ extern float cpu_rsqf(float *f);
 extern float cpu_sqrtf(float * pIn);
 
 
-#ifndef _LINUX
+#ifndef __linux__
 extern float sse_clampf(float value, float minval, float maxval);
 extern float sse_lerp2(CMP_Vec4uc C1, CMP_Vec4uc CA, CMP_Vec4uc CB, CMP_Vec4uc C2, CMP_MATH_BYTE *encode1, CMP_MATH_BYTE *encode2);
 extern float sse_maxf(float l1, float r1);
@@ -75,12 +77,12 @@ extern float sse_sqrtf(  float *pIn );
 //==================================
 void cmp_autodected_cpufeatures(CMP_MATH_BYTE set);
 
-extern float(*cmp_clampf )(float value, float minval, float maxval);
+extern float(*cmp_clampf2 )(float value, float minval, float maxval);
 extern float(*cmp_lerp2  )(CMP_Vec4uc C1, CMP_Vec4uc CA, CMP_Vec4uc CB, CMP_Vec4uc C2, CMP_MATH_BYTE *encode1, CMP_MATH_BYTE *encode2);
-extern float(*cmp_maxf   )(float l1, float r1);
-extern float(*cmp_minf   )(float l1, float r1);
-extern float(*cmp_rsqf   )(float *);
-extern float(*cmp_sqrtf  )(float *);
+extern float(*cmp_maxf2   )(float l1, float r1);
+extern float(*cmp_minf2   )(float l1, float r1);
+extern float(*cmp_rsqf2   )(float *);
+extern float(*cmp_sqrtf2  )(float *);
 
 #endif
 

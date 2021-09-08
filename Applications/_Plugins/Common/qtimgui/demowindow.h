@@ -9,16 +9,13 @@
 #include <QOpenGLWidget>
 #include <QOpenGLExtraFunctions>
 
-class DemoWindow : public QOpenGLWindow, private QOpenGLExtraFunctions
-{
-protected:
-    void initializeGL() override
-    {
+class DemoWindow : public QOpenGLWindow, private QOpenGLExtraFunctions {
+  protected:
+    void initializeGL() override {
         initializeOpenGLFunctions();
         QtImGui::initialize(this);
     }
-    void paintGL() override
-    {
+    void paintGL() override {
         QtImGui::newFrame();
 
         // 1. Show a simple window
@@ -34,8 +31,7 @@ protected:
         }
 
         // 2. Show another simple window, this time using an explicit Begin/End pair
-        if (show_another_window)
-        {
+        if (show_another_window) {
             ImGui::SetNextWindowSize(ImVec2(200, 100), ImGuiSetCond_FirstUseEver);
             ImGui::Begin("Another Window", &show_another_window);
             ImGui::Text("Hello");
@@ -43,8 +39,7 @@ protected:
         }
 
         // 3. Show the ImGui test window. Most of the sample code is in ImGui::ShowTestWindow()
-        if (show_test_window)
-        {
+        if (show_test_window) {
             ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiSetCond_FirstUseEver);
             ImGui::ShowTestWindow(&show_test_window);
         }
@@ -57,22 +52,19 @@ protected:
         ImGui::Render();
     }
 
-private:
+  private:
     bool show_test_window = true;
     bool show_another_window = false;
     ImVec4 clear_color = ImColor(114, 144, 154);
 };
 
-class DemoWidget : public QOpenGLWidget, private QOpenGLExtraFunctions
-{
-protected:
-    void initializeGL() override
-    {
+class DemoWidget : public QOpenGLWidget, private QOpenGLExtraFunctions {
+  protected:
+    void initializeGL() override {
         initializeOpenGLFunctions();
         QtImGui::initialize((QWindow *)this);
     }
-    void paintGL() override
-    {
+    void paintGL() override {
         QtImGui::newFrame();
 
         // 1. Show a simple window
@@ -88,8 +80,7 @@ protected:
         }
 
         // 2. Show another simple window, this time using an explicit Begin/End pair
-        if (show_another_window)
-        {
+        if (show_another_window) {
             ImGui::SetNextWindowSize(ImVec2(200, 100), ImGuiSetCond_FirstUseEver);
             ImGui::Begin("Another Window", &show_another_window);
             ImGui::Text("Hello");
@@ -97,8 +88,7 @@ protected:
         }
 
         // 3. Show the ImGui test window. Most of the sample code is in ImGui::ShowTestWindow()
-        if (show_test_window)
-        {
+        if (show_test_window) {
             ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiSetCond_FirstUseEver);
             ImGui::ShowTestWindow(&show_test_window);
         }
@@ -111,7 +101,7 @@ protected:
         ImGui::Render();
     }
 
-private:
+  private:
     bool show_test_window = true;
     bool show_another_window = false;
     ImVec4 clear_color = ImColor(114, 144, 154);

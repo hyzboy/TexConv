@@ -1,5 +1,5 @@
 // AMD AMDUtils code
-// 
+//
 // Copyright(c) 2017 Advanced Micro Devices, Inc.All rights reserved.
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
@@ -18,26 +18,25 @@
 // THE SOFTWARE.
 #pragma once
 
-#include "GltfCommon.h"
-#include "GltfTechnique.h"
+#include "gltfcommon.h"
+#include "gltftechnique.h"
 
-#include <DirectXMath.h>
-#include <Windows.h>
+#include <directxmath.h>
+#include <windows.h>
 #include <wrl.h>
 
 
 // This class takes a GltfCommon class (that holds all the non-GPU specific data) as an input and loads all the GPU specific data
 //
-class GltfBBoxPass : public GltfTechnique
-{
+class GltfBBoxPass : public GltfTechnique {
     // all bounding boxes of all the meshes use the same geometry, shaders and pipelines.
     UINT m_NumIndices;
     D3D12_INDEX_BUFFER_VIEW m_IBV;
     D3D12_VERTEX_BUFFER_VIEW m_VBV;
-    Microsoft::WRL::ComPtr<ID3D12RootSignature>	m_RootSignature;
-    Microsoft::WRL::ComPtr<ID3D12PipelineState>	m_PipelineRender;
+    Microsoft::WRL::ComPtr<ID3D12RootSignature>    m_RootSignature;
+    Microsoft::WRL::ComPtr<ID3D12PipelineState>    m_PipelineRender;
 
-public:
+  public:
     void OnCreate(
         ID3D12Device* pDevice,
         UploadHeapDX12* pUploadHeap,
@@ -47,9 +46,11 @@ public:
         GLTFCommon *pGLTFData, void *pluginManager, void *msghandler);
 
     void OnDestroy();
-    DirectX::XMMATRIX *SetPerBatchConstants() { return &m_Camera; };
+    DirectX::XMMATRIX *SetPerBatchConstants() {
+        return &m_Camera;
+    };
     void DrawMesh(ID3D12GraphicsCommandList* pCommandList, int meshIndex, DirectX::XMMATRIX worldMatrix);
-private:
+  private:
 
     DirectX::XMMATRIX m_Camera;
 };

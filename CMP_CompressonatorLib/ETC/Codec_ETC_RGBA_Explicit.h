@@ -9,10 +9,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -29,15 +29,14 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
-#include "Codec_ETC.h"
+#include "codec_etc.h"
 
-class CCodec_ETC_RGBA_Explicit : public CCodec_ETC
-{
-public:
-	CCodec_ETC_RGBA_Explicit();
-	virtual ~CCodec_ETC_RGBA_Explicit();
+class CCodec_ETC_RGBA_Explicit : public CCodec_ETC {
+  public:
+    CCodec_ETC_RGBA_Explicit();
+    virtual ~CCodec_ETC_RGBA_Explicit();
 
-	virtual CodecError Compress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut, Codec_Feedback_Proc pFeedbackProc = NULL, DWORD_PTR pUser1 = NULL, DWORD_PTR pUser2 = NULL);
-	virtual CodecError Decompress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut);
+    virtual CodecError Compress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut, Codec_Feedback_Proc pFeedbackProc = NULL, DWORD_PTR pUser1 = NULL, DWORD_PTR pUser2 = NULL);
+    virtual CodecError Decompress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut);
 };
 #endif // !defined(_Codec_ETC_RGBA_H_INCLUDED_)

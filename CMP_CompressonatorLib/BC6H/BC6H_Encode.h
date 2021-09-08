@@ -8,10 +8,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -25,8 +25,8 @@
 #ifndef _BC6H_ENCODE_H_
 #define _BC6H_ENCODE_H_
 
-#include "Compressonator.h"
-#include "BC6H_Definitions.h"
+#include "compressonator.h"
+#include "bc6h_definitions.h"
 
 #include <float.h>
 
@@ -48,12 +48,10 @@
 #define DELTA_LEFT       3
 
 
-class BC6HBlockEncoder
-{
-public:
+class BC6HBlockEncoder {
+  public:
 
-    BC6HBlockEncoder(CMP_BC6H_BLOCK_PARAMETERS user_options)
-    {
+    BC6HBlockEncoder(CMP_BC6H_BLOCK_PARAMETERS user_options) {
         m_quality                 = user_options.fQuality;
         m_useMonoShapePatterns    = user_options.bUsePatternRec;
         m_isSigned                = user_options.bIsSigned;
@@ -62,8 +60,8 @@ public:
         m_bAverageEndPoint        = true;
         m_DiffLevel               = 0.01f;
     };
-     
-    ~BC6HBlockEncoder(){};
+
+    ~BC6HBlockEncoder() {};
 
     float   CompressBlock(float in[MAX_SUBSET_SIZE][MAX_DIMENSION_BIG],BYTE   out[COMPRESSED_BLOCK_SIZE]);
     void    clampF16Max(float EndPoints[MAX_SUBSETS][MAX_END_POINTS][MAX_DIMENSION_BIG]);
@@ -72,7 +70,7 @@ public:
     void    SwapIndices(int iEndPoints[MAX_SUBSETS][MAX_END_POINTS][MAX_DIMENSION_BIG], int iIndices[3][MAX_SUBSET_SIZE], int  entryCount[MAX_SUBSETS], int max_subsets, int mode, int shape_pattern);
     bool   TransformEndPoints(AMD_BC6H_Format &BC6H_data, int iEndPoints[MAX_SUBSETS][MAX_END_POINTS][MAX_DIMENSION_BIG], int oEndPoints[MAX_SUBSETS][MAX_END_POINTS][MAX_DIMENSION_BIG],int max_subsets, int mode);
 
-private:
+  private:
 
 #ifdef DEBUG_PATTERNS
     float DoPixelNoise();                        // Used for debugging... adds existing shape patterns with random noise
@@ -84,17 +82,17 @@ private:
     */
 
     float    FindBestPattern(AMD_BC6H_Format &BC6H_data,
-                              bool    TwoRegionShapes, 
-                              int    shape_pattern);
+                             bool    TwoRegionShapes,
+                             int    shape_pattern);
 
 
     float    EncodePattern(AMD_BC6H_Format &BC6H_data,
-        float  error);
+                           float  error);
 
-    void    SaveCompressedBlockData(AMD_BC6H_Format &BC6H_data, 
+    void    SaveCompressedBlockData(AMD_BC6H_Format &BC6H_data,
                                     int oEndPoints[MAX_SUBSETS][MAX_END_POINTS][MAX_DIMENSION_BIG],
-                                    int iIndices[3][MAX_SUBSET_SIZE], 
-                                    int max_subsets, 
+                                    int iIndices[3][MAX_SUBSET_SIZE],
+                                    int max_subsets,
                                     int mode);
 
 

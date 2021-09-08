@@ -7,10 +7,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -26,10 +26,10 @@
 #ifndef _PLUGIN_COMPUTE_BC7_H
 #define _PLUGIN_COMPUTE_BC7_H
 
-#include "Common_Def.h"
-#include "PluginInterface.h"
-#include "BC7_Encode_kernel.h"
-#include "HPC_Compress.h"           // padline defs
+#include "common_def.h"
+#include "plugininterface.h"
+#include "bc7_encode_kernel.h"
+#include "hpc_compress.h"           // padline defs
 #include "cmp_math_common.h"
 
 #ifdef _WIN32
@@ -49,8 +49,7 @@ static const GUID g_GUID = 0;
 #endif
 #endif
 
-struct TIMERDATA
-{
+struct TIMERDATA {
     double start;
     double end;
     int   sequence;
@@ -59,22 +58,21 @@ struct TIMERDATA
 
 //========================================
 
-class Plugin_BC7 : public PluginInterface_Encoder
-{
-public: 
-        Plugin_BC7();
-        virtual ~Plugin_BC7();
-        int     TC_PluginSetSharedIO(void* Shared);
-        int     TC_PluginGetVersion(TC_PluginVersion* pPluginVersion);
-        void*   TC_Create();
-        void    TC_Destroy(void* codec);
-        int     TC_Init(void *kernel_options);
-        char *  TC_ComputeSourceFile(unsigned int     Compute_type);
-        void TC_Start();
-        void TC_End();
-private:
-        KernelOptions   *m_KernelOptions;
-        CMIPS           *CMips             = nullptr;
+class Plugin_BC7 : public PluginInterface_Encoder {
+  public:
+    Plugin_BC7();
+    virtual ~Plugin_BC7();
+    int     TC_PluginSetSharedIO(void* Shared);
+    int     TC_PluginGetVersion(TC_PluginVersion* pPluginVersion);
+    void*   TC_Create();
+    void    TC_Destroy(void* codec);
+    int     TC_Init(void *kernel_options);
+    char *  TC_ComputeSourceFile(unsigned int     Compute_type);
+    void TC_Start();
+    void TC_End();
+  private:
+    KernelOptions   *m_KernelOptions;
+    CMIPS           *CMips             = nullptr;
 };
 
 
@@ -82,9 +80,8 @@ extern void *make_Plugin_BC7();
 
 
 
-class BC7_EncodeClass : public CMP_Encoder 
-{
-public:
+class BC7_EncodeClass : public CMP_Encoder {
+  public:
     BC7_EncodeClass();
 
     int CompressBlock(unsigned int xBlock, unsigned int yBlock, void *in, void *out);

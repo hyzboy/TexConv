@@ -7,10 +7,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -25,7 +25,7 @@
 
 #pragma warning(disable:4505)  // disable warnings on unreferenced local function has been removed
 
-#include "Common_Def.h"
+#include "common_def.h"
 
 #define MAX_TRACE                       10
 #define MAX_ENTRIES_QUANT_TRACE         16
@@ -40,6 +40,7 @@
 #define MAX_PARTITIONS                  64              // Maximum number of partition types
 #define MAX_ENTRIES                     64
 #define MAX_TRY                         20
+#define BC6_FLT_MAX_EXP                 128
 
 #define MAX_PARTITIONS_TABLE            (1+64+64)
 #define DIMENSION                       4
@@ -78,8 +79,7 @@
 #define BC6BlockX   4
 #define BC6BlockY   4
 
-typedef struct
-{
+typedef struct {
     CGU_INT  k;
     CGU_FLOAT d;
 } BC6H_TRACE;
@@ -105,19 +105,16 @@ typedef struct
 
 #define USE_NEWRAMP
 
-typedef struct
-{
+typedef struct {
     CGU_FLOAT A[NCHANNELS];
     CGU_FLOAT B[NCHANNELS];
 } END_Points;
 
-typedef struct
-{
+typedef struct {
     CGU_FLOAT x, y, z;
 } BC6H_Vec3f;
 
-typedef struct
-{
+typedef struct {
     CGU_INT nbits;              // Number of bits
     CGU_INT prec[3];            // precission of the Qunatized RGB endpoints
     CGU_INT transformed;        // if 0, deltas are unsigned and no transform; otherwise, signed and transformed
@@ -127,27 +124,26 @@ typedef struct
     CGU_INT lowestPrec;         // Step size of each precesion incriment
 }  ModePartitions;
 
-__constant ModePartitions ModePartition[MAX_BC6H_MODES + 1] =
-{
-   {0,     {0,0,0},       0,    0,    0,    0,     0},   // Mode = Invaild
+__constant ModePartitions ModePartition[MAX_BC6H_MODES + 1] = {
+    {0,     {0,0,0},       0,    0,    0,    0,     0},   // Mode = Invaild
 
-   // Two region Partition
-   { 10,   {5,5,5},       1,    2,    3,    0x00,  31 },    // Mode = 1
-   { 7,    {6,6,6},       1,    2,    3,    0x01,  248},   // Mode = 2
-   { 11,   {5,4,4},       1,    5,    3,    0x02,  15 },    // Mode = 3
-   { 11,   {4,5,4},       1,    5,    3,    0x06,  15 },    // Mode = 4 
-   { 11,   {4,4,5},       1,    5,    3,    0x0a,  15 },    // Mode = 5
-   { 9,    {5,5,5},       1,    5,    3,    0x0e,  62 },    // Mode = 6
-   { 8,    {6,5,5},       1,    5,    3,    0x12,  124},   // Mode = 7
-   { 8,    {5,6,5},       1,    5,    3,    0x16,  124},   // Mode = 8
-   { 8,    {5,5,6},       1,    5,    3,    0x1a,  124},   // Mode = 9
-   { 6,    {6,6,6},       0,    5,    3,    0x1e,  496},   // Mode = 10
+    // Two region Partition
+    { 10,   {5,5,5},       1,    2,    3,    0x00,  31 },    // Mode = 1
+    { 7,    {6,6,6},       1,    2,    3,    0x01,  248},   // Mode = 2
+    { 11,   {5,4,4},       1,    5,    3,    0x02,  15 },    // Mode = 3
+    { 11,   {4,5,4},       1,    5,    3,    0x06,  15 },    // Mode = 4
+    { 11,   {4,4,5},       1,    5,    3,    0x0a,  15 },    // Mode = 5
+    { 9,    {5,5,5},       1,    5,    3,    0x0e,  62 },    // Mode = 6
+    { 8,    {6,5,5},       1,    5,    3,    0x12,  124},   // Mode = 7
+    { 8,    {5,6,5},       1,    5,    3,    0x16,  124},   // Mode = 8
+    { 8,    {5,5,6},       1,    5,    3,    0x1a,  124},   // Mode = 9
+    { 6,    {6,6,6},       0,    5,    3,    0x1e,  496},   // Mode = 10
 
-   // One region Partition    
-   {10,   {10,10,10},     0,    5,    4,    0x03,  31},    // Mode = 11
-   {11,   {9,9,9   },     1,    5,    4,    0x07,  15},    // Mode = 12
-   {12,   {8,8,8   },     1,    5,    4,    0x0b,  7 },     // Mode = 13
-   {16,   {4,4,4   },     1,    5,    4,    0x0f,  1 }     // Mode = 14
+    // One region Partition
+    {10,   {10,10,10},     0,    5,    4,    0x03,  31},    // Mode = 11
+    {11,   {9,9,9   },     1,    5,    4,    0x07,  15},    // Mode = 12
+    {12,   {8,8,8   },     1,    5,    4,    0x0b,  7 },     // Mode = 13
+    {16,   {4,4,4   },     1,    5,    4,    0x0f,  1 }     // Mode = 14
 };
 
 //================================================
@@ -155,12 +151,11 @@ __constant ModePartitions ModePartition[MAX_BC6H_MODES + 1] =
 // The order can be rearranged to set which modes gets processed first
 // for now it is set in order.
 //================================================
-__constant CGU_INT8 ModeFitOrder[MAX_BC6H_MODES + 1] =
-{
-   0,                //0: N/A
+__constant CGU_INT8 ModeFitOrder[MAX_BC6H_MODES + 1] = {
+    0,                //0: N/A
     // ----  2 region lower bits ---
     1,                // 10 5 5 5
-    2,                // 7  6 6 6 
+    2,                // 7  6 6 6
     3,                // 11 5 4 5
     4,                // 11 4 5 4
     5,                // 11 4 4 5
@@ -178,43 +173,40 @@ __constant CGU_INT8 ModeFitOrder[MAX_BC6H_MODES + 1] =
 
 // The Region2FixUps are for our index[subset = 2][16][3] locations
 // indexed by shape region 2
-__constant CGU_INT g_Region2FixUp[32] =
-{
-   7 , 3 , 11, 7,
-   3 , 11, 9 , 5,
-   2 , 12, 7 , 3,
-   11, 7 , 11, 3,
-   7 , 1 , 0 , 1,
-   0 , 1 , 0 , 7,
-   0 , 1 , 1 , 0,
-   4 , 4 , 1 , 0,
+__constant CGU_INT g_Region2FixUp[32] = {
+    7, 3, 11, 7,
+    3, 11, 9, 5,
+    2, 12, 7, 3,
+    11, 7, 11, 3,
+    7, 1, 0, 1,
+    0, 1, 0, 7,
+    0, 1, 1, 0,
+    4, 4, 1, 0,
 };
 
-// Indexed by all shape regions 
+// Indexed by all shape regions
 // Partition Set Fixups for region 1 note region 0 is always at 0
 // that means normally we use 3 bits to define an index value
 // if its at the fix up location then its one bit less
-__constant CGU_INT g_indexfixups[32] =
-{
-   15,15,15,15,
-   15,15,15,15,
-   15,15,15,15,
-   15,15,15,15,
-   15, 2, 8, 2,
-   2, 8, 8,15,
-   2, 8, 2, 2,
-   8, 8, 2, 2,
+__constant CGU_INT g_indexfixups[32] = {
+    15,15,15,15,
+    15,15,15,15,
+    15,15,15,15,
+    15,15,15,15,
+    15, 2, 8, 2,
+    2, 8, 8,15,
+    2, 8, 2, 2,
+    8, 8, 2, 2,
 };
 
-typedef struct
-{
+typedef struct {
     CGU_INT8 region;                // one or two
     CGU_INT8 m_mode;                // m
     CGU_INT8 d_shape_index;         // d
     CGU_INT rw;                            // endpt[0].A[0]
     CGU_INT rx;                            // endpt[0].B[0]
     CGU_INT ry;                            // endpt[1].A[0]
-    CGU_INT rz;                            // endpt[1].B[0] 
+    CGU_INT rz;                            // endpt[1].B[0]
     CGU_INT gw;                            // endpt[0].A[1]
     CGU_INT gx;                            // endpt[0].B[1]
     CGU_INT gy;                            // endpt[1].A[1]
@@ -224,21 +216,19 @@ typedef struct
     CGU_INT by;                            // endpt[1].A[2]
     CGU_INT bz;                            // endpt[1].B[2]
 
-    union
-    {
+    union {
         CGU_UINT8 indices[4][4];            // Indices data after header block
         CGU_UINT8 indices16[16];
     };
 
-    union
-    {
+    union {
         CGU_FLOAT         din[MAX_SUBSET_SIZE][MAX_DIMENSION_BIG];   // Original data input as floats
         unsigned char     cdin[256];                                 // as uchar to match float
     };
 
     END_Points    EC[MAX_END_POINTS];    // compressed endpoints expressed as endpt[0].A[] and endpt[1].B[]
-    END_Points    E[MAX_END_POINTS];     // decompressed endpoints 
-    CGU_BOOL      issigned;            // Format is 16 bit signed floating point 
+    END_Points    E[MAX_END_POINTS];     // decompressed endpoints
+    CGU_BOOL      issigned;            // Format is 16 bit signed floating point
     CGU_BOOL      istransformed;       // region two: all modes = true except mode=10
     short         wBits;               // number of bits for the root endpoint
     short         tBits[NCHANNELS];    // number of bits used for the transformed endpoints
@@ -259,23 +249,18 @@ typedef struct
 } BC6H_Encode_local;
 
 #ifndef ASPM_GPU
-class BitHeader
-{
-public:
-    BitHeader(const CGU_UINT8 in[], CGU_INT sizeinbytes)
-    {
+class BitHeader {
+  public:
+    BitHeader(const CGU_UINT8 in[], CGU_INT sizeinbytes) {
         m_bits.reset();
         m_sizeinbytes = sizeinbytes;
 
-        if ((in != NULL) && (sizeinbytes <= 16))
-        {
+        if ((in != NULL) && (sizeinbytes <= 16)) {
             // Init bits set with given data
             CGU_INT bitpos = 0;
-            for (CGU_INT i = 0; i < sizeinbytes; i++)
-            {
+            for (CGU_INT i = 0; i < sizeinbytes; i++) {
                 CGU_INT bit = 1;
-                for (CGU_INT j = 0; j < 8; j++)
-                {
+                for (CGU_INT j = 0; j < 8; j++) {
                     m_bits[bitpos] = in[i] & bit ? 1 : 0;
                     bit = bit << 1;
                     bitpos++;
@@ -284,22 +269,17 @@ public:
         }
     }
 
-    ~BitHeader()
-    {
+    ~BitHeader() {
     }
 
-    void transferbits(CGU_UINT8 in[], CGU_INT sizeinbytes)
-    {
-        if ((sizeinbytes <= m_sizeinbytes) && (in != NULL))
-        {
+    void transferbits(CGU_UINT8 in[], CGU_INT sizeinbytes) {
+        if ((sizeinbytes <= m_sizeinbytes) && (in != NULL)) {
             // Init bits set with given data
             memset(in, 0, sizeinbytes);
             CGU_INT bitpos = 0;
-            for (CGU_INT i = 0; i < sizeinbytes; i++)
-            {
+            for (CGU_INT i = 0; i < sizeinbytes; i++) {
                 CGU_INT bit = 1;
-                for (CGU_INT j = 0; j < 8; j++)
-                {
+                for (CGU_INT j = 0; j < 8; j++) {
                     if (m_bits[bitpos]) in[i] |= bit;
                     bit = bit << 1;
                     bitpos++;
@@ -308,12 +288,10 @@ public:
         }
     }
 
-    CGU_INT getvalue(CGU_INT start, CGU_INT bitsize)
-    {
+    CGU_INT getvalue(CGU_INT start, CGU_INT bitsize) {
         CGU_INT value = 0;
         CGU_INT end = start + bitsize - 1;
-        for (; end >= start; end--)
-        {
+        for (; end >= start; end--) {
             value |= m_bits[end] ? 1 : 0;
             if (end > start) value <<= 1;
         }
@@ -321,12 +299,10 @@ public:
         return value;
     }
 
-    void setvalue(CGU_INT start, CGU_INT bitsize, CGU_INT value, CGU_INT maskshift = 0)
-    {
+    void setvalue(CGU_INT start, CGU_INT bitsize, CGU_INT value, CGU_INT maskshift = 0) {
         CGU_INT end = start + bitsize - 1;
         CGU_INT mask = 0x1 << maskshift;
-        for (; start <= end; start++)
-        {
+        for (; start <= end; start++) {
             m_bits[start] = (value&mask) ? 1 : 0;
             mask <<= 1;
         }
@@ -342,39 +318,34 @@ public:
 #define S16MAX                          0x7fff
 #define SIGN_EXTEND(w,tbits)            ((((signed(w))&(1<<((tbits)-1)))?((~0)<<(tbits)):0)|(signed(w)))
 
-enum
-{
+enum {
     UNSIGNED_F16 = 1,
     SIGNED_F16   = 2
 };
 
-enum
-{
+enum {
     BC6_ONE = 0,
     BC6_TWO
 };
 
-enum
-{
+enum {
     C_RED = 0,
     C_GREEN,
     C_BLUE
 };
 
-struct BC6H_Vec3
-{
+struct BC6H_Vec3 {
     int x,y,z;
 };
 
-struct AMD_BC6H_Format
-{
+struct AMD_BC6H_Format {
     unsigned short region;             // one or two
     unsigned short m_mode;             // m
     int d_shape_index;                 // d
     int rw;                            // endpt[0].A[0]
     int rx;                            // endpt[0].B[0]
     int ry;                            // endpt[1].A[0]
-    int rz;                            // endpt[1].B[0] 
+    int rz;                            // endpt[1].B[0]
     int gw;                            // endpt[0].A[1]
     int gx;                            // endpt[0].B[1]
     int gy;                            // endpt[1].A[1]
@@ -383,17 +354,16 @@ struct AMD_BC6H_Format
     int bx;                            // endpt[0].B[2]
     int by;                            // endpt[1].A[2]
     int bz;                            // endpt[1].B[2]
-    
-    union
-    {
+
+    union {
         CGU_UINT8 indices[4][4];            // Indices data after header block
         CGU_UINT8 indices16[16];
     };
 
     float         din[MAX_SUBSET_SIZE][MAX_DIMENSION_BIG];   // Original data input
     END_Points    EC[MAXENDPOINTS];    // compressed endpoints expressed as endpt[0].A[] and endpt[1].B[]
-    END_Points    E[MAXENDPOINTS];     // decompressed endpoints 
-    bool          issigned;            // Format is 16 bit signed floating point 
+    END_Points    E[MAXENDPOINTS];     // decompressed endpoints
+    bool          issigned;            // Format is 16 bit signed floating point
     bool          istransformed;       // region two: all modes = true except mode=10
     short         wBits;               // number of bits for the root endpoint
     short         tBits[NCHANNELS];    // number of bits used for the transformed endpoints
@@ -419,8 +389,7 @@ struct AMD_BC6H_Format
 //-------------------------------------------------
 // Set by Host : Read only in kernel
 //-------------------------------------------------
-typedef struct
-{
+typedef struct {
     // Setup at initialization time
     CGU_FLOAT  m_quality;
     CGU_FLOAT  m_performance;
@@ -432,8 +401,7 @@ typedef struct
     CGU_BOOL   m_isSigned;
 } CMP_BC6HOptions;
 
-typedef struct
-{
+typedef struct {
     // These are quality parameters used to select when to use the high precision quantizer
     // and shaker paths
     CGU_FLOAT m_quantizerRangeThreshold;
@@ -457,10 +425,8 @@ typedef struct
 
 } BC6H_Encode;
 
-CMP_STATIC void SetDefaultBC6Options(BC6H_Encode *BC6Encode)
-{
-    if (BC6Encode)
-    {
+CMP_STATIC void SetDefaultBC6Options(BC6H_Encode *BC6Encode) {
+    if (BC6Encode) {
         BC6Encode->m_quality = 1.0f;
         BC6Encode->m_quantizerRangeThreshold = 0.0f;
         BC6Encode->m_shakerRangeThreshold = 0.0f;

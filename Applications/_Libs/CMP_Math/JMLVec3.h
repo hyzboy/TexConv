@@ -7,10 +7,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -24,16 +24,14 @@
 #define _JML_VEC3_H_
 
 
-namespace JML
-{
+namespace JML {
 /// \brief A template class for two-component vectors.
 /**
     The template argument must be a numeric type
 */
 template<class T>
-class Vec3
-{
-public:
+class Vec3 {
+  public:
 
     T x;
     T y;
@@ -63,60 +61,102 @@ public:
     // *****************************************
 
     /// cast to T*
-    operator const T* () const { return (const T*)this; };
+    operator const T* () const {
+        return (const T*)this;
+    };
 
     /// cast to T*
-    operator T* () { return (T*)this; };
+    operator T* () {
+        return (T*)this;
+    };
 
     /// Assignment
-    const Vec3<T>& operator=(const Vec3<T>& rhs)  { x = rhs.x; y = rhs.y; z = rhs.z; return *this; };
+    const Vec3<T>& operator=(const Vec3<T>& rhs)  {
+        x = rhs.x;
+        y = rhs.y;
+        z = rhs.z;
+        return *this;
+    };
 
     // *****************************************
     //    Comparison
     // *****************************************
 
     /// Equality comparison
-    bool operator==(const Vec3<T>& rhs) const { return (x == rhs.x && y == rhs.y && z == rhs.z); };
+    bool operator==(const Vec3<T>& rhs) const {
+        return (x == rhs.x && y == rhs.y && z == rhs.z);
+    };
 
     /// Inequality comparision
-    bool operator!=(const Vec3<T>& rhs) const { return (x != rhs.x || y != rhs.y || z != rhs.z); };
+    bool operator!=(const Vec3<T>& rhs) const {
+        return (x != rhs.x || y != rhs.y || z != rhs.z);
+    };
 
     // *****************************************
     //    Arithmetic
     // *****************************************
 
     /// Addition
-    const Vec3<T> operator+(const Vec3<T>& rhs) const { return Vec3<T>(x + rhs.x, y + rhs.y, z + rhs.z); };
+    const Vec3<T> operator+(const Vec3<T>& rhs) const {
+        return Vec3<T>(x + rhs.x, y + rhs.y, z + rhs.z);
+    };
 
     /// Subtraction
-    const Vec3<T> operator-(const Vec3<T>& rhs) const { return Vec3<T>(x - rhs.x, y - rhs.y, z - rhs.z);};
+    const Vec3<T> operator-(const Vec3<T>& rhs) const {
+        return Vec3<T>(x - rhs.x, y - rhs.y, z - rhs.z);
+    };
 
     /// Multiply by scalar
-    const Vec3<T> operator*(const T& v) const { return Vec3<T>(x * v, y * v, z * v); };
+    const Vec3<T> operator*(const T& v) const {
+        return Vec3<T>(x * v, y * v, z * v);
+    };
 
     /// Divide by scalar
-    const Vec3<T> operator/(const T& v) const { return Vec3<T>(x / v, y / v, z / v); };
+    const Vec3<T> operator/(const T& v) const {
+        return Vec3<T>(x / v, y / v, z / v);
+    };
 
     /// Divide by vector
-    const Vec3<T> operator/(const Vec3<T>& rhs) const { return Vec3<T>(x / rhs.x, y / rhs.y, z / rhs.z); };
+    const Vec3<T> operator/(const Vec3<T>& rhs) const {
+        return Vec3<T>(x / rhs.x, y / rhs.y, z / rhs.z);
+    };
 
     /// Addition in-place
-    Vec3<T>& operator+= (const Vec3<T>& rhs) { x += rhs.x; y += rhs.y; z += rhs.z; return *this; };
+    Vec3<T>& operator+= (const Vec3<T>& rhs) {
+        x += rhs.x;
+        y += rhs.y;
+        z += rhs.z;
+        return *this;
+    };
 
     /// Subtract in-place
-    Vec3<T>& operator-= (const Vec3<T>& rhs) { x -= rhs.x; y -= rhs.y; z -= rhs.z; return *this; };
+    Vec3<T>& operator-= (const Vec3<T>& rhs) {
+        x -= rhs.x;
+        y -= rhs.y;
+        z -= rhs.z;
+        return *this;
+    };
 
     /// Scalar multiply in-place
-    Vec3<T>& operator*= (const T& v) { x *= v; y *= v; z *= v; return *this; };
+    Vec3<T>& operator*= (const T& v) {
+        x *= v;
+        y *= v;
+        z *= v;
+        return *this;
+    };
 
     /// Scalar divide in-place
-    Vec3<T>& operator/= (const T& v) { x /= v; y /= v; z /= v; return *this; };
+    Vec3<T>& operator/= (const T& v) {
+        x /= v;
+        y /= v;
+        z /= v;
+        return *this;
+    };
 };
 
 /// stream output
 template <class T>
-std::ostream& operator<<(std::ostream& sout, const Vec3<T>& vec)
-{
+std::ostream& operator<<(std::ostream& sout, const Vec3<T>& vec) {
     sout << "<" << vec.x << "," << vec.y << "," << vec.z << ">";
     return sout;
 };

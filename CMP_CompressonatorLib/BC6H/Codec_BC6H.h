@@ -8,10 +8,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -28,16 +28,15 @@
 #if !defined(_CODEC_BC6H_H_INCLUDED_)
 #define _CODEC_BC6H_H_INCLUDED_
 
-#include "Compressonator.h"
-#include "Codec_DXTC.h"
-#include "BC6H_Encode.h"
-#include "BC6H_Decode.h"
-#include "BC6H_Library.h"
+#include "compressonator.h"
+#include "codec_dxtc.h"
+#include "bc6h_encode.h"
+#include "bc6h_decode.h"
+#include "bc6h_library.h"
 
 #include <thread>
 
-struct BC6HEncodeThreadParam
-{
+struct BC6HEncodeThreadParam {
     BC6HBlockEncoder    *encoder;
     float               in[MAX_SUBSET_SIZE][MAX_DIMENSION_BIG];
     CMP_BYTE             *out;
@@ -45,9 +44,8 @@ struct BC6HEncodeThreadParam
     volatile CMP_BOOL    exit;
 };
 
-class CCodec_BC6H : public CCodec_DXTC  
-{
-public:
+class CCodec_BC6H : public CCodec_DXTC {
+  public:
     CCodec_BC6H(CodecType codecType);
     ~CCodec_BC6H();
 
@@ -62,18 +60,18 @@ public:
     virtual CodecError Decompress           (CCodecBuffer& bufferIn, CCodecBuffer& bufferOut, Codec_Feedback_Proc pFeedbackProc = NULL,  CMP_DWORD_PTR pUser1 = NULL,  CMP_DWORD_PTR pUser2 = NULL);
 
 
-private:
+  private:
     BC6HEncodeThreadParam *m_EncodeParameterStorage;
 
     // BC6H User configurable variables
     CMP_WORD        m_ModeMask;
     float           m_Quality;
-    CMP_WORD        m_NumThreads;    
+    CMP_WORD        m_NumThreads;
     bool            m_bIsSigned;
     bool            m_UsePatternRec;
     float           m_Exposure;
 
-    // BC6H Internal status 
+    // BC6H Internal status
     CMP_BOOL        m_LibraryInitialized;
     CMP_BOOL        m_Use_MultiThreading;
     CMP_INT         m_NumEncodingThreads;
@@ -90,7 +88,7 @@ private:
     CodecError    CEncodeBC6HBlock(float  in[BC6H_BLOCK_PIXELS][MAX_DIMENSION_BIG],CMP_BYTE *out);
     CodecError    CFinishBC6HEncoding(void);
 
-    
+
 };
 
 #endif // !defined(_CODEC_DXT5_H_INCLUDED_)

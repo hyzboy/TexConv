@@ -1,7 +1,6 @@
-#include "UserInterface.h"
+#include "userinterface.h"
 
-UserInterface::UserInterface()
-{
+UserInterface::UserInterface() {
     xRotation = 0.0f;
     yRotation = 0.0f;
     zRotation = 0.0f;
@@ -12,8 +11,7 @@ UserInterface::UserInterface()
     fill = false;
 }
 
-UserInterface::~UserInterface()
-{
+UserInterface::~UserInterface() {
 }
 
 

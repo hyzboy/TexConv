@@ -8,10 +8,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -27,13 +27,13 @@
 //////////////////////////////////////////////////////////////////////////////
 
 #pragma warning(disable:4100)    // Ignore warnings of unreferenced formal parameters
-#include "Common.h"
-#include "Codec_BC7.h"
-#include "BC7_Library.h"
+#include "common.h"
+#include "codec_bc7.h"
+#include "bc7_library.h"
 #include <chrono>
 
 #ifdef BC7_COMPDEBUGGER
-#include "CompClient.h"
+#include "compclient.h"
 #endif
 
 #ifdef BC7_COMPDEBUGGER
@@ -62,23 +62,18 @@ extern CMP_INT CMP_GetNumberOfProcessors();
 // it should set the exit flag in the parameters to allow the tread to quit
 //
 
-unsigned int BC7ThreadProcEncode(void* param)
-{
+unsigned int BC7ThreadProcEncode(void* param) {
     BC7EncodeThreadParam *tp = (BC7EncodeThreadParam*)param;
-    
-    while(tp->exit == FALSE)
-    {
-        if(tp->run == TRUE)
-        {
+
+    while(tp->exit == FALSE) {
+        if(tp->run == TRUE) {
             tp->encoder->CompressBlock(tp->in, tp->out);
             tp->run = FALSE;
         }
 
-        using namespace std::chrono;
-
-        std::this_thread::sleep_for(0ms);
+        std::this_thread::sleep_for(std::chrono::milliseconds(0));
     }
-    
+
     return 0;
 }
 
@@ -86,8 +81,7 @@ unsigned int BC7ThreadProcEncode(void* param)
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////////////
 
-CCodec_BC7::CCodec_BC7() : CCodec_DXTC(CT_BC7)
-{
+CCodec_BC7::CCodec_BC7() : CCodec_DXTC(CT_BC7) {
     m_LibraryInitialized   = false;
 
     m_Use_MultiThreading   = true;
@@ -107,85 +101,61 @@ CCodec_BC7::CCodec_BC7() : CCodec_DXTC(CT_BC7)
 }
 
 
-bool CCodec_BC7::SetParameter(const CMP_CHAR* pszParamName, CMP_CHAR* sValue)
-{
+bool CCodec_BC7::SetParameter(const CMP_CHAR* pszParamName, CMP_CHAR* sValue) {
     if (sValue == NULL) return false;
 
-    if (strcmp(pszParamName, "ModeMask") == 0)
-    {
+    if (strcmp(pszParamName, "ModeMask") == 0) {
         m_ModeMask = (CMP_BYTE)std::stoi(sValue) & 0xFF;
         if (m_ModeMask <= 0) m_ModeMask = 0xFF;
-    }
-    else
-    if(strcmp(pszParamName, "ColourRestrict") == 0)
+    } else if(strcmp(pszParamName, "ColourRestrict") == 0)
         m_ColourRestrict    = std::stoi(sValue) > 0 ?TRUE:FALSE;
-    else
-    if(strcmp(pszParamName, "AlphaRestrict") == 0)
+    else if(strcmp(pszParamName, "AlphaRestrict") == 0)
         m_AlphaRestrict        = std::stoi(sValue) > 0?TRUE:FALSE;
-    else
-    if(strcmp(pszParamName, "ImageNeedsAlpha") == 0)
+    else if(strcmp(pszParamName, "ImageNeedsAlpha") == 0)
         m_ImageNeedsAlpha     = std::stoi(sValue) > 0?TRUE:FALSE;
-    else
-    if(strcmp(pszParamName, "NumThreads") == 0)
-    {
+    else if(strcmp(pszParamName, "NumThreads") == 0) {
         m_NumThreads = (CMP_BYTE) std::stoi(sValue) & 0xFF;
         m_Use_MultiThreading = m_NumThreads != 1;
         //printf("BC7 CPU set threads = %d\n",m_NumThreads);
     }
-    if(strcmp(pszParamName, "Quality") == 0)
-    {
+    if(strcmp(pszParamName, "Quality") == 0) {
         m_Quality = std::stof(sValue);
-        if ((m_Quality < 0) || (m_Quality > 1.0))
-        {
+        if ((m_Quality < 0) || (m_Quality > 1.0)) {
             return false;
         }
-    }
-    else
-    if(strcmp(pszParamName, "Performance") == 0)
-    {
+    } else if(strcmp(pszParamName, "Performance") == 0) {
         m_Performance = std::stof(sValue);
-        if ((m_Performance < 0) || (m_Performance > 1.0))
-        {
+        if ((m_Performance < 0) || (m_Performance > 1.0)) {
             return false;
         }
-    }
-    else
+    } else
         return CCodec_DXTC::SetParameter(pszParamName, sValue);
     return true;
 }
 
 
 
-bool CCodec_BC7::SetParameter(const CMP_CHAR* pszParamName, CMP_DWORD dwValue)
-{
+bool CCodec_BC7::SetParameter(const CMP_CHAR* pszParamName, CMP_DWORD dwValue) {
     if(strcmp(pszParamName, "ModeMask") == 0)
         m_ModeMask            = (CMP_BYTE) dwValue & 0xFF;
-    else
-    if(strcmp(pszParamName, "ColourRestrict") == 0)
+    else if(strcmp(pszParamName, "ColourRestrict") == 0)
         m_ColourRestrict    = (dwValue & 1)?TRUE:FALSE;
-    else
-    if(strcmp(pszParamName, "AlphaRestrict") == 0)
+    else if(strcmp(pszParamName, "AlphaRestrict") == 0)
         m_AlphaRestrict        =  (dwValue & 1)?TRUE:FALSE;
-    else
-    if(strcmp(pszParamName, "ImageNeedsAlpha") == 0)
+    else if(strcmp(pszParamName, "ImageNeedsAlpha") == 0)
         m_ImageNeedsAlpha     = (dwValue & 1)?TRUE:FALSE;
-    else
-    if(strcmp(pszParamName, "NumThreads") == 0)
-    {
+    else if(strcmp(pszParamName, "NumThreads") == 0) {
         m_NumThreads = (CMP_BYTE) dwValue;
         m_Use_MultiThreading = (m_NumThreads != 1)?TRUE:FALSE;
-    }
-    else
+    } else
         return CCodec_DXTC::SetParameter(pszParamName, dwValue);
     return true;
 }
 
-bool CCodec_BC7::SetParameter(const CMP_CHAR* pszParamName, CODECFLOAT fValue)
-{
+bool CCodec_BC7::SetParameter(const CMP_CHAR* pszParamName, CODECFLOAT fValue) {
     if(strcmp(pszParamName, "Quality") == 0)
         m_Quality = fValue;
-    else
-    if(strcmp(pszParamName, "Performance") == 0)
+    else if(strcmp(pszParamName, "Performance") == 0)
         m_Performance = fValue;
     else
         return CCodec_DXTC::SetParameter(pszParamName, fValue);
@@ -193,15 +163,11 @@ bool CCodec_BC7::SetParameter(const CMP_CHAR* pszParamName, CODECFLOAT fValue)
 }
 
 
-CCodec_BC7::~CCodec_BC7()
-{
-    if (m_LibraryInitialized)
-    {
-        if (m_Use_MultiThreading)
-        {
+CCodec_BC7::~CCodec_BC7() {
+    if (m_LibraryInitialized) {
+        if (m_Use_MultiThreading) {
             // Tell all the live threads that they can exit when they have finished any current work
-            for(int i=0; i < m_LiveThreads; i++)
-            {
+            for(int i=0; i < m_LiveThreads; i++) {
                 // If a thread is in the running state then we need to wait for it to finish
                 // any queued work from the producer before we can tell it to exit.
                 //
@@ -210,10 +176,8 @@ CCodec_BC7::~CCodec_BC7()
                 // the exit flag before it runs then its block will not be processed.
 #pragma warning(push)
 #pragma warning(disable:4127) //warning C4127: conditional expression is constant
-                while(1)
-                {
-                    if(m_EncodeParameterStorage[i].run != TRUE)
-                    {
+                while(1) {
+                    if(m_EncodeParameterStorage[i].run != TRUE) {
                         break;
                     }
                 }
@@ -223,20 +187,17 @@ CCodec_BC7::~CCodec_BC7()
             }
 
             // Now wait for all threads to have exited
-            if (m_LiveThreads > 0)
-            {
-                for (CMP_DWORD dwThread = 0; dwThread < m_LiveThreads; dwThread++)
-                {
+            if (m_LiveThreads > 0) {
+                for (CMP_DWORD dwThread = 0; dwThread < m_LiveThreads; dwThread++) {
                     std::thread& curThread = m_EncodingThreadHandle[dwThread];
 
                     curThread.join();
                 }
             }
 
-            for (unsigned int i = 0; i < m_LiveThreads; i++)
-            {
+            for (unsigned int i = 0; i < m_LiveThreads; i++) {
                 std::thread& curThread = m_EncodingThreadHandle[i];
-            
+
                 curThread = std::thread();
             }
 
@@ -249,17 +210,14 @@ CCodec_BC7::~CCodec_BC7()
             delete[] m_EncodeParameterStorage;
         m_EncodeParameterStorage = NULL;
 
-        for(int i=0; i < m_NumEncodingThreads; i++)
-        {
-            if (m_encoder[i])
-            {
+        for(int i=0; i < m_NumEncodingThreads; i++) {
+            if (m_encoder[i]) {
                 delete m_encoder[i];
                 m_encoder[i] = NULL;
             }
         }
 
-        if (m_decoder)
-        {
+        if (m_decoder) {
             delete m_decoder;
             m_decoder = NULL;
         }
@@ -272,18 +230,13 @@ CCodec_BC7::~CCodec_BC7()
 
 
 
-CodecError CCodec_BC7::InitializeBC7Library()
-{
-    if (!m_LibraryInitialized)
-    {
+CodecError CCodec_BC7::InitializeBC7Library() {
+    if (!m_LibraryInitialized) {
 
         // One time initialisation for quantizer and shaker
         Quant_Init();
-        init_ramps();
 
-
-        for(CMP_DWORD i=0; i < MAX_BC7_THREADS; i++)
-        {
+        for(CMP_DWORD i=0; i < MAX_BC7_THREADS; i++) {
             m_encoder[i] = NULL;
         }
 
@@ -291,9 +244,8 @@ CodecError CCodec_BC7::InitializeBC7Library()
         m_LiveThreads = 0;
         m_LastThread  = 0;
         //printf("BC7 CPU Num user threads = %d\n",m_NumEncodingThreads);
-        m_NumEncodingThreads = min(m_NumThreads, MAX_BC7_THREADS);
-        if (m_NumEncodingThreads == 0)
-        {
+        m_NumEncodingThreads = cmp_minT(m_NumThreads, MAX_BC7_THREADS);
+        if (m_NumEncodingThreads == 0) {
             m_NumEncodingThreads = CMP_GetNumberOfProcessors();
             if (m_NumEncodingThreads <= 2)
                 m_NumEncodingThreads = 8; // fallback to a default!
@@ -304,14 +256,12 @@ CodecError CCodec_BC7::InitializeBC7Library()
         m_Use_MultiThreading = (m_NumEncodingThreads != 1);
 
         m_EncodeParameterStorage = new BC7EncodeThreadParam[m_NumEncodingThreads];
-        if(!m_EncodeParameterStorage)
-        {
+        if(!m_EncodeParameterStorage) {
             return CE_Unknown;
         }
 
         m_EncodingThreadHandle = new std::thread[m_NumEncodingThreads];
-        if(!m_EncodingThreadHandle)
-        {
+        if(!m_EncodingThreadHandle) {
             delete[] m_EncodeParameterStorage;
             m_EncodeParameterStorage = NULL;
 
@@ -320,8 +270,7 @@ CodecError CCodec_BC7::InitializeBC7Library()
 
         CMP_INT   i;
         //printf("BC7 CPU Num threads used = %d\n",m_NumEncodingThreads);
-        for(i=0; i < m_NumEncodingThreads; i++)
-        {
+        for(i=0; i < m_NumEncodingThreads; i++) {
             // Create single encoder instance
             m_encoder[i] = new BC7BlockEncoder( m_ModeMask,
                                                 m_ImageNeedsAlpha,
@@ -330,10 +279,9 @@ CodecError CCodec_BC7::InitializeBC7Library()
                                                 m_AlphaRestrict,
                                                 m_Performance);
 
-            
+
             // Cleanup if problem!
-            if(!m_encoder[i])
-            {
+            if(!m_encoder[i]) {
 
                 delete[] m_EncodeParameterStorage;
                 m_EncodeParameterStorage = NULL;
@@ -341,8 +289,7 @@ CodecError CCodec_BC7::InitializeBC7Library()
                 delete[] m_EncodingThreadHandle;
                 m_EncodingThreadHandle = NULL;
 
-                for(CMP_INT j=0; j<i; j++)
-                {
+                for(CMP_INT j=0; j<i; j++) {
                     delete m_encoder[j];
                     m_encoder[j] = NULL;
                 }
@@ -350,15 +297,14 @@ CodecError CCodec_BC7::InitializeBC7Library()
                 return CE_Unknown;
             }
 
-            #ifdef USE_DBGTRACE
+#ifdef USE_DBGTRACE
             DbgTrace(("Encoder[%d]:ModeMask %X, Quality %f",i,m_ModeMask,m_Quality));
-            #endif
+#endif
 
         }
 
         // Create the encoding threads
-        for (i = 0; i<m_NumEncodingThreads; i++)
-        {
+        for (i = 0; i<m_NumEncodingThreads; i++) {
             // Initialize thread parameters.
             m_EncodeParameterStorage[i].encoder = m_encoder[i];
             // Inform the thread that at the moment it doesn't have any work to do
@@ -367,18 +313,16 @@ CodecError CCodec_BC7::InitializeBC7Library()
             m_EncodeParameterStorage[i].exit = FALSE;
 
             m_EncodingThreadHandle[i] = std::thread(
-                BC7ThreadProcEncode,
-                (void*)&m_EncodeParameterStorage[i]
-            );
+                                            BC7ThreadProcEncode,
+                                            (void*)&m_EncodeParameterStorage[i]
+                                        );
             m_LiveThreads++;
         }
 
         // Create single decoder instance
         m_decoder = new BC7BlockDecoder();
-        if(!m_decoder)
-        {
-            for(CMP_INT j=0; j<m_NumEncodingThreads; j++)
-            {
+        if(!m_decoder) {
+            for(CMP_INT j=0; j<m_NumEncodingThreads; j++) {
                 delete m_encoder[j];
                 m_encoder[j] = NULL;
             }
@@ -392,100 +336,84 @@ CodecError CCodec_BC7::InitializeBC7Library()
 
 
 CodecError CCodec_BC7::EncodeBC7Block(double  in[BC7_BLOCK_PIXELS][MAX_DIMENSION_BIG],
-    CMP_BYTE    *out)
-{
+                                      CMP_BYTE    *out) {
 #ifdef USE_SINGLETHREADING
     m_Use_MultiThreading = false;
 #endif
 
-if (m_Use_MultiThreading)
-{
-    CMP_WORD   threadIndex;
+    if (m_Use_MultiThreading) {
+        CMP_WORD   threadIndex;
 
-    if((!m_LibraryInitialized) ||
-        (!in) ||
-        (!out))
-    {
-        return CE_Unknown;
-    }
-
-    // Loop and look for an available thread
-    CMP_BOOL found = FALSE;
-    threadIndex = m_LastThread;
-    while (found == FALSE)
-    {
-
-        if (m_EncodeParameterStorage == NULL)
+        if((!m_LibraryInitialized) ||
+                (!in) ||
+                (!out)) {
             return CE_Unknown;
-
-        if(m_EncodeParameterStorage[threadIndex].run == FALSE)
-        {
-            found = TRUE;
-            break;
         }
 
-        // Increment and wrap the thread index
-        threadIndex++;
-        if(threadIndex == m_LiveThreads)
-        {
-            threadIndex = 0;
+        // Loop and look for an available thread
+        CMP_BOOL found = FALSE;
+        threadIndex = m_LastThread;
+        while (found == FALSE) {
+
+            if (m_EncodeParameterStorage == NULL)
+                return CE_Unknown;
+
+            if(m_EncodeParameterStorage[threadIndex].run == FALSE) {
+                found = TRUE;
+                break;
+            }
+
+            // Increment and wrap the thread index
+            threadIndex++;
+            if(threadIndex == m_LiveThreads) {
+                threadIndex = 0;
+            }
         }
-    }
 
-    m_LastThread = threadIndex;
+        m_LastThread = threadIndex;
 
-    // Copy the input data into the thread storage
-    std::memcpy(m_EncodeParameterStorage[threadIndex].in,
-           in,
-           MAX_SUBSET_SIZE * MAX_DIMENSION_BIG * sizeof(double));
+        // Copy the input data into the thread storage
+        std::memcpy(m_EncodeParameterStorage[threadIndex].in,
+                    in,
+                    MAX_SUBSET_SIZE * MAX_DIMENSION_BIG * sizeof(double));
 
-    // Set the output pointer for the thread to the provided location
-    m_EncodeParameterStorage[threadIndex].out = out;
+        // Set the output pointer for the thread to the provided location
+        m_EncodeParameterStorage[threadIndex].out = out;
 
-    // Tell the thread to start working
-    m_EncodeParameterStorage[threadIndex].run = TRUE;
-}
-else 
-{
-    //printf("BC7 CPU Single Threaded\n");
+        // Tell the thread to start working
+        m_EncodeParameterStorage[threadIndex].run = TRUE;
+    } else {
+        //printf("BC7 CPU Single Threaded\n");
         // Copy the input data into the thread storage
         std::memcpy(m_EncodeParameterStorage[0].in, in, MAX_SUBSET_SIZE * MAX_DIMENSION_BIG * sizeof(double));
         // Set the output pointer for the thread to write
         m_EncodeParameterStorage[0].out = out;
         m_encoder[0]->CompressBlock(m_EncodeParameterStorage[0].in, m_EncodeParameterStorage[0].out);
-}
+    }
     return CE_OK;
 }
 
-CodecError CCodec_BC7::FinishBC7Encoding(void)
-{
-    if(!m_LibraryInitialized)
-    {
+CodecError CCodec_BC7::FinishBC7Encoding(void) {
+    if(!m_LibraryInitialized) {
         return CE_Unknown;
     }
 
-    if (!m_EncodeParameterStorage)
-    {
+    if (!m_EncodeParameterStorage) {
         return CE_Unknown;
     }
 
-if (m_Use_MultiThreading)
-{
+    if (m_Use_MultiThreading) {
 
-    // Wait for all the live threads to finish any current work
-    for (CMP_DWORD i = 0; i < m_LiveThreads; i++)
-    {
-        using namespace std::chrono;
-        
-        // If a thread is in the running state then we need to wait for it to finish
-        // its work from the producer
-        while (m_EncodeParameterStorage[i].run == TRUE)
-        {
-            std::this_thread::sleep_for(1ms);
+        // Wait for all the live threads to finish any current work
+        for (CMP_DWORD i = 0; i < m_LiveThreads; i++) {
+            // If a thread is in the running state then we need to wait for it to finish
+            // its work from the producer
+            while (m_EncodeParameterStorage[i].run == TRUE) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            }
         }
     }
-}
-return CE_OK;
+    return CE_OK;
 }
 
 
@@ -501,27 +429,22 @@ CMP_DWORD_PTR       CCodec_BC7::m_pUser1             = NULL;
 CMP_DWORD_PTR       CCodec_BC7::m_pUser2             = NULL;
 
 // Used by a none-blocking thread while compresion is in progress!
-void CCodec_BC7::Run()
-{
+void CCodec_BC7::Run() {
     // printf("Block:");
     // char ch = getchar();
-    while (!m_progress.abort)
-    {
-       if (cmp_bc7_progress_update)
-       {
-          cmp_bc7_progress_update = false;
-          if (m_user_pFeedbackProc)
-          {
-             m_progress.abort = m_user_pFeedbackProc(m_progress.progress,CCodec_BC7::m_pUser1,CCodec_BC7::m_pUser2);
-          }
-       }
+    while (!m_progress.abort) {
+        if (cmp_bc7_progress_update) {
+            cmp_bc7_progress_update = false;
+            if (m_user_pFeedbackProc) {
+                m_progress.abort = m_user_pFeedbackProc(m_progress.progress,CCodec_BC7::m_pUser1,CCodec_BC7::m_pUser2);
+            }
+        }
     }
 }
 #endif
 
 
-CodecError CCodec_BC7::Compress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut, Codec_Feedback_Proc pFeedbackProc, CMP_DWORD_PTR pUser1, CMP_DWORD_PTR pUser2)
-{
+CodecError CCodec_BC7::Compress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut, Codec_Feedback_Proc pFeedbackProc, CMP_DWORD_PTR pUser1, CMP_DWORD_PTR pUser2) {
     assert(bufferIn.GetWidth()    == bufferOut.GetWidth());
     assert(bufferIn.GetHeight() == bufferOut.GetHeight());
 
@@ -532,7 +455,7 @@ CodecError CCodec_BC7::Compress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut,
     if (err != CE_OK) return err;
 
 #ifdef USE_THREADED_CALLBACKS
-    // Create a progress thread that will track 
+    // Create a progress thread that will track
     // the current progress of encoding 100% = done
 
     m_user_pFeedbackProc            = pFeedbackProc;
@@ -545,19 +468,18 @@ CodecError CCodec_BC7::Compress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut,
     // Spawn a progress thread
     std::thread *cmp_progress  = new  std::thread(CCodec_BC7::Run); // cmp_bc7_progress);
 #else
-     float progress;
-     float old_progress = FLT_MAX;
+    float progress;
+    float old_progress = FLT_MAX;
 #endif
 
 #ifdef BC7_COMPDEBUGGER
     CompViewerClient    CompClient;
     bool hold_UseMultitheading = m_Use_MultiThreading;
-    if (CompClient.connect())
-    {
+    if (CompClient.connect()) {
         m_Use_MultiThreading = false;
-        #ifdef USE_DBGTRACE
+#ifdef USE_DBGTRACE
         DbgTrace(("-------> Remote Server Connected"));
-        #endif
+#endif
     }
 #endif
 
@@ -567,14 +489,14 @@ CodecError CCodec_BC7::Compress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut,
     int lineAtPercent = (int)(dwBlocksY * 0.01F);
     if (lineAtPercent <= 0)  lineAtPercent = 1;
 
-    #ifdef USE_DBGTRACE
+#ifdef USE_DBGTRACE
     DbgTrace(("***********-----------START-------------***********"));
     DbgTrace(("IN : BufferType %d ChannelCount %d ChannelDepth %d",bufferIn.GetBufferType(),bufferIn.GetChannelCount(),bufferIn.GetChannelDepth()));
     DbgTrace(("   : Height %d Width %d Pitch %d isFloat %d",bufferIn.GetHeight(),bufferIn.GetWidth(),bufferIn.GetWidth(),bufferIn.IsFloat()));
 
     DbgTrace(("OUT: BufferType %d ChannelCount %d ChannelDepth %d",bufferOut.GetBufferType(),bufferOut.GetChannelCount(),bufferOut.GetChannelDepth()));
     DbgTrace(("   : Height %d Width %d Pitch %d isFloat %d",bufferOut.GetHeight(),bufferOut.GetWidth(),bufferOut.GetWidth(),bufferOut.IsFloat()));
-    #endif
+#endif
 
     char            row,col,srcIndex;
 
@@ -591,11 +513,9 @@ CodecError CCodec_BC7::Compress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut,
 #endif
 
     CMP_DWORD block = 0;
-    for(CMP_DWORD j = 0; j < dwBlocksY; j++)
-    {
+    for(CMP_DWORD j = 0; j < dwBlocksY; j++) {
 
-        for(CMP_DWORD i = 0; i < dwBlocksX; i++)
-        {
+        for(CMP_DWORD i = 0; i < dwBlocksX; i++) {
 
 #ifdef USE_FILEIO
             if (bc7_File)
@@ -603,7 +523,7 @@ CodecError CCodec_BC7::Compress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut,
 #endif
 
 #ifdef USE_DBGTRACE
-    DbgTrace(("--------------  Block: x=%3d y=%3d ---------------", i, j));
+            DbgTrace(("--------------  Block: x=%3d y=%3d ---------------", i, j));
 #endif
 
             double blockToEncode[BLOCK_SIZE_4X4][CHANNEL_SIZE_ARGB];
@@ -612,19 +532,16 @@ CodecError CCodec_BC7::Compress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut,
             memset(srcBlock,0,sizeof(srcBlock));
             bufferIn.ReadBlockRGBA(i*4, j*4, 4, 4, srcBlock);
 
-            #ifdef BC7_COMPDEBUGGER
-            if (CompClient.Connected())
-            {
+#ifdef BC7_COMPDEBUGGER
+            if (CompClient.Connected()) {
                 CompClient.SendData(1, sizeof(srcBlock), srcBlock);
             }
-            #endif
+#endif
 
             // Create the block for encoding
             srcIndex = 0;
-            for(row=0; row < BLOCK_SIZE_4; row++)
-            {
-                for(col=0; col < BLOCK_SIZE_4; col++)
-                {
+            for(row=0; row < BLOCK_SIZE_4; row++) {
+                for(col=0; col < BLOCK_SIZE_4; col++) {
                     blockToEncode[row*BLOCK_SIZE_4+col][BC_COMP_RED]        = (double)srcBlock[srcIndex];
                     blockToEncode[row*BLOCK_SIZE_4+col][BC_COMP_GREEN]        = (double)srcBlock[srcIndex+1];
                     blockToEncode[row*BLOCK_SIZE_4+col][BC_COMP_BLUE]        = (double)srcBlock[srcIndex+2];
@@ -633,16 +550,14 @@ CodecError CCodec_BC7::Compress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut,
                 }
             }
 
-           // printf("[i %3d, j%3d]\n",i,j);
+            // printf("[i %3d, j%3d]\n",i,j);
             EncodeBC7Block(blockToEncode, pOutBuffer + block);
 
 #ifdef BC7_COMPDEBUGGER // Checks decompression it should match or be close to source
-            if (CompClient.Connected())
-            {
+            if (CompClient.Connected()) {
                 CMP_BYTE destBlock[BLOCK_SIZE_4X4X4];
 
-                union FBLOCKS
-                {
+                union FBLOCKS {
                     double decodedBlock[16][4];
                     double destBlock[BLOCK_SIZE_4X4X4];
                 } DecData;
@@ -652,10 +567,8 @@ CodecError CCodec_BC7::Compress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut,
 
                 // Create the block for decoding
                 int srcIndex = 0;
-                for (int row = 0; row < BLOCK_SIZE_4; row++)
-                {
-                    for (int col = 0; col<BLOCK_SIZE_4; col++)
-                    {
+                for (int row = 0; row < BLOCK_SIZE_4; row++) {
+                    for (int col = 0; col<BLOCK_SIZE_4; col++) {
                         destBlock[srcIndex]     = (CMP_BYTE)DecData.decodedBlock[row*BLOCK_SIZE_4 + col][BC_COMP_RED];
                         destBlock[srcIndex + 1] = (CMP_BYTE)DecData.decodedBlock[row*BLOCK_SIZE_4 + col][BC_COMP_GREEN];
                         destBlock[srcIndex + 2] = (CMP_BYTE)DecData.decodedBlock[row*BLOCK_SIZE_4 + col][BC_COMP_BLUE];
@@ -688,13 +601,10 @@ CodecError CCodec_BC7::Compress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut,
             rMSE *= (1.0 / 16);
             MSE = int((bMSE + gMSE + rMSE) / 3);
 
-            if (MSE == 0)
-            {
+            if (MSE == 0) {
                 if (bc7_File)
                     fprintf(bc7_File, "MSE 000 PSNR ---\n", MSE);
-            }
-            else
-            {
+            } else {
                 bc7_total_MSE += MSE;
                 PSNR = (int)(20 * log10(pow(2.0, 8.0) - 1) - 10 * log10(MSE));
                 if (bc7_File)
@@ -705,38 +615,32 @@ CodecError CCodec_BC7::Compress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut,
         }
 
 #ifdef USE_THREADED_CALLBACKS
-        if(m_user_pFeedbackProc)
-        {
-             m_progress.progress = 100.f * (j * dwBlocksX) / dwBlocksXY;
+        if(m_user_pFeedbackProc) {
+            m_progress.progress = 100.f * (j * dwBlocksX) / dwBlocksXY;
             // Inform progress thread to update user feedback
             cmp_bc7_progress_update = true;
-            
+
             // Check if user abort the process
-            if (m_progress.abort)
-            {
+            if (m_progress.abort) {
                 cmp_progress->detach();
                 delete cmp_progress;
-                #ifdef BC7_COMPDEBUGGER
-                    CompClient.disconnect();
-                #endif
+#ifdef BC7_COMPDEBUGGER
+                CompClient.disconnect();
+#endif
                 FinishBC7Encoding();
                 return CE_Aborted;
             }
-         }
+        }
 #else
-        if (pFeedbackProc)
-        {
-            if ((j % lineAtPercent) == 0)
-            {
+        if (pFeedbackProc) {
+            if ((j % lineAtPercent) == 0) {
                 progress = (j * dwBlocksX) / fBlocksXY;
-                if (progress != old_progress)
-                {
+                if (progress != old_progress) {
                     old_progress = progress;
-                    if (pFeedbackProc(progress * 100.0f,pUser1,pUser2))
-                    {
-                        #ifdef BC7_COMPDEBUGGER
-                            CompClient.disconnect();
-                        #endif
+                    if (pFeedbackProc(progress * 100.0f,pUser1,pUser2)) {
+#ifdef BC7_COMPDEBUGGER
+                        CompClient.disconnect();
+#endif
                         FinishBC7Encoding();
                         return CE_Aborted;
                     }
@@ -747,44 +651,42 @@ CodecError CCodec_BC7::Compress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut,
     }
 
 #ifdef USE_FILEIO
-    if (bc7_File)
-    {
+    if (bc7_File) {
         if (bc7_blockcount == 0) bc7_blockcount = 1;
         fprintf(bc7_File, "Total MSE %6d AVG_MSE %6d\n\n", bc7_total_MSE, bc7_total_MSE / bc7_blockcount);
         fclose(bc7_File);
         bc7_File = NULL;
     }
 #endif
-    #ifdef BC7_COMPDEBUGGER
+#ifdef BC7_COMPDEBUGGER
     CompClient.disconnect();
     m_Use_MultiThreading = hold_UseMultitheading;
-    #endif
+#endif
 
 #ifdef USE_THREADED_CALLBACKS
     // Close progress thread Loop
-    m_progress.abort = true; 
+    m_progress.abort = true;
     cmp_progress->detach();
     delete cmp_progress;
 #endif
     // Close up remaining compression blocks
     CodecError cError = FinishBC7Encoding();
 
-    #ifdef USE_DBGTRACE
+#ifdef USE_DBGTRACE
     DbgTrace(("###########-----------DONE -------------###########"));
-    #endif
+#endif
 
     return cError;
 }
 
 
-CodecError CCodec_BC7::Decompress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut, Codec_Feedback_Proc pFeedbackProc, CMP_DWORD_PTR pUser1, CMP_DWORD_PTR pUser2)
-{
+CodecError CCodec_BC7::Decompress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut, Codec_Feedback_Proc pFeedbackProc, CMP_DWORD_PTR pUser1, CMP_DWORD_PTR pUser2) {
     assert(bufferIn.GetWidth() == bufferOut.GetWidth());
     assert(bufferIn.GetHeight() == bufferOut.GetHeight());
-    
+
     CodecError err = InitializeBC7Library();
     if (err != CE_OK) return err;
-    
+
     if(bufferIn.GetWidth() != bufferOut.GetWidth() || bufferIn.GetHeight() != bufferOut.GetHeight())
         return CE_Unknown;
 
@@ -792,18 +694,14 @@ CodecError CCodec_BC7::Decompress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOu
     const CMP_DWORD dwBlocksY = ((bufferIn.GetHeight() + 3) >> 2);
     const CMP_FLOAT fBlocksXY = (CMP_FLOAT)(dwBlocksX*dwBlocksY);
 
-    for(CMP_DWORD j = 0; j < dwBlocksY; j++)
-    {
-        for(CMP_DWORD i = 0; i < dwBlocksX; i++)
-        {
-            union FBLOCKS
-            {
+    for(CMP_DWORD j = 0; j < dwBlocksY; j++) {
+        for(CMP_DWORD i = 0; i < dwBlocksX; i++) {
+            union FBLOCKS {
                 double decodedBlock[16][4];
                 double destBlock[BLOCK_SIZE_4X4X4];
             } DecData;
 
-            union BBLOCKS
-            {
+            union BBLOCKS {
                 CMP_DWORD    compressedBlock[4];
                 CMP_BYTE            out[16];
                 CMP_BYTE            in[16];
@@ -818,10 +716,8 @@ CodecError CCodec_BC7::Decompress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOu
 
             // Create the block for decoding
             int srcIndex = 0;
-            for(int row=0; row < BLOCK_SIZE_4; row++)
-            {
-                for(int col=0; col<BLOCK_SIZE_4; col++)
-                {
+            for(int row=0; row < BLOCK_SIZE_4; row++) {
+                for(int col=0; col<BLOCK_SIZE_4; col++) {
                     destBlock[srcIndex]   = (CMP_BYTE)DecData.decodedBlock[row*BLOCK_SIZE_4+col][BC_COMP_RED];
                     destBlock[srcIndex+1] = (CMP_BYTE)DecData.decodedBlock[row*BLOCK_SIZE_4+col][BC_COMP_GREEN];
                     destBlock[srcIndex+2] = (CMP_BYTE)DecData.decodedBlock[row*BLOCK_SIZE_4+col][BC_COMP_BLUE];
@@ -834,11 +730,9 @@ CodecError CCodec_BC7::Decompress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOu
 
         }
 
-        if (pFeedbackProc)
-        {
+        if (pFeedbackProc) {
             float fProgress = 100.f * (j * dwBlocksX) / fBlocksXY;
-            if (pFeedbackProc(fProgress, pUser1, pUser2))
-            {
+            if (pFeedbackProc(fProgress, pUser1, pUser2)) {
                 return CE_Aborted;
             }
         }
@@ -848,13 +742,11 @@ CodecError CCodec_BC7::Decompress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOu
 }
 
 // Not implemented
-CodecError CCodec_BC7::Compress_Fast(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut, Codec_Feedback_Proc pFeedbackProc, CMP_DWORD_PTR pUser1, CMP_DWORD_PTR pUser2)
-{
+CodecError CCodec_BC7::Compress_Fast(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut, Codec_Feedback_Proc pFeedbackProc, CMP_DWORD_PTR pUser1, CMP_DWORD_PTR pUser2) {
     return CE_OK;
 }
 
 // Not implemented
-CodecError CCodec_BC7::Compress_SuperFast(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut, Codec_Feedback_Proc pFeedbackProc, CMP_DWORD_PTR pUser1, CMP_DWORD_PTR pUser2)
-{
-   return CE_OK;
+CodecError CCodec_BC7::Compress_SuperFast(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut, Codec_Feedback_Proc pFeedbackProc, CMP_DWORD_PTR pUser1, CMP_DWORD_PTR pUser2) {
+    return CE_OK;
 }

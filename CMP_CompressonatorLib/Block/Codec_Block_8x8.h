@@ -9,10 +9,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -29,19 +29,20 @@
 #ifndef _CODEC_BLOCK_8x8_H_INCLUDED_
 #define _CODEC_BLOCK_8x8_H_INCLUDED_
 
-#include "Codec_Block.h"
+#include "codec_block.h"
 
-class CCodec_Block_8x8 : public CCodec_Block  
-{
-public:
+class CCodec_Block_8x8 : public CCodec_Block {
+  public:
     CCodec_Block_8x8(CodecType codecType);
     virtual ~CCodec_Block_8x8();
 
     virtual CCodecBuffer* CreateBuffer(
-        CMP_BYTE nBlockWidth, CMP_BYTE nBlockHeight, CMP_BYTE nBlockDepth, 
+        CMP_BYTE nBlockWidth, CMP_BYTE nBlockHeight, CMP_BYTE nBlockDepth,
         CMP_DWORD dwWidth, CMP_DWORD dwHeight, CMP_DWORD dwPitch = 0, CMP_BYTE* pData = 0,CMP_DWORD dwDataSize = 0) const;
 
-    virtual CMP_DWORD GetBlockHeight() {return 4;};
+    virtual CMP_DWORD GetBlockHeight() {
+        return 4;
+    };
 };
 
 #endif // !defined(_CODEC_BLOCK_8x8_H_INCLUDED_)

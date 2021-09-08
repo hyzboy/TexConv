@@ -7,10 +7,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -28,18 +28,19 @@
 
 #define __CL_ENABLE_EXCEPTIONS
 
-#include "Common_Def.h"
+#include "common_def.h"
 
-#include "Compute_Base.h"
-#include "Common_KernelDef.h"
-#include "TextureIO.h"
+#include "compute_base.h"
+#include "common_kerneldef.h"
+#include "textureio.h"
 #include "crc32.h"
 #include <d3d11.h>
 #include <d3dcompiler.h>
+#include <d3d11shadertracing.h>
+#include <wrl.h>
 
 #if defined(_DEBUG)
 #include <dxgidebug.h>
-#include <wrl.h>
 #endif
 
 #include "query_timer.h"
@@ -57,15 +58,35 @@ UINT const MAX_QUERY_FRAME_NUM = 5;
 #define V_RETURN( x )    { hr = (x); if( FAILED(hr) ) { return hr; } }
 #endif
 
-struct Buffer128Bits
+//-------------------------------------------------
+// Data structure used to share data per pixel
+// between multiple shader calls
+//-------------------------------------------------
+
+struct SharedIOData
+{
+    CGU_UINT32 error;
+    CGU_UINT32 mode;
+    CGU_UINT32 index_selector;
+    CGU_UINT32 pbit;
+    CGU_UINT32 partition;
+    CGU_Vec4ui data2;
+};
+
+
+//---------------------------------------------------
+// Data structures for final compressed image blocks
+//---------------------------------------------------
+struct OutCompressedStruct64Bits
+{
+    UINT color[2];
+};
+
+struct OutCompressedStruct128Bits
 {
     UINT color[4];
 };
 
-struct Buffer64Bits
-{
-    UINT color[2];
-};
 
 #define BLOCK_SIZE_Y    4
 #define BLOCK_SIZE_X    4
@@ -81,13 +102,10 @@ struct Buffer64Bits
 
 // #define USE_COMMON_PIPELINE_API     // Reserved for updates on next release
 
-#if defined(_DEBUG)
 using Microsoft::WRL::ComPtr;
-#endif
 
-class CDirectX :public ComputeBase
-{
-public:
+class CDirectX :public ComputeBase {
+  public:
     CDirectX(void *kerneloptions);
     ~CDirectX();
 
@@ -100,8 +118,7 @@ public:
     const char* GetVersion();
     int         GetMaxUCores();
 
-
-private:
+  private:
     bool            m_programRun;
     CMP_FORMAT      m_codecFormat;
 
@@ -125,8 +142,7 @@ private:
     bool    RunKernel();
     bool    GetResults();
 
-    union
-    {
+    union {
         char            *buffer;
         unsigned char   *ubuffer;
     } p_program;
@@ -160,6 +176,10 @@ private:
     float   m_fquality;
     int     m_activeEncoder;
 
+    // Additional BC7 Mode options to try over default modes 4,5 and 6
+    bool m_bc7_mode02;
+    bool m_bc7_mode137;
+
     // GPU Performance Monitoring
     cmp_cputimer        m_cmpTimer;
     ID3D11Query*        m_pQueryDisjoint;        // Checks for valid timestamp query
@@ -186,14 +206,15 @@ private:
 
     // Shader execution
     void RunComputeShader(
-                          ID3D11ComputeShader* pComputeShader,
-                          ID3D11ShaderResourceView** pShaderResourceViews,
-                          UINT uNumSRVs,
-                          ID3D11Buffer* pCBCS,
-                          ID3D11UnorderedAccessView* pUnorderedAccessView,
-                          UINT X, UINT Y, UINT Z,
-                          UINT numBlocks,
-                          bool fixed);
+        ID3D11ComputeShader* pComputeShader,
+        ID3D11ShaderResourceView** pShaderResourceViews,
+        UINT uNumSRVs,
+        ID3D11Buffer* pCBCS,
+        ID3D11UnorderedAccessView* pUnorderedAccessView,
+        UINT X, UINT Y, UINT Z,
+        UINT numBlocks);
+
+    void ResetContext();
 
     // Device Info
     std::string          m_deviceName;

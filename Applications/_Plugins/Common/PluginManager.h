@@ -40,8 +40,8 @@
 #endif
 #include <vector>
 
-//#include "PluginInterface.h"
-#include "PluginBase.h"
+//#include "plugininterface.h"
+#include "pluginbase.h"
 
 
 #define MAX_PLUGIN_FILENAME_STR   512
@@ -52,59 +52,68 @@
 
 #define DEFAULT_PLUGINLIST_DIR    "./plugins"
 
-class PluginDetails
-{
- public:
-        PluginDetails() { clearMembers(); }
-        ~PluginDetails();
+class PluginDetails {
+  public:
+    PluginDetails() {
+        clearMembers();
+    }
+    ~PluginDetails();
 
-        void *makeNewInstance();
-        void setFileName(char * nm);
-        char *getFileName()     { return filename; }
-        char *getName()         { return pluginName; }
-        char *getUUID()         { return pluginUUID; }
-        char *getType()         { return pluginType; }
-        char *getCategory()     { return pluginCategory; }
-        void setName(char * nm);
-        void setUUID(char * nm);
-        void setType(char * nm);
-        void setCategory(char * nm);
-        bool                isStatic;
-        bool                isRegistered;       // true when all dll interfaces has been registered using LoadLibraryA and GetProcAddress
-        PLUGIN_FACTORYFUNC  funcHandle;
-private:
-        void clearMembers()
-        {
+    void *makeNewInstance();
+    void setFileName(char * nm);
+    char *getFileName()     {
+        return filename;
+    }
+    char *getName()         {
+        return pluginName;
+    }
+    char *getUUID()         {
+        return pluginUUID;
+    }
+    char *getType()         {
+        return pluginType;
+    }
+    char *getCategory()     {
+        return pluginCategory;
+    }
+    void setName(char * nm);
+    void setUUID(char * nm);
+    void setType(char * nm);
+    void setCategory(char * nm);
+    bool                isStatic;
+    bool                isRegistered;       // true when all dll interfaces has been registered using LoadLibraryA and GetProcAddress
+    PLUGIN_FACTORYFUNC  funcHandle;
+  private:
+    void clearMembers() {
 #ifdef _WIN32
-            dllHandle  = NULL;
+        dllHandle  = NULL;
 #endif
-            isStatic   = false;
-            isRegistered = false;
+        isStatic   = false;
+        isRegistered = false;
 
-            filename[0]   = 0;
-            pluginType[0] = 0;
-            pluginName[0] = 0;
-            pluginUUID[0] = 0;
-            pluginCategory[0] = 0;
+        filename[0]   = 0;
+        pluginType[0] = 0;
+        pluginName[0] = 0;
+        pluginUUID[0] = 0;
+        pluginCategory[0] = 0;
 
-            funcHandle = NULL;
-        }
+        funcHandle = NULL;
+    }
 
-        char filename   [MAX_PLUGIN_FILENAME_STR];
-        char pluginType [MAX_PLUGIN_TYPE_STR];
-        char pluginName [MAX_PLUGIN_NAME_STR];
-        char pluginUUID [MAX_PLUGIN_UUID_STR];
-        char pluginCategory[MAX_PLUGIN_CATEGORY_STR];
+    char filename   [MAX_PLUGIN_FILENAME_STR];
+    char pluginType [MAX_PLUGIN_TYPE_STR];
+    char pluginName [MAX_PLUGIN_NAME_STR];
+    char pluginUUID [MAX_PLUGIN_UUID_STR];
+    char pluginCategory[MAX_PLUGIN_CATEGORY_STR];
 
 #ifdef _WIN32
-        HINSTANCE           dllHandle;
+    HINSTANCE           dllHandle;
 #endif
 
 };
 
-class PluginManager
-{
-public:
+class PluginManager {
+  public:
     PluginManager();
     ~PluginManager();
     void getPluginList(char * dirPath, bool append = false);
@@ -121,7 +130,7 @@ public:
     void *GetPlugin(char *type, const char *name);
     void *GetPlugin(char *uuid);
     bool RemovePlugin(char *type, char *name);
-private:
+  private:
     bool         m_pluginlistset;
     char         m_pluginfolder [MAX_PLUGIN_FILENAME_STR];
     void         clearPluginList();

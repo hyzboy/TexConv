@@ -11,7 +11,7 @@
 
 #pragma once
 
-#include <Compressonator.h>
+#include <compressonator.h>
 
 #include <stdlib.h>
 #include <string>
@@ -239,8 +239,9 @@ public:
                 colorSpace = surfaceFormats[0].colorSpace;
             }
         }
-        
+
     }
+
 
     // Connect to the instance und device and get all required function pointers
     void connect(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device)

@@ -24,19 +24,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include "GltfDepthPassVK.h"
+#include "gltfdepthpassvk.h"
 
-#include "DynamicBufferRingVK.h"
-#include "GltfCommon.h"
-#include "GltfHelpers.h"
-#include "GltfHelpers_Vulkan.h"
-#include "ResourceViewHeapsVK.h"
-#include "ShaderCompilerHelper.h"
-#include "TextureVK.h"
-#include "ThreadPool.h"
-#include "UploadHeapVK.h"
+#include "dynamicbufferringvk.h"
+#include "gltfcommon.h"
+#include "gltfhelpers.h"
+#include "gltfhelpers_vulkan.h"
+#include "resourceviewheapsvk.h"
+#include "shadercompilerhelper.h"
+#include "texturevk.h"
+#include "threadpool.h"
+#include "uploadheapvk.h"
 
-#include <filesystem>
 #include <vector>
 
 void GltfDepthPass::OnCreate(
@@ -46,8 +45,7 @@ void GltfDepthPass::OnCreate(
     ResourceViewHeapsVK *pHeaps,
     DynamicBufferRingVK *pDynamicBufferRing,
     StaticBufferPoolVK *pStaticBufferPool,
-    GLTFCommon *pGLTFData, void *pluginManager, void *msghandler)
-{
+    GLTFCommon *pGLTFData, void *pluginManager, void *msghandler) {
     m_pDevice = pDevice;
     m_pGLTFData = pGLTFData;
     m_pDynamicBufferRing = pDynamicBufferRing;
@@ -56,14 +54,12 @@ void GltfDepthPass::OnCreate(
 
     json &j3 = pGLTFData->j3;
 
-    // Load Textures (A cache should take care of deduplication) 
-    //    
+    // Load Textures (A cache should take care of deduplication)
+    //
     auto images = j3["images"];
-    if (images.size() > 0)
-    {
+    if (images.size() > 0) {
         m_textures.resize(images.size());
-        for (unsigned int i = 0; i<images.size(); i++)
-        {
+        for (unsigned int i = 0; i<images.size(); i++) {
             std::string filename = images[i]["uri"];
 
             INT32 result = m_textures[i].InitFromFile(pDevice, pUploadHeap, (pGLTFData->m_path + filename).c_str(), pluginManager, msghandler);
@@ -95,66 +91,61 @@ void GltfDepthPass::OnCreate(
     std::vector<DepthMaterial *> materialsData;
     auto materials = j3["materials"];
     auto textures = j3["textures"];
-    if ((materials.size() > 0) && (textures.size() > 0))
-    {
-        for (unsigned int i = 0; i < materials.size(); i++)
-    {
-        json::object_t material = materials[i];
+    if ((materials.size() > 0) && (textures.size() > 0)) {
+        for (unsigned int i = 0; i < materials.size(); i++) {
+            json::object_t material = materials[i];
 
-        DepthMaterial *tfmat = new DepthMaterial();
-        materialsData.push_back(tfmat);
+            DepthMaterial *tfmat = new DepthMaterial();
+            materialsData.push_back(tfmat);
 
-        // Load material constants. This is a depth pass and we are only interested in the txtures that are transparent
-        //               
-        std::string opaque = GetElementString(material, "alphaMode", "OPAQUE");
-        if (opaque != "OPAQUE")
-        {
-            tfmat->m_defines["DEF_alphaMode_" + GetElementString(material, "alphaMode", "OPAQUE")] = 1;
-            tfmat->m_defines["DEF_alphaCutoff"] = std::to_string(GetElementFloat(material, "alphaCutoff", 1.0));
-            tfmat->m_doubleSided = GetElementBoolean(material, "doubleSided", false);
-
-            // If transparent create glTF 2.0 baseColorTexture SRV 
+            // Load material constants. This is a depth pass and we are only interested in the txtures that are transparent
             //
-            if (textures.size() > 0)
-            {
-                int id = GetElementInt(material, "pbrMetallicRoughness/baseColorTexture/index", -1);
-                if (id > 0)
-                {
-                    int tex = textures[id]["source"];
-                    Texture *pTex = &m_textures[tex];
+            std::string opaque = GetElementString(material, "alphaMode", "OPAQUE");
+            if (opaque != "OPAQUE") {
+                tfmat->m_defines["DEF_alphaMode_" + GetElementString(material, "alphaMode", "OPAQUE")] = 1;
+                tfmat->m_defines["DEF_alphaCutoff"] = std::to_string(GetElementFloat(material, "alphaCutoff", 1.0));
+                tfmat->m_doubleSided = GetElementBoolean(material, "doubleSided", false);
 
-                    VkDescriptorSetLayoutBinding layout_binding;
-                    layout_binding.binding = 0;
-                    layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-                    layout_binding.descriptorCount = 1;
-                    layout_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-                    layout_binding.pImmutableSamplers = NULL;
+                // If transparent create glTF 2.0 baseColorTexture SRV
+                //
+                if (textures.size() > 0) {
+                    int id = GetElementInt(material, "pbrMetallicRoughness/baseColorTexture/index", -1);
+                    if (id > 0) {
+                        int tex = textures[id]["source"];
+                        Texture *pTex = &m_textures[tex];
 
-                    VkWriteDescriptorSet writes;
-                    VkDescriptorImageInfo desc_image;
+                        VkDescriptorSetLayoutBinding layout_binding;
+                        layout_binding.binding = 0;
+                        layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                        layout_binding.descriptorCount = 1;
+                        layout_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+                        layout_binding.pImmutableSamplers = NULL;
 
-                    desc_image.sampler = m_sampler;
-                    desc_image.imageView = VK_NULL_HANDLE;
-                    desc_image.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                        VkWriteDescriptorSet writes;
+                        VkDescriptorImageInfo desc_image;
 
-                    writes = {};
-                    writes.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                    writes.dstBinding = 0;
-                    writes.pNext = NULL;
-                    writes.dstSet = tfmat->m_descriptorSet;
-                    writes.descriptorCount = 1;
-                    writes.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-                    writes.pImageInfo = &desc_image;
-                    writes.dstArrayElement = 0;
+                        desc_image.sampler = m_sampler;
+                        desc_image.imageView = VK_NULL_HANDLE;
+                        desc_image.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-                    pTex->CreateSRV(0, &desc_image.imageView);
+                        writes = {};
+                        writes.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                        writes.dstBinding = 0;
+                        writes.pNext = NULL;
+                        writes.dstSet = tfmat->m_descriptorSet;
+                        writes.descriptorCount = 1;
+                        writes.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                        writes.pImageInfo = &desc_image;
+                        writes.dstArrayElement = 0;
 
-                    tfmat->m_textureCount = 1;
-                    tfmat->m_defines["ID_baseColorTexture"] = "0";
+                        pTex->CreateSRV(0, &desc_image.imageView);
+
+                        tfmat->m_textureCount = 1;
+                        tfmat->m_defines["ID_baseColorTexture"] = "0";
+                    }
                 }
             }
         }
-    }
     }
 
     // Load Meshes
@@ -163,14 +154,12 @@ void GltfDepthPass::OnCreate(
     auto bufferViews = j3["bufferViews"];
     auto meshes = j3["meshes"];
     m_meshes.resize(meshes.size());
-    for (unsigned int i = 0; i < meshes.size(); i++)
-    {
+    for (unsigned int i = 0; i < meshes.size(); i++) {
         DepthMesh* tfmesh = &m_meshes[i];
 
         auto primitives = meshes[i]["primitives"];
         tfmesh->m_pPrimitives.resize(primitives.size());
-        for (unsigned int p = 0; p < primitives.size(); p++)
-        {
+        for (unsigned int p = 0; p < primitives.size(); p++) {
             DepthPrimitives* pPrimitive = &tfmesh->m_pPrimitives[p];
             auto primitive = primitives[p];
 
@@ -198,8 +187,7 @@ void GltfDepthPass::OnCreate(
             semanticNames.resize(attribute.size());
 
             int cnt = 0;
-            for (auto it = attribute.begin(); it != attribute.end(); it++)
-            {
+            for (auto it = attribute.begin(); it != attribute.end(); it++) {
                 // the glTF attributes name may end in a number, DX12 doest like this and if this is the case we need to split the attribute name from the number
                 //
                 CMP_DWORD semanticIndex = 0;
@@ -208,8 +196,7 @@ void GltfDepthPass::OnCreate(
 
                 // We are only interested in the position or the texcoords (that is if the geoemtry uses a transparent material)
                 //
-                if (semanticName != "Position")
-                {
+                if (semanticName != "Position") {
                     if (pPrimitive->m_pMaterial->m_defines.find("DEF_alphaMode_OPAQUE") != pPrimitive->m_pMaterial->m_defines.end())
                         if (semanticName != "TEXCOORD")
                             continue;
@@ -238,28 +225,24 @@ void GltfDepthPass::OnCreate(
             CreateGeometry(indexBuffer, vertexBuffers, pPrimitive);
             //GetThreadPool()->Add_Job([=]()
             //{
-                CreatePipeline(pDevice, renderPass, semanticNames, attributes, pPrimitive);
+            CreatePipeline(pDevice, renderPass, semanticNames, attributes, pPrimitive);
             //});
         }
     }
 }
 
-void GltfDepthPass::OnDestroy()
-{
-    for (unsigned int i = 0; i < m_textures.size(); i++)
-    {
+void GltfDepthPass::OnDestroy() {
+    for (unsigned int i = 0; i < m_textures.size(); i++) {
         m_textures[i].OnDestroy();
     }
 }
 
-void GltfDepthPass::CreatePipeline(DeviceVK* pDevice, VkRenderPass renderPass, std::vector<std::string> semanticNames, std::vector<VkVertexInputAttributeDescription> layout, DepthPrimitives* pPrimitive)
-{
+void GltfDepthPass::CreatePipeline(DeviceVK* pDevice, VkRenderPass renderPass, std::vector<std::string> semanticNames, std::vector<VkVertexInputAttributeDescription> layout, DepthPrimitives* pPrimitive) {
     VkResult res;
 
     // let vertex shader know what buffers are present
     std::map<std::string, std::string> attributeDefines;
-    for (unsigned int i = 0; i < semanticNames.size(); i++)
-    {
+    for (unsigned int i = 0; i < semanticNames.size(); i++) {
         attributeDefines[std::string("ID_") + semanticNames[i]] = "1";
     }
 
@@ -343,8 +326,7 @@ void GltfDepthPass::CreatePipeline(DeviceVK* pDevice, VkRenderPass renderPass, s
     // vertex input state
 
     std::vector<VkVertexInputBindingDescription> vi_binding(layout.size());
-    for (unsigned int i = 0; i < layout.size(); i++)
-    {
+    for (unsigned int i = 0; i < layout.size(); i++) {
         vi_binding[i].binding = layout[i].binding;
         vi_binding[i].stride = SizeOfFormat_Vulkan(layout[i].format);
         vi_binding[i].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
@@ -412,7 +394,8 @@ void GltfDepthPass::CreatePipeline(DeviceVK* pDevice, VkRenderPass renderPass, s
 
     std::vector<VkDynamicState> dynamicStateEnables = {
         VK_DYNAMIC_STATE_VIEWPORT,
-        VK_DYNAMIC_STATE_SCISSOR };
+        VK_DYNAMIC_STATE_SCISSOR
+    };
     VkPipelineDynamicStateCreateInfo dynamicState = {};
     dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
     dynamicState.pNext = NULL;
@@ -504,19 +487,16 @@ void GltfDepthPass::CreatePipeline(DeviceVK* pDevice, VkRenderPass renderPass, s
     assert(res == VK_SUCCESS);
 }
 
-GltfDepthPass::per_batch* GltfDepthPass::SetPerBatchConstants()
-{
+GltfDepthPass::per_batch* GltfDepthPass::SetPerBatchConstants() {
     GltfDepthPass::per_batch* cbPerBatch;
     m_pDynamicBufferRing->AllocConstantBuffer(sizeof(GltfDepthPass::per_batch), (void**)&cbPerBatch, &m_perBatchDesc);
 
     return cbPerBatch;
 }
 
-void GltfDepthPass::DrawMesh(VkCommandBuffer cmd_buf, int meshIndex, const glm::mat4x4& worldMatrix)
-{
+void GltfDepthPass::DrawMesh(VkCommandBuffer cmd_buf, int meshIndex, const glm::mat4x4& worldMatrix) {
     DepthMesh* pMesh = &m_meshes[meshIndex];
-    for (unsigned int p = 0; p < pMesh->m_pPrimitives.size(); p++)
-    {
+    for (unsigned int p = 0; p < pMesh->m_pPrimitives.size(); p++) {
         DepthPrimitives* pPrimitive = &pMesh->m_pPrimitives[p];
 
         if (pPrimitive->m_pipeline == NULL)
@@ -534,8 +514,7 @@ void GltfDepthPass::DrawMesh(VkCommandBuffer cmd_buf, int meshIndex, const glm::
         std::uint32_t size = (std::uint32_t)pPrimitive->m_VBV.size();
         std::vector<VkBuffer> buffers(size);
         std::vector<VkDeviceSize> offsets(size);
-        for (std::uint32_t i = 0; i < size; i++)
-        {
+        for (std::uint32_t i = 0; i < size; i++) {
             buffers[i] = pPrimitive->m_VBV[i].buffer;
             offsets[i] = pPrimitive->m_VBV[i].offset;
         }

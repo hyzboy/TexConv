@@ -24,26 +24,24 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include "GltfPbrVK.h"
+#include "gltfpbrvk.h"
 
-#include "DeviceVK.h"
-#include "DynamicBufferRingVK.h"
-#include "GltfCommon.h"
-#include "GltfHelpers.h"
-#include "GltfHelpers_Vulkan.h"
-#include "ResourceViewHeapsVK.h"
-#include "ShaderCompilerHelper.h"
-#include "ThreadPool.h"
-#include "UploadHeapVK.h"
+#include "devicevk.h"
+#include "dynamicbufferringvk.h"
+#include "gltfcommon.h"
+#include "gltfhelpers.h"
+#include "gltfhelpers_vulkan.h"
+#include "resourceviewheapsvk.h"
+#include "shadercompilerhelper.h"
+#include "threadpool.h"
+#include "uploadheapvk.h"
 
 #include <vector>
 
 
-void GltfPbrVK::AddTextureIfExists(json::object_t material, json::array_t textures, std::map<std::string, Texture*>& map, char* texturePath, char* textureName)
-{
+void GltfPbrVK::AddTextureIfExists(json::object_t material, json::array_t textures, std::map<std::string, Texture*>& map, char* texturePath, char* textureName) {
     int id = GetElementInt(material, texturePath, -1);
-    if (id >= 0)
-    {
+    if (id >= 0) {
         int tex = textures[id]["source"];
         map[textureName] = &m_textures[tex];
     }
@@ -61,28 +59,26 @@ void GltfPbrVK::OnCreate(
     Texture *pShadowMap,
     void *pluginManager,
     void *msghandler
-    )
-{
+) {
     m_pDevice = pDevice;
     m_pGLTFData = pGLTFData;
     m_pDynamicBufferRing = pDynamicBufferRing;
     m_pResourceViewHeaps = pHeaps;
     m_pStaticBufferPool = pStaticBufferPool;
-/*
-    // Load cubemaps maps for IBL
-    m_pCubeDiffuseTexture = pSkyDome->GetDiffuseCubeMap();
-    m_pCubeSpecularTexture = pSkyDome->GetSpecularCubeMap();
-    m_BrdfTexture.InitFromFile(pDevice, pUploadHeap, L"..\\media\\envmap\\brdf.dds");
-    pUploadHeap->FlushAndFinish();
-*/
+    /*
+        // Load cubemaps maps for IBL
+        m_pCubeDiffuseTexture = pSkyDome->GetDiffuseCubeMap();
+        m_pCubeSpecularTexture = pSkyDome->GetSpecularCubeMap();
+        m_BrdfTexture.InitFromFile(pDevice, pUploadHeap, L"..\\media\\envmap\\brdf.dds");
+        pUploadHeap->FlushAndFinish();
+    */
     json &j3 = pGLTFData->j3;
 
     // Load Textures
     // ToDo - Change to use TextureIO in next release
     auto images = j3["images"];
     m_textures.resize(images.size());
-    for (unsigned int i = 0; i<images.size(); i++)
-    {
+    for (unsigned int i = 0; i<images.size(); i++) {
         std::string filename = images[i]["uri"];
 
         INT32 result = m_textures[i].InitFromFile(pDevice, pUploadHeap, (pGLTFData->m_path + filename).c_str(), pluginManager, msghandler);
@@ -113,8 +109,7 @@ void GltfPbrVK::OnCreate(
     std::vector<PBRMaterial *> materialsData;
     auto materials = j3["materials"];
     auto textures = j3["textures"];
-    for (unsigned int i = 0; i < materials.size(); i++)
-    {
+    for (unsigned int i = 0; i < materials.size(); i++) {
         json::object_t material = materials[i];
 
         PBRMaterial *tfmat = new PBRMaterial();
@@ -135,8 +130,7 @@ void GltfPbrVK::OnCreate(
         // load glTF 2.0 material's textures (if present) and create descriptor set
         //
         std::map<std::string, Texture *> texturesBase;
-        if (textures.size() > 0)
-        {
+        if (textures.size() > 0) {
             AddTextureIfExists(material, textures, texturesBase, "pbrMetallicRoughness/baseColorTexture/index", "baseColorTexture");
             AddTextureIfExists(material, textures, texturesBase, "pbrMetallicRoughness/metallicRoughnessTexture/index", "metallicRoughnessTexture");
             AddTextureIfExists(material, textures, texturesBase, "emissiveTexture/index", "emissiveTexture");
@@ -145,29 +139,27 @@ void GltfPbrVK::OnCreate(
         }
 
         tfmat->m_textureCount = (int)texturesBase.size();
-/*
-        if (m_pCubeDiffuseTexture)
-            tfmat->m_textureCount += 1;
+        /*
+                if (m_pCubeDiffuseTexture)
+                    tfmat->m_textureCount += 1;
 
-        if (m_pCubeSpecularTexture)
-            tfmat->m_textureCount += 1;
+                if (m_pCubeSpecularTexture)
+                    tfmat->m_textureCount += 1;
 
-        //+ 1 brdf lookup texture, add that to the total count of textures used
-        tfmat->m_textureCount += 1;
-*/
+                //+ 1 brdf lookup texture, add that to the total count of textures used
+                tfmat->m_textureCount += 1;
+        */
         // plus shadows
         if (pShadowMap != NULL)
             tfmat->m_textureCount += 1;
 
-        if (tfmat->m_textureCount >= 0)
-        {
+        if (tfmat->m_textureCount >= 0) {
             std::vector<VkDescriptorSetLayoutBinding> layout_bindings(tfmat->m_textureCount);
 
             int cnt = 0;
 
-            //create SRVs and #defines so the shader compiler knows what the index of each texture is           
-            for (auto it = texturesBase.begin(); it != texturesBase.end(); it++)
-            {
+            //create SRVs and #defines so the shader compiler knows what the index of each texture is
+            for (auto it = texturesBase.begin(); it != texturesBase.end(); it++) {
                 tfmat->m_defines[std::string("ID_") + it->first] = std::to_string(cnt);
 
                 layout_bindings[cnt].binding = cnt;
@@ -179,8 +171,7 @@ void GltfPbrVK::OnCreate(
                 cnt++;
             }
 
-            if (pShadowMap != NULL)
-            {
+            if (pShadowMap != NULL) {
                 tfmat->m_defines["ID_shadowMap"] = std::to_string(cnt);
 
                 layout_bindings[cnt].binding = cnt;
@@ -198,8 +189,7 @@ void GltfPbrVK::OnCreate(
 
             std::vector<VkWriteDescriptorSet> writes(tfmat->m_textureCount);
             std::vector<VkDescriptorImageInfo> desc_image(tfmat->m_textureCount);
-            for (auto it = texturesBase.begin(); it != texturesBase.end(); it++)
-            {
+            for (auto it = texturesBase.begin(); it != texturesBase.end(); it++) {
                 desc_image[cnt].sampler = m_sampler;
                 desc_image[cnt].imageView = VK_NULL_HANDLE;
                 desc_image[cnt].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -219,29 +209,28 @@ void GltfPbrVK::OnCreate(
                 cnt++;
             }
 
-/*
-            //create SRVs and #defines for the IBL resources
-            if (m_pCubeDiffuseTexture)
-            {
-                tfmat->m_defines["ID_diffuseCube"] = std::to_string(cnt);
-                m_pCubeDiffuseTexture->CreateCubeSRV(cnt++, tfmat->m_pTexturesTable);
-                tfmat->m_defines["USE_IBL"] = "1";
-            }
+            /*
+                        //create SRVs and #defines for the IBL resources
+                        if (m_pCubeDiffuseTexture)
+                        {
+                            tfmat->m_defines["ID_diffuseCube"] = std::to_string(cnt);
+                            m_pCubeDiffuseTexture->CreateCubeSRV(cnt++, tfmat->m_pTexturesTable);
+                            tfmat->m_defines["USE_IBL"] = "1";
+                        }
 
-            if (m_pCubeSpecularTexture)
-            {
-                tfmat->m_defines["ID_specularCube"] = std::to_string(cnt);
-                m_pCubeSpecularTexture->CreateCubeSRV(cnt++, tfmat->m_pTexturesTable);
-                tfmat->m_defines["USE_IBL"] = "1";
-            }
+                        if (m_pCubeSpecularTexture)
+                        {
+                            tfmat->m_defines["ID_specularCube"] = std::to_string(cnt);
+                            m_pCubeSpecularTexture->CreateCubeSRV(cnt++, tfmat->m_pTexturesTable);
+                            tfmat->m_defines["USE_IBL"] = "1";
+                        }
 
-            tfmat->m_defines["ID_brdfTexture"] = std::to_string(cnt);
-            m_BrdfTexture.CreateSRV(cnt++, tfmat->m_pTexturesTable);
-            */
+                        tfmat->m_defines["ID_brdfTexture"] = std::to_string(cnt);
+                        m_BrdfTexture.CreateSRV(cnt++, tfmat->m_pTexturesTable);
+                        */
 
             // add SRV for the shadowmap
-            if (pShadowMap!=NULL)
-            {
+            if (pShadowMap!=NULL) {
                 desc_image[cnt].sampler = m_sampler;
                 desc_image[cnt].imageView = VK_NULL_HANDLE;
                 desc_image[cnt].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -254,7 +243,7 @@ void GltfPbrVK::OnCreate(
                 writes[cnt].descriptorCount = 1;
                 writes[cnt].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
                 writes[cnt].pImageInfo = &desc_image[cnt];
-                writes[cnt].dstArrayElement = 0;                
+                writes[cnt].dstArrayElement = 0;
                 pShadowMap->CreateSRV(cnt, &desc_image[cnt].imageView);
                 cnt++;
             }
@@ -270,14 +259,12 @@ void GltfPbrVK::OnCreate(
     json::array_t bufferViews = j3["bufferViews"];
     json::array_t meshes = j3["meshes"];
     m_meshes.resize(meshes.size());
-    for (unsigned int i = 0; i < meshes.size(); i++)
-    {
+    for (unsigned int i = 0; i < meshes.size(); i++) {
         PBRMesh *tfmesh = &m_meshes[i];
 
         auto primitives = meshes[i]["primitives"];
         tfmesh->m_pPrimitives.resize(primitives.size());
-        for (unsigned int p = 0; p < primitives.size(); p++)
-        {
+        for (unsigned int p = 0; p < primitives.size(); p++) {
             PBRPrimitives *pPrimitive = &tfmesh->m_pPrimitives[p];
             auto primitive = primitives[p];
 
@@ -298,20 +285,18 @@ void GltfPbrVK::OnCreate(
             std::vector<tfAccessor> vertexBuffers;
             std::vector<std::string> semanticNames;
             std::vector<VkVertexInputAttributeDescription> attributes;      // std::vector<D3D12_INPUT_ELEMENT_DESC> layout;
-            
+
             auto attribute = primitive["attributes"];
             attributes.resize(attribute.size());            // layout.reserve(attribute.size());
             vertexBuffers.resize(attribute.size());
             semanticNames.resize(attribute.size());         // vertexBuffers.resize(attribute.size());
 
             int cnt = 0;
-            for (auto it = attribute.begin(); it != attribute.end(); it++)
-            {
+            for (auto it = attribute.begin(); it != attribute.end(); it++) {
                 int index = cnt; // std::uint32_t semanticIndex = 0;
 
                 // Diff from DX12 code =====
-                if (it.key() == "TANGENT")
-                {
+                if (it.key() == "TANGENT") {
                     index = (int)attributes.size() - 1;
                     cnt--;
                 }
@@ -341,41 +326,34 @@ void GltfPbrVK::OnCreate(
 
             CreateGeometry(indexBuffer, vertexBuffers, pPrimitive);
             //GetThreadPool()->Add_Job([=]()
-            //{               
-                CreatePipeline(pDevice, renderPass, semanticNames, attributes, pPrimitive);
-            //});          
+            //{
+            CreatePipeline(pDevice, renderPass, semanticNames, attributes, pPrimitive);
+            //});
         }
     }
 }
 
-void GltfPbrVK::OnDestroy()
-{
-    for (unsigned int i = 0; i < m_textures.size(); i++)
-    {
+void GltfPbrVK::OnDestroy() {
+    for (unsigned int i = 0; i < m_textures.size(); i++) {
         m_textures[i].OnDestroy();
     }
-/*
-    m_BrdfTexture.OnDestroy();
-*/
+    /*
+        m_BrdfTexture.OnDestroy();
+    */
 }
 
-void GltfPbrVK::CreatePipeline(DeviceVK* pDevice, VkRenderPass renderPass, std::vector<std::string> semanticNames, std::vector<VkVertexInputAttributeDescription> layout, PBRPrimitives *pPrimitive)
-{
+void GltfPbrVK::CreatePipeline(DeviceVK* pDevice, VkRenderPass renderPass, std::vector<std::string> semanticNames, std::vector<VkVertexInputAttributeDescription> layout, PBRPrimitives *pPrimitive) {
     VkResult res;
 
     // let vertex shader know what buffers are present
     std::map<std::string, std::string> attributeDefines;
-    for (unsigned int i = 0; i < semanticNames.size(); i++)
-    {
+    for (unsigned int i = 0; i < semanticNames.size(); i++) {
         attributeDefines[std::string("ID_") + semanticNames[i]] = std::to_string(layout[i].binding);
     }
 
-    if (attributeDefines.find("ID_TANGENT")!= attributeDefines.end())
-    {
+    if (attributeDefines.find("ID_TANGENT")!= attributeDefines.end()) {
         attributeDefines[std::string("ID_WORLDPOS")] = std::to_string(semanticNames.size() + 2);
-    }
-    else
-    {
+    } else {
         attributeDefines[std::string("ID_WORLDPOS")] = std::to_string(semanticNames.size());
     }
 
@@ -418,7 +396,7 @@ void GltfPbrVK::CreatePipeline(DeviceVK* pDevice, VkRenderPass renderPass, std::
     layout_bindings[1].pImmutableSamplers = NULL;
 
     m_pResourceViewHeaps->AllocDescriptor(&layout_bindings, &pPrimitive->m_descriptorSetLayout, &pPrimitive->m_descriptorSet);
-    
+
     VkWriteDescriptorSet writes[2];
     writes[0] = {};
     writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -461,8 +439,7 @@ void GltfPbrVK::CreatePipeline(DeviceVK* pDevice, VkRenderPass renderPass, std::
     // vertex input state
 
     std::vector<VkVertexInputBindingDescription> vi_binding(layout.size());
-    for (unsigned int i = 0; i < layout.size(); i++)
-    {
+    for (unsigned int i = 0; i < layout.size(); i++) {
         vi_binding[i].binding = layout[i].binding;
         vi_binding[i].stride = SizeOfFormat_Vulkan(layout[i].format);
         vi_binding[i].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
@@ -596,7 +573,7 @@ void GltfPbrVK::CreatePipeline(DeviceVK* pDevice, VkRenderPass renderPass, std::
     res = vkCreatePipelineCache(pDevice->GetDevice(), &pipelineCache, NULL, &pPrimitive->m_pipelineCache);
     assert(res == VK_SUCCESS);
 
-    // create pipeline 
+    // create pipeline
 
     VkGraphicsPipelineCreateInfo pipeline = {};
     pipeline.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -718,19 +695,16 @@ void GltfPbrVK::CreatePipeline(DeviceVK* pDevice, VkRenderPass renderPass, std::
     */
 }
 
-GltfPbrVK::per_batch *GltfPbrVK::SetPerBatchConstants()
-{
-    per_batch *cbPerBatch;    
+GltfPbrVK::per_batch *GltfPbrVK::SetPerBatchConstants() {
+    per_batch *cbPerBatch;
     m_pDynamicBufferRing->AllocConstantBuffer(sizeof(per_batch), (void **)&cbPerBatch, &m_perBatchDesc);
 
     return cbPerBatch;
 }
 
-void GltfPbrVK::DrawMesh(VkCommandBuffer cmd_buf, int meshIndex, const glm::mat4x4& worldMatrix)
-{
+void GltfPbrVK::DrawMesh(VkCommandBuffer cmd_buf, int meshIndex, const glm::mat4x4& worldMatrix) {
     PBRMesh *pMesh = &m_meshes[meshIndex];
-    for (unsigned int p = 0; p < pMesh->m_pPrimitives.size(); p++)
-    {
+    for (unsigned int p = 0; p < pMesh->m_pPrimitives.size(); p++) {
         PBRPrimitives *pPrimitive = &pMesh->m_pPrimitives[p];
 
         if (pPrimitive->m_pipeline == VK_NULL_HANDLE)
@@ -751,15 +725,14 @@ void GltfPbrVK::DrawMesh(VkCommandBuffer cmd_buf, int meshIndex, const glm::mat4
         std::uint32_t size = (std::uint32_t)pPrimitive->m_VBV.size();
         std::vector<VkBuffer> buffers(size);
         std::vector<VkDeviceSize> offsets(size);
-        for (std::uint32_t i = 0; i < size; i++)
-        {
+        for (std::uint32_t i = 0; i < size; i++) {
             buffers[i] = pPrimitive->m_VBV[i].buffer;
             offsets[i] = pPrimitive->m_VBV[i].offset;
         }
-        
+
         // Set state and draw
         //
-        vkCmdBindVertexBuffers(cmd_buf, 0, size, buffers.data(), offsets.data()); 
+        vkCmdBindVertexBuffers(cmd_buf, 0, size, buffers.data(), offsets.data());
         vkCmdBindIndexBuffer(cmd_buf, pPrimitive->m_IBV.buffer, pPrimitive->m_IBV.offset, pPrimitive->m_indexType);
 
         vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pPrimitive->m_pipeline);

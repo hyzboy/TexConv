@@ -7,10 +7,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -26,14 +26,14 @@
 
 #define __CL_ENABLE_EXCEPTIONS
 
-#include <CL/opencl.h>
+#include <cl/opencl.h>
 
-#include "Common_Def.h"                     // Updated at run time by COpenCL
+#include "common_def.h"                     // Updated at run time by COpenCL
 
-#include "Compute_Base.h"
-#include "Common_KernelDef.h"
+#include "compute_base.h"
+#include "common_kerneldef.h"
 #include "query_timer.h"
-#include "TextureIO.h"
+#include "textureio.h"
 #include "crc32.h"
 #include "cmp_math_common.h"
 
@@ -43,17 +43,15 @@ using namespace CMP_Compute_Base;
 
 #define NUM_THREADS   1                     // Number of threads per work group.(can have upto 64 Threads)
 // #define USE_CRC32                        // Use source file checking first to update .cmp files at run time. (slows compute loading time)
-                                            // Disable this definition to use .cmp files first and then try src if not found
+// Disable this definition to use .cmp files first and then try src if not found
 
-struct OpenCLBinary_Header
-{
+struct OpenCLBinary_Header {
     unsigned int  version;
     long          crc32;
 };
 
-class COpenCL :public ComputeBase
-{
-public:
+class COpenCL :public ComputeBase {
+  public:
     COpenCL(void  *kerneloptions);
     COpenCL(ComputeOptions CLOptions);
     ~COpenCL();
@@ -66,7 +64,7 @@ public:
     const char* GetVersion();
     int         GetMaxUCores();
 
-private:
+  private:
     bool            m_initDeviceOk;
     bool            m_programRun;
     CMP_FORMAT      m_codecFormat;
@@ -118,8 +116,7 @@ private:
     // OpenCL file (Binary or Source)
     char            m_compile_options[256];
 
-    union
-    {
+    union {
         char            *buffer;
         unsigned char   *ubuffer;
     } p_program;
@@ -131,10 +128,6 @@ private:
 
     long file_size(FILE* p_file);
     bool load_file();
-
-#ifdef USE_CRC32
-    bool SourceFile_CRC32();
-#endif
 
     // Need to fill these
     BYTE* p_destination;

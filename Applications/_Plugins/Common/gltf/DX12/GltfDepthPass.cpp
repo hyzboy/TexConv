@@ -1,5 +1,5 @@
 // AMD AMDUtils code
-// 
+//
 // Copyright(c) 2017 Advanced Micro Devices, Inc.All rights reserved.
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
@@ -17,15 +17,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include "GltfDepthPass.h"
-#include "GltfHelpers.h"
-#include "ThreadPool.h"
+#include "gltfdepthpass.h"
+#include "gltfhelpers.h"
+#include "threadpool.h"
 
 
-#include "gltfGetFormat_DX12.h"
-#include "GltfHelpers_DX12.h"
+#include "gltfgetformat_dx12.h"
+#include "gltfhelpers_dx12.h"
 
-#include <Error.h>
+#include <error.h>
 
 #include <d3dcompiler.h>
 
@@ -37,8 +37,7 @@ bool GltfDepthPass::OnCreate(
     ResourceViewHeapsDX12 *pHeaps,
     DynamicBufferRingDX12 *pDynamicBufferRing,
     StaticBufferPoolDX12 *pStaticBufferPool,
-    GLTFCommon *pGLTFData, void *pluginManager, void *msghandler)
-{
+    GLTFCommon *pGLTFData, void *pluginManager, void *msghandler) {
     m_pGLTFData = pGLTFData;
     m_pDynamicBufferRing = pDynamicBufferRing;
     m_pResourceViewHeaps = pHeaps;
@@ -46,14 +45,12 @@ bool GltfDepthPass::OnCreate(
 
     json &j3 = pGLTFData->j3;
 
-    // Load Textures (A cache should take care of deduplication) 
-    //    
+    // Load Textures (A cache should take care of deduplication)
+    //
     auto images = j3["images"];
-    if (images.size() > 0)
-    {
+    if (images.size() > 0) {
         m_textures.resize(images.size());
-        for (unsigned int i = 0; i < images.size(); i++)
-        {
+        for (unsigned int i = 0; i < images.size(); i++) {
             std::string filename = images[i]["uri"];
             WCHAR wcstrPath[MAX_PATH];
             MultiByteToWideChar(CP_UTF8, 0, (pGLTFData->m_path + filename).c_str(), -1, wcstrPath, MAX_PATH);
@@ -69,31 +66,26 @@ bool GltfDepthPass::OnCreate(
     std::vector<DepthMaterial *> materialsData;
     auto materials = j3["materials"];
     auto textures = j3["textures"];
-    if (materials.size() > 0)
-    {
-        for (unsigned int i = 0; i < materials.size(); i++)
-        {
+    if (materials.size() > 0) {
+        for (unsigned int i = 0; i < materials.size(); i++) {
             json::object_t material = materials[i];
 
             DepthMaterial *tfmat = new DepthMaterial();
             materialsData.push_back(tfmat);
 
             // Load material constants. This is a depth pass and we are only interested in the txtures that are transparent
-            //               
+            //
             std::string opaque = GetElementString(material, "alphaMode", "OPAQUE");
-            if (opaque != "OPAQUE")
-            {
+            if (opaque != "OPAQUE") {
                 tfmat->m_defines["DEF_alphaMode_" + GetElementString(material, "alphaMode", "OPAQUE")] = 1;
                 tfmat->m_defines["DEF_alphaCutoff"] = std::to_string(GetElementFloat(material, "alphaCutoff", 1.0));
 
-                // If transparent create glTF 2.0 baseColorTexture SRV 
+                // If transparent create glTF 2.0 baseColorTexture SRV
                 //
-                if (textures.size() > 0)
-                {
+                if (textures.size() > 0) {
                     int id = GetElementInt(material, "pbrMetallicRoughness/baseColorTexture/index", -1);
-                    if (id > 0)
-                    {
-                        //allocate descriptor table for the textures            
+                    if (id > 0) {
+                        //allocate descriptor table for the textures
                         tfmat->m_pTransparency = new CBV_SRV_UAV();
                         pHeaps->AllocCBV_SRV_UAVDescriptor(1, tfmat->m_pTransparency);
 
@@ -113,14 +105,12 @@ bool GltfDepthPass::OnCreate(
     auto bufferViews = j3["bufferViews"];
     auto meshes = j3["meshes"];
     m_meshes.resize(meshes.size());
-    for (unsigned int i = 0; i < meshes.size(); i++)
-    {
+    for (unsigned int i = 0; i < meshes.size(); i++) {
         DepthMesh *tfmesh = &m_meshes[i];
 
         auto primitives = meshes[i]["primitives"];
         tfmesh->m_pPrimitives.resize(primitives.size());
-        for (unsigned int p = 0; p < primitives.size(); p++)
-        {
+        for (unsigned int p = 0; p < primitives.size(); p++) {
             DepthPrimitives *pPrimitive = &tfmesh->m_pPrimitives[p];
 
             // Set Material
@@ -145,8 +135,7 @@ bool GltfDepthPass::OnCreate(
             layout.reserve(attribute.size());
             semanticNames.reserve(attribute.size());
             vertexBuffers.resize(attribute.size());
-            for (auto it = attribute.begin(); it != attribute.end(); it++)
-            {
+            for (auto it = attribute.begin(); it != attribute.end(); it++) {
                 // the glTF attributes name may end in a number, DX12 doest like this and if this is the case we need to split the attribute name from the number
                 //
                 CMP_DWORD semanticIndex = 0;
@@ -155,8 +144,7 @@ bool GltfDepthPass::OnCreate(
 
                 // We are only interested in the position or the texcoords (that is if the geoemtry uses a transparent material)
                 //
-                if (semanticName != "Position")
-                {
+                if (semanticName != "Position") {
                     if (pPrimitive->m_pMaterial->m_defines.find("DEF_alphaMode_OPAQUE")!= pPrimitive->m_pMaterial->m_defines.end())
                         if (semanticName != "TEXCOORD")
                             continue;
@@ -183,10 +171,9 @@ bool GltfDepthPass::OnCreate(
 
                 layout.push_back(l);
             }
-            
+
             if (!CreateGeometry(indexBuffer, vertexBuffers, pPrimitive)) return false;
-            GetThreadPool()->Add_Job([=]()
-            {
+            GetThreadPool()->Add_Job([=]() {
                 CreatePipeline(pDevice, pUploadHeap->GetNodeMask(), semanticNames, layout, pPrimitive);
             });
         }
@@ -195,16 +182,13 @@ bool GltfDepthPass::OnCreate(
     return true;
 }
 
-void GltfDepthPass::OnDestroy()
-{
-    for (unsigned int i = 0; i < m_textures.size(); i++)
-    {
+void GltfDepthPass::OnDestroy() {
+    for (unsigned int i = 0; i < m_textures.size(); i++) {
         m_textures[i].OnDestroy();
     }
 }
 
-bool GltfDepthPass::CreateGeometry(tfAccessor indexBuffer, std::vector<tfAccessor> vertexBuffers, DepthPrimitives *pPrimitive)
-{
+bool GltfDepthPass::CreateGeometry(tfAccessor indexBuffer, std::vector<tfAccessor> vertexBuffers, DepthPrimitives *pPrimitive) {
     pPrimitive->m_NumIndices = indexBuffer.m_count;
 
     void *pDest;
@@ -213,8 +197,7 @@ bool GltfDepthPass::CreateGeometry(tfAccessor indexBuffer, std::vector<tfAccesso
 
     // load those buffers onto the GPU
     pPrimitive->m_VBV.resize(vertexBuffers.size());
-    for (unsigned int i = 0; i < vertexBuffers.size(); i++)
-    {
+    for (unsigned int i = 0; i < vertexBuffers.size(); i++) {
         tfAccessor *pVertexAccessor = &vertexBuffers[i];
 
         void *pDest;
@@ -225,12 +208,10 @@ bool GltfDepthPass::CreateGeometry(tfAccessor indexBuffer, std::vector<tfAccesso
     return true;
 }
 
-void GltfDepthPass::CreatePipeline(ID3D12Device* pDevice, UINT node, std::vector<std::string> semanticNames, std::vector<D3D12_INPUT_ELEMENT_DESC> layout, DepthPrimitives *pPrimitive)
-{
+void GltfDepthPass::CreatePipeline(ID3D12Device* pDevice, UINT node, std::vector<std::string> semanticNames, std::vector<D3D12_INPUT_ELEMENT_DESC> layout, DepthPrimitives *pPrimitive) {
     // let vertex shader know what buffers are present
     std::map<std::string, std::string> attributeDefines;
-    for (unsigned int i = 0; i < layout.size(); i++)
-    {
+    for (unsigned int i = 0; i < layout.size(); i++) {
         layout[i].SemanticName = semanticNames[i].c_str();
         attributeDefines[std::string("HAS_") + layout[i].SemanticName] = "1";
     }
@@ -251,8 +232,7 @@ void GltfDepthPass::CreatePipeline(ID3D12Device* pDevice, UINT node, std::vector
         ID3DBlob *pError;
         D3DCompileFromFile(L"./plugins/shaders/Shadows.hlsl", macros.data(), nullptr, "mainVS", "vs_5_0", 0, 0, &pBlobShaderVert, &pError);
         D3DCompileFromFile(L"./plugins/shaders/Shadows.hlsl", macros.data(), nullptr, "mainPS", "ps_5_0", 0, 0, &pBlobShaderPixel, &pError);
-        if (pError != NULL)
-        {
+        if (pError != NULL) {
             char *msg = (char *)pError->GetBufferPointer();
             MessageBoxA(0, msg, "", 0);
         }
@@ -267,33 +247,30 @@ void GltfDepthPass::CreatePipeline(ID3D12Device* pDevice, UINT node, std::vector
         CD3DX12_ROOT_PARAMETER RTSlot[4];
         CD3DX12_ROOT_SIGNATURE_DESC descRootSignature = CD3DX12_ROOT_SIGNATURE_DESC();
 
-        if (bUsingTransparency)
-        {
-            DescRange[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);		// b0 <- per frame
-            DescRange[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);		// t0 <- per material
-            DescRange[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);		// b1 <- per material parameters
-            DescRange[3].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 4, 0);	// s0 <- samplers
+        if (bUsingTransparency) {
+            DescRange[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);        // b0 <- per frame
+            DescRange[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);        // t0 <- per material
+            DescRange[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);        // b1 <- per material parameters
+            DescRange[3].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 4, 0);    // s0 <- samplers
 
             RTSlot[0].InitAsDescriptorTable(1, &DescRange[0], D3D12_SHADER_VISIBILITY_ALL);
             RTSlot[1].InitAsDescriptorTable(1, &DescRange[1], D3D12_SHADER_VISIBILITY_PIXEL);
             RTSlot[2].InitAsDescriptorTable(1, &DescRange[2], D3D12_SHADER_VISIBILITY_ALL);
             RTSlot[3].InitAsDescriptorTable(1, &DescRange[3], D3D12_SHADER_VISIBILITY_PIXEL);
 
-            // the root signature contains 3 slots to be used        
+            // the root signature contains 3 slots to be used
             descRootSignature.NumParameters = 4;
             descRootSignature.pParameters = RTSlot;
             descRootSignature.NumStaticSamplers = 0;
             descRootSignature.pStaticSamplers = NULL;
-        }
-        else
-        {
-            DescRange[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);		// b0 <- per frame
-            DescRange[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);		// b1 <- per material parameters
+        } else {
+            DescRange[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);        // b0 <- per frame
+            DescRange[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);        // b1 <- per material parameters
 
             RTSlot[0].InitAsDescriptorTable(1, &DescRange[0], D3D12_SHADER_VISIBILITY_ALL);
             RTSlot[1].InitAsDescriptorTable(1, &DescRange[1], D3D12_SHADER_VISIBILITY_ALL);
 
-            // the root signature contains 3 slots to be used        
+            // the root signature contains 3 slots to be used
             descRootSignature.NumParameters = 2;
             descRootSignature.pParameters = RTSlot;
             descRootSignature.NumStaticSamplers = 0;
@@ -301,20 +278,19 @@ void GltfDepthPass::CreatePipeline(ID3D12Device* pDevice, UINT node, std::vector
         }
 
 
-        // deny uneccessary access to certain pipeline stages   
+        // deny uneccessary access to certain pipeline stages
         descRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_NONE
-            | D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT
-            //| D3D12_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS
-            | D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS
-            | D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS
-            | D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
+                                  | D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT
+                                  //| D3D12_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS
+                                  | D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS
+                                  | D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS
+                                  | D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
         //| D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
 
         ID3DBlob *pOutBlob, *pErrorBlob = NULL;
         D3D12SerializeRootSignature(&descRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &pOutBlob, &pErrorBlob);
 
-        if (pErrorBlob != NULL)
-        {
+        if (pErrorBlob != NULL) {
             char *msg = (char *)pErrorBlob->GetBufferPointer();
             MessageBoxA(0, msg, "", 0);
         }
@@ -357,8 +333,7 @@ void GltfDepthPass::CreatePipeline(ID3D12Device* pDevice, UINT node, std::vector
     );
 
     // create samplers if not initialized (this should happen once)
-    if (m_sampler.GetSize() == 0)
-    {
+    if (m_sampler.GetSize() == 0) {
         m_pResourceViewHeaps->AllocSamplerDescriptor(1, &m_sampler);
 
         //for pbr materials
@@ -384,18 +359,15 @@ void GltfDepthPass::CreatePipeline(ID3D12Device* pDevice, UINT node, std::vector
     pPrimitive->m_sampler = &m_sampler;
 }
 
-GltfDepthPass::per_batch *GltfDepthPass::SetPerBatchConstants()
-{
+GltfDepthPass::per_batch *GltfDepthPass::SetPerBatchConstants() {
     GltfDepthPass::per_batch *cbPerBatch;
     m_pDynamicBufferRing->AllocConstantBuffer(sizeof(GltfDepthPass::per_batch), (void **)&cbPerBatch, &m_perBatchDesc);
 
     return cbPerBatch;
 }
 
-void GltfDepthPass::DrawMesh(ID3D12GraphicsCommandList* pCommandList, int meshIndex, XMMATRIX worldMatrix)
-{
-    struct per_object
-    {
+void GltfDepthPass::DrawMesh(ID3D12GraphicsCommandList* pCommandList, int meshIndex, XMMATRIX worldMatrix) {
+    struct per_object {
         XMMATRIX mWorld;
     };
 
@@ -404,8 +376,7 @@ void GltfDepthPass::DrawMesh(ID3D12GraphicsCommandList* pCommandList, int meshIn
     pCommandList->SetDescriptorHeaps(2, pDescriptorHeaps);
 
     DepthMesh *pMesh = &m_meshes[meshIndex];
-    for (unsigned int p = 0; p < pMesh->m_pPrimitives.size(); p++)
-    {
+    for (unsigned int p = 0; p < pMesh->m_pPrimitives.size(); p++) {
         DepthPrimitives *pPrimitive = &pMesh->m_pPrimitives[p];
 
         // Set per Object constants
@@ -423,13 +394,10 @@ void GltfDepthPass::DrawMesh(ID3D12GraphicsCommandList* pCommandList, int meshIn
         pCommandList->IASetIndexBuffer(&pPrimitive->m_IBV);
         pCommandList->IASetVertexBuffers(0, (UINT)pPrimitive->m_VBV.size(), pPrimitive->m_VBV.data());
 
-        if (pPrimitive->m_pMaterial->m_pTransparency == NULL)
-        {
+        if (pPrimitive->m_pMaterial->m_pTransparency == NULL) {
             pCommandList->SetGraphicsRootDescriptorTable(0, m_perBatchDesc);
             pCommandList->SetGraphicsRootDescriptorTable(1, perObjectDesc);
-        }
-        else
-        {
+        } else {
             pCommandList->SetGraphicsRootDescriptorTable(0, m_perBatchDesc);
             pCommandList->SetGraphicsRootDescriptorTable(1, pPrimitive->m_pMaterial->m_pTransparency->GetGPU());
             pCommandList->SetGraphicsRootDescriptorTable(2, perObjectDesc);

@@ -7,10 +7,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -28,7 +28,7 @@
 
 #define __CL_ENABLE_EXCEPTIONS
 
-#include "Compressonator.h"
+#include "compressonator.h"
 #include "query_timer.h"
 
 #include <thread>
@@ -36,8 +36,7 @@
 
 #define MAX_ENCODER_THREADS 128
 
-struct ThreadParam
-{
+struct ThreadParam {
     CMP_Encoder        *cmp_encoder;
     void                *in;
     void                *out;
@@ -49,9 +48,8 @@ struct ThreadParam
 
 using namespace CMP_Compute_Base;
 
-class CCPU_HPC :public ComputeBase
-{
-public:
+class CCPU_HPC :public ComputeBase {
+  public:
     CCPU_HPC(void *kerneloptions);
     ~CCPU_HPC();
     CMP_ERROR   Compress(KernelOptions *Options, MipSet  &SrcTexture, MipSet  &destTexture,CMP_Feedback_Proc pFeedback);
@@ -63,7 +61,7 @@ public:
     const char* GetVersion();
     int         GetMaxUCores();
 
-private:
+  private:
     // Encoders
     CMP_Encoder*  m_encoder[MAX_ENCODER_THREADS];
 

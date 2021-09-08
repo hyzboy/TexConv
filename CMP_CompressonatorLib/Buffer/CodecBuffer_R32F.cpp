@@ -9,10 +9,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -27,8 +27,8 @@
 //
 //////////////////////////////////////////////////////////////////////////////
 
-#include "Common.h"
-#include "CodecBuffer_R32F.h"
+#include "common.h"
+#include "codecbuffer_r32f.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -40,35 +40,29 @@ const int nPixelSize = nChannelCount * sizeof(float);
 CCodecBuffer_R32F::CCodecBuffer_R32F(
     CMP_BYTE nBlockWidth, CMP_BYTE nBlockHeight, CMP_BYTE nBlockDepth,
     CMP_DWORD dwWidth, CMP_DWORD dwHeight, CMP_DWORD dwPitch, CMP_BYTE* pData,CMP_DWORD dwDataSize)
-    : CCodecBuffer(nBlockWidth, nBlockHeight, nBlockDepth, dwWidth, dwHeight, dwPitch, pData,dwDataSize)
-{
+    : CCodecBuffer(nBlockWidth, nBlockHeight, nBlockDepth, dwWidth, dwHeight, dwPitch, pData,dwDataSize) {
     assert((m_dwPitch == 0) || (m_dwPitch >= GetWidth() * nPixelSize));
     if(m_dwPitch <= GetWidth() * nPixelSize)
         m_dwPitch = GetWidth() * nPixelSize;
 
-    if(m_pData == NULL)
-    {
+    if(m_pData == NULL) {
         CMP_DWORD dwSize = m_dwPitch * GetHeight();
         m_pData = (CMP_BYTE*) malloc(dwSize);
     }
 }
 
-CCodecBuffer_R32F::~CCodecBuffer_R32F()
-{
+CCodecBuffer_R32F::~CCodecBuffer_R32F() {
 }
 
-void CCodecBuffer_R32F::Copy(CCodecBuffer& srcBuffer)
-{
+void CCodecBuffer_R32F::Copy(CCodecBuffer& srcBuffer) {
     if(GetWidth() != srcBuffer.GetWidth() || GetHeight() != srcBuffer.GetHeight())
         return;
 
     const CMP_DWORD dwBlocksX = ((GetWidth() + 3) >> 2);
     const CMP_DWORD dwBlocksY = ((GetHeight() + 3) >> 2);
 
-    for(CMP_DWORD j = 0; j < dwBlocksY; j++)
-    {
-        for(CMP_DWORD i = 0; i < dwBlocksX; i++)
-        {
+    for(CMP_DWORD j = 0; j < dwBlocksY; j++) {
+        for(CMP_DWORD i = 0; i < dwBlocksX; i++) {
             float block[BLOCK_SIZE_4X4X4];
             srcBuffer.ReadBlockRGBA(i*4, j*4, 4, 4, block);
             WriteBlockRGBA(i*4, j*4, 4, 4, block);
@@ -76,22 +70,19 @@ void CCodecBuffer_R32F::Copy(CCodecBuffer& srcBuffer)
     }
 }
 
-bool CCodecBuffer_R32F::ReadBlock(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, float block[], CMP_DWORD dwChannelIndex)
-{
+bool CCodecBuffer_R32F::ReadBlock(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, float block[], CMP_DWORD dwChannelIndex) {
     assert(x < GetWidth());
     assert(y < GetHeight());
 
     if(x >= GetWidth() || y >= GetHeight())
         return false;
 
-    CMP_DWORD dwWidth = min(w, (GetWidth() - x));
+    CMP_DWORD dwWidth = cmp_minT(w, (GetWidth() - x));
 
     CMP_DWORD i,j;
-    for(j = 0; j < h && (y + j) < GetHeight(); j++)
-    {
+    for(j = 0; j < h && (y + j) < GetHeight(); j++) {
         float* pData = (float*) (GetData() + ((y + j) * m_dwPitch) + (x * nPixelSize));
-        for(i = 0; i < dwWidth; i++)
-        {
+        for(i = 0; i < dwWidth; i++) {
             block[(j * w) + i] = pData[dwChannelIndex];
             pData += nChannelCount;
         }
@@ -108,30 +99,26 @@ bool CCodecBuffer_R32F::ReadBlock(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE
     return true;
 }
 
-bool CCodecBuffer_R32F::WriteBlock(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, float block[], CMP_DWORD dwChannelIndex)
-{
+bool CCodecBuffer_R32F::WriteBlock(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, float block[], CMP_DWORD dwChannelIndex) {
     assert(x < GetWidth());
     assert(y < GetHeight());
 
     if(x >= GetWidth() || y >= GetHeight())
         return false;
 
-    CMP_DWORD dwWidth = min(w, (GetWidth() - x));
+    CMP_DWORD dwWidth = cmp_minT(w, (GetWidth() - x));
 
-    for(CMP_DWORD j = 0; j < h && (y + j) < GetHeight(); j++)
-    {
+    for(CMP_DWORD j = 0; j < h && (y + j) < GetHeight(); j++) {
         float* pData = (float*) (GetData() + ((y + j) * m_dwPitch) + (x * nPixelSize));
-        for(CMP_DWORD i = 0; i < dwWidth; i++)
-        {
-            pData[dwChannelIndex] = block[(j * w) + i]; 
+        for(CMP_DWORD i = 0; i < dwWidth; i++) {
+            pData[dwChannelIndex] = block[(j * w) + i];
             pData += nChannelCount;
         }
     }
     return true;
 }
 
-bool CCodecBuffer_R32F::ReadBlockA(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, float block[])
-{
+bool CCodecBuffer_R32F::ReadBlockA(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, float block[]) {
     assert(x < GetWidth());
     assert(y < GetHeight());
 
@@ -143,13 +130,11 @@ bool CCodecBuffer_R32F::ReadBlockA(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYT
     return true;
 }
 
-bool CCodecBuffer_R32F::ReadBlockR(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, float block[])
-{
+bool CCodecBuffer_R32F::ReadBlockR(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, float block[]) {
     return ReadBlock(x, y, w, h, block, CHANNEL_INDEX_R);
 }
 
-bool CCodecBuffer_R32F::ReadBlockG(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, float block[])
-{
+bool CCodecBuffer_R32F::ReadBlockG(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, float block[]) {
     assert(x < GetWidth());
     assert(y < GetHeight());
 
@@ -161,8 +146,7 @@ bool CCodecBuffer_R32F::ReadBlockG(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYT
     return true;
 }
 
-bool CCodecBuffer_R32F::ReadBlockB(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, float block[])
-{
+bool CCodecBuffer_R32F::ReadBlockB(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, float block[]) {
     assert(x < GetWidth());
     assert(y < GetHeight());
 
@@ -174,24 +158,21 @@ bool CCodecBuffer_R32F::ReadBlockB(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYT
     return true;
 }
 
-bool CCodecBuffer_R32F::WriteBlockA(CMP_DWORD x, CMP_DWORD y, CMP_BYTE /*w*/, CMP_BYTE /*h*/, float /*block*/[])
-{
+bool CCodecBuffer_R32F::WriteBlockA(CMP_DWORD x, CMP_DWORD y, CMP_BYTE /*w*/, CMP_BYTE /*h*/, float /*block*/[]) {
     assert(x < GetWidth());
     assert(y < GetHeight());
 
     if(x >= GetWidth() || y >= GetHeight())
         return false;
-    
+
     return true;
 }
 
-bool CCodecBuffer_R32F::WriteBlockR(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, float block[])
-{
+bool CCodecBuffer_R32F::WriteBlockR(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, float block[]) {
     return WriteBlock(x, y, w, h, block, CHANNEL_INDEX_R);
 }
 
-bool CCodecBuffer_R32F::WriteBlockG(CMP_DWORD x, CMP_DWORD y, CMP_BYTE /*w*/, CMP_BYTE /*h*/, float /*block*/[])
-{
+bool CCodecBuffer_R32F::WriteBlockG(CMP_DWORD x, CMP_DWORD y, CMP_BYTE /*w*/, CMP_BYTE /*h*/, float /*block*/[]) {
     assert(x < GetWidth());
     assert(y < GetHeight());
 
@@ -201,8 +182,7 @@ bool CCodecBuffer_R32F::WriteBlockG(CMP_DWORD x, CMP_DWORD y, CMP_BYTE /*w*/, CM
     return true;
 }
 
-bool CCodecBuffer_R32F::WriteBlockB(CMP_DWORD x, CMP_DWORD y, CMP_BYTE /*w*/, CMP_BYTE /*h*/, float /*block*/[])
-{
+bool CCodecBuffer_R32F::WriteBlockB(CMP_DWORD x, CMP_DWORD y, CMP_BYTE /*w*/, CMP_BYTE /*h*/, float /*block*/[]) {
     assert(x < GetWidth());
     assert(y < GetHeight());
 
@@ -213,8 +193,7 @@ bool CCodecBuffer_R32F::WriteBlockB(CMP_DWORD x, CMP_DWORD y, CMP_BYTE /*w*/, CM
 }
 
 #define GET_PIXEL(i, j) &block[(((j * w) + i) * 4)]
-bool CCodecBuffer_R32F::ReadBlockRGBA(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, float block[])
-{
+bool CCodecBuffer_R32F::ReadBlockRGBA(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, float block[]) {
     assert(x < GetWidth());
     assert(y < GetHeight());
     assert(x % w == 0);
@@ -223,16 +202,14 @@ bool CCodecBuffer_R32F::ReadBlockRGBA(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_
     if(x >= GetWidth() || y >= GetHeight())
         return false;
 
-    CMP_DWORD dwWidth = min(w, (GetWidth() - x));
+    CMP_DWORD dwWidth = cmp_minT(w, (GetWidth() - x));
 
     CMP_DWORD i, j;
-    for(j = 0; j < h && (y + j) < GetHeight(); j++)
-    {
+    for(j = 0; j < h && (y + j) < GetHeight(); j++) {
         float* pData = (float*) (GetData() + ((y + j) * m_dwPitch) + (x * nPixelSize));
-        for(i = 0; i < dwWidth; i++)
-        {
+        for(i = 0; i < dwWidth; i++) {
             float* pDest = GET_PIXEL(i, j);
-            *pDest++ = *pData++; 
+            *pDest++ = *pData++;
             *pDest++ = 0.0f;
             *pDest++ = 0.0f;
             *pDest++ = 1.0f;
@@ -249,8 +226,7 @@ bool CCodecBuffer_R32F::ReadBlockRGBA(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_
     return true;
 }
 
-bool CCodecBuffer_R32F::WriteBlockRGBA(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, float block[])
-{
+bool CCodecBuffer_R32F::WriteBlockRGBA(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, float block[]) {
     assert(x < GetWidth());
     assert(y < GetHeight());
     assert(x % w == 0);
@@ -259,13 +235,11 @@ bool CCodecBuffer_R32F::WriteBlockRGBA(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP
     if(x >= GetWidth() || y >= GetHeight())
         return false;
 
-    CMP_DWORD dwWidth = min(w, (GetWidth() - x));
+    CMP_DWORD dwWidth = cmp_minT(w, (GetWidth() - x));
 
-    for(CMP_DWORD j = 0; j < h && (y + j) < GetHeight(); j++)
-    {
+    for(CMP_DWORD j = 0; j < h && (y + j) < GetHeight(); j++) {
         float* pData = (float*) (GetData() + ((y + j) * m_dwPitch) + (x * nPixelSize));
-        for(CMP_DWORD i = 0; i < dwWidth; i++)
-        {
+        for(CMP_DWORD i = 0; i < dwWidth; i++) {
             memcpy(pData, GET_PIXEL(i, j), nPixelSize);
             pData += nChannelCount;
         }

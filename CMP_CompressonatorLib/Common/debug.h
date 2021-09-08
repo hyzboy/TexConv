@@ -8,10 +8,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -36,79 +36,73 @@
 #define MAX_DBGPPRINTBUFF_SIZE  512
 #define MAX_DBGBUFF_SIZE        256
 
-class DbgTracer
-{
-private:
-     const char* m_function;
-    
-public:
-      
+class DbgTracer {
+  private:
+    const char* m_function;
+
+  public:
+
     // Our dynamic class used during DbgTrace calls
-    DbgTracer(const char* FunctionName) :m_function( FunctionName )
-    {
+    DbgTracer(const char* FunctionName) :m_function( FunctionName ) {
 #ifdef USE_DEBUG_FILEIO
         debug_File = fopen("debug_report.txt", "a");
 #endif
-    if (debug_File)
-        fprintf(debug_File,"\n");
-    else
-       printf("\n");
+        if (debug_File)
+            fprintf(debug_File,"\n");
+        else
+            printf("\n");
     }
 
     // This is used only when class is contructed and when operator overrided
-       virtual ~DbgTracer()
-    {
+    virtual ~DbgTracer() {
 #ifdef USE_DEBUG_FILEIO
-     if (debug_File)
-        fclose(debug_File);
+        if (debug_File)
+            fclose(debug_File);
 
 #endif
-      // Cleanup print 
-       m_function = "";
-       buff[0] = '\0';
-       debug_File = NULL;
+        // Cleanup print
+        m_function = "";
+        buff[0] = '\0';
+        debug_File = NULL;
     }
 
     // this is used for tracing functions :: with no parameters
-    void operator()(void)
-    {
-           PrintMsg();
+    void operator()(void) {
+        PrintMsg();
     }
 
     // Clean up operator for existing debug messages in code DBG_ERROR(...) DBG_PRINT(...) etc
-    void operator()(const char* Format, ... )
-    {
-            // define a pointer to save argument list
-            va_list args;
- 
-             // process the arguments into our debug buffer
-            va_start(args, Format);
-            vsnprintf(buff, MAX_DBGBUFF_SIZE,Format,args);
-            va_end(args);
+    void operator()(const char* Format, ... ) {
+        // define a pointer to save argument list
+        va_list args;
 
-            // print debug message
-            PrintMsg();
+        // process the arguments into our debug buffer
+        va_start(args, Format);
+        vsnprintf(buff, MAX_DBGBUFF_SIZE,Format,args);
+        va_end(args);
+
+        // print debug message
+        PrintMsg();
     }
 
-protected:
-   static char  buff[MAX_DBGBUFF_SIZE];
-   static char  PrintBuff[MAX_DBGPPRINTBUFF_SIZE];
-   static unsigned long  stacklevel;
-   static unsigned long level;
+  protected:
+    static char  buff[MAX_DBGBUFF_SIZE];
+    static char  PrintBuff[MAX_DBGPPRINTBUFF_SIZE];
+    static unsigned long  stacklevel;
+    static unsigned long level;
 
-   FILE * debug_File = NULL;
+    FILE * debug_File = NULL;
 
-    void PrintMsg()
-    {
+    void PrintMsg() {
         _snprintf_s(PrintBuff,MAX_DBGPPRINTBUFF_SIZE,"[   ]%-30s, %s",
-                m_function,
-                buff
-                ); 
-       // OutputDebugString(PrintBuff);
-    if (debug_File)
-           fprintf(debug_File,PrintBuff);
-    else
-           printf(PrintBuff);
+                    m_function,
+                    buff
+                   );
+        // OutputDebugString(PrintBuff);
+        if (debug_File)
+            fprintf(debug_File,PrintBuff);
+        else
+            printf(PrintBuff);
     }
 };
 
@@ -116,8 +110,8 @@ protected:
 #define Dbg_Trace        (DbgTracer(__FUNCTION__))
 #define DbgTrace(x)        Dbg_Trace x;
 #else
-#define Dbg_Trace        
-#define DbgTrace(x)        
+#define Dbg_Trace
+#define DbgTrace(x)
 #endif
 
 #endif

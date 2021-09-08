@@ -9,10 +9,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -29,11 +29,10 @@
 #ifndef _CODECBUFFER_RGBA2101010_H_INCLUDED_
 #define _CODECBUFFER_RGBA2101010_H_INCLUDED_
 
-#include "CodecBuffer.h"
+#include "codecbuffer.h"
 
-class CCodecBuffer_RGBA2101010 : public CCodecBuffer  
-{
-public:
+class CCodecBuffer_RGBA2101010 : public CCodecBuffer {
+  public:
     CCodecBuffer_RGBA2101010(
         CMP_BYTE nBlockWidth, CMP_BYTE nBlockHeight, CMP_BYTE nBlockDepth,
         CMP_DWORD dwWidth, CMP_DWORD dwHeight, CMP_DWORD dwPitch = 0, CMP_BYTE* pData = 0,CMP_DWORD dwDataSize = 0);
@@ -41,10 +40,18 @@ public:
 
     virtual void Copy(CCodecBuffer& srcBuffer);
 
-    virtual CodecBufferType GetBufferType() const {return CBT_RGBA2101010;};
-    virtual CMP_DWORD GetChannelDepth() const {return 10;};
-    virtual CMP_DWORD GetChannelCount() const {return 4;};
-    virtual bool IsFloat() const {return false;};
+    virtual CodecBufferType GetBufferType() const {
+        return CBT_RGBA2101010;
+    };
+    virtual CMP_DWORD GetChannelDepth() const {
+        return 10;
+    };
+    virtual CMP_DWORD GetChannelCount() const {
+        return 4;
+    };
+    virtual bool IsFloat() const {
+        return false;
+    };
 
     virtual bool ReadBlockR(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, CMP_WORD block[]);
     virtual bool ReadBlockG(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, CMP_WORD block[]);
@@ -62,7 +69,7 @@ public:
     virtual bool ReadBlockRGBA(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, CMP_WORD block[]);
     virtual bool WriteBlockRGBA(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, CMP_WORD block[]);
 
-protected:
+  protected:
     virtual bool ReadBlock(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, CMP_WORD block[], CMP_DWORD dwChannelMask, CMP_DWORD dwChannelOffset, bool b10Bit);
     virtual bool WriteBlock(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, CMP_WORD block[], CMP_DWORD dwChannelMask, CMP_DWORD dwChannelOffset, bool b10Bit);
 };

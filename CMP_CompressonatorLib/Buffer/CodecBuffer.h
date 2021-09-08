@@ -9,10 +9,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -30,14 +30,13 @@
 #define _CODECBUFFER_H_INCLUDED_
 
 #include "debug.h"
-#include "Common.h"
-#include "Compressonator.h"
-#include "MathMacros.h"
+#include "common.h"
+#include "compressonator.h"
+#include "mathmacros.h"
 
 
 
-typedef enum _CodecBufferType
-{
+typedef enum _CodecBufferType {
     CBT_Unknown = 0,
     CBT_RGBA8888,
     CBT_BGRA8888,       // Reserved for future work
@@ -46,6 +45,10 @@ typedef enum _CodecBufferType
     CBT_BGR888,         // Reserved for future work
     CBT_RG8,
     CBT_R8,
+    CBT_RGBA8888S,
+    CBT_RGB888S,
+    CBT_RG8S,
+    CBT_R8S,
     CBT_RGBA2101010,
     CBT_RGBA16,
     CBT_RG16,
@@ -81,11 +84,11 @@ typedef enum _CodecBufferType
 #define BLOCK_SIZE_8X8          64
 #define BLOCK_SIZE_8X8X4        256
 
-// This is also used in code for ETC ATC it needs to be fixed 
+// This is also used in code for ETC ATC it needs to be fixed
 // and only used in codebuffer IO, The prefix description is not correct
 // it should read BGRA8888_...
 // Codecbuffer.cpp has CCodecBuffer* CreateCodecBuffer() mixes up these into one create buffer
-// new CodecBuffer for BGRA.. should be added. 
+// new CodecBuffer for BGRA.. should be added.
 #define RGBA8888_CHANNEL_R      2
 #define RGBA8888_CHANNEL_G      1
 #define RGBA8888_CHANNEL_B      0
@@ -160,10 +163,13 @@ typedef enum _CodecBufferType
 #define SWIZZLE_xGxR_RGBA(dsw) ((((dsw >> RGBA8888_OFFSET_A) & BYTE_MASK) << RGBA8888_OFFSET_R) | (((dsw >> RGBA8888_OFFSET_G) & BYTE_MASK) << RGBA8888_OFFSET_G) | (BYTE_MASK << RGBA8888_OFFSET_A))
 #define SWIZZLE_RGBA_xGxR(dsw) ((((dsw >> RGBA8888_OFFSET_R) & BYTE_MASK) << RGBA8888_OFFSET_A) | (((dsw >> RGBA8888_OFFSET_G) & BYTE_MASK) << RGBA8888_OFFSET_G))
 
+#define SBYTE_MAXVAL 127
 #define BYTE_MAXVAL 255
 #define BYTE_MAX_FLOAT 255.0f
 #define CONVERT_FLOAT_TO_BYTE(f) static_cast<CMP_BYTE>(((f) * BYTE_MAX_FLOAT) + 0.5)
+#define CONVERT_FLOAT_TO_SBYTE(f) static_cast<CMP_SBYTE>(((f)*BYTE_MAX_FLOAT) + 0.5)
 #define CONVERT_BYTE_TO_FLOAT(b) (b) / BYTE_MAX_FLOAT
+#define CONVERT_SBYTE_TO_FLOAT(b) (b) / BYTE_MAX_FLOAT
 
 #define DWORD_MAXVAL 4294967295.0f
 #define WORD_MAXVAL 65535.0f
@@ -172,11 +178,15 @@ typedef enum _CodecBufferType
 #define CONVERT_DWORD_TO_FLOAT(w) (w) / DWORD_MAXVAL
 #define CONVERT_WORD_TO_FLOAT(w) (w) / WORD_MAXVAL
 #define CONVERT_WORD_TO_DWORD(w) (((static_cast<CMP_DWORD>(w)) << 16) | static_cast<CMP_DWORD>(w))
-#define CONVERT_DWORD_TO_WORD(dw) static_cast<CMP_BYTE>(min(((dw >> 16) + ((dw & 0x0000ffff) >= 0x00008000 ? 1 : 0)),WORD_MAXVAL))
+#define CONVERT_DWORD_TO_WORD(dw) static_cast<CMP_BYTE>(cmp_minT(((dw >> 16) + ((dw & 0x0000ffff) >= 0x00008000 ? 1 : 0)),WORD_MAXVAL))
 #define CONVERT_BYTE_TO_DWORD(b) (((static_cast<CMP_DWORD>(b)) << 24) | ((static_cast<CMP_DWORD>(b)) << 16) | ((static_cast<CMP_DWORD>(b)) << 8) | static_cast<CMP_DWORD>(b))
-#define CONVERT_DWORD_TO_BYTE(dw) static_cast<CMP_BYTE>(min(((dw >> 24) + ((dw & 0x00ffffff) >= 0x00800000 ? 1 : 0)), BYTE_MAXVAL))
+#define CONVERT_SBYTE_TO_DWORD(b) (((static_cast<CMP_DWORD>(b)) << 24) | ((static_cast<CMP_DWORD>(b)) << 16) | ((static_cast<CMP_DWORD>(b)) << 8) | static_cast<CMP_DWORD>(b))
+#define CONVERT_DWORD_TO_BYTE(dw) static_cast<CMP_BYTE>(cmp_minT(((dw >> 24) + ((dw & 0x00ffffff) >= 0x00800000 ? 1 : 0)), BYTE_MAXVAL))
+#define CONVERT_DWORD_TO_SBYTE(dw) static_cast<CMP_SBYTE>(cmp_minT(((dw >> 24) + ((dw & 0x00ffffff) >= 0x00800000 ? 1 : 0)), SBYTE_MAXVAL))
 #define CONVERT_BYTE_TO_WORD(b) (((static_cast<CMP_WORD>(b)) << 8) | static_cast<CMP_WORD>(b))
-#define CONVERT_WORD_TO_BYTE(w) static_cast<CMP_BYTE>(min(((w >> 8) + ((w & BYTE_MASK) >= 128 ? 1 : 0)), BYTE_MAXVAL))
+#define CONVERT_SBYTE_TO_WORD(b) (((static_cast<CMP_WORD>(b)) << 8) | static_cast<CMP_WORD>(b))
+#define CONVERT_WORD_TO_BYTE(w) static_cast<CMP_BYTE>(cmp_minT(((w >> 8) + ((w & BYTE_MASK) >= 128 ? 1 : 0)), BYTE_MAXVAL))
+#define CONVERT_WORD_TO_SBYTE(w) static_cast<CMP_BYTE>(cmp_minT(((w >> 8) + ((w & BYTE_MASK) >= 128 ? 1 : 0)), SBYTE_MAXVAL))
 #define CONVERT_10BIT_TO_WORD(b) (((static_cast<CMP_WORD>(b)) << 6) | static_cast<CMP_WORD>(b) >> 2)
 #define CONVERT_2BIT_TO_WORD(b) ((static_cast<CMP_WORD>(b)) | ((static_cast<CMP_WORD>(b)) << 2) | ((static_cast<CMP_WORD>(b)) << 4) | ((static_cast<CMP_WORD>(b)) << 6) | ((static_cast<CMP_WORD>(b)) << 8) | ((static_cast<CMP_WORD>(b)) << 10) | ((static_cast<CMP_WORD>(b)) << 12) | ((static_cast<CMP_WORD>(b)) << 14))
 #define CONVERT_WORD_TO_10BIT(b) ((b >> 6) & TEN_BIT_MASK)
@@ -188,14 +198,12 @@ typedef enum _CodecBufferType
 #define SWAP_FLOATS(a, b) {float fTemp = a; a = b; b = fTemp;}
 #define SWAP_DOUBLES(a, b) {double dTemp = a; a = b; b = dTemp;}
 
-template <typename T> void PadLine(CMP_DWORD i, CMP_BYTE w, CMP_BYTE c, T block[])
-{
+template <typename T> void PadLine(CMP_DWORD i, CMP_BYTE w, CMP_BYTE c, T block[]) {
     // So who do we perform generic padding ?
     // In powers of two
 
     CMP_DWORD dwPadWidth = w - i;
-    if(dwPadWidth > i)
-    {
+    if(dwPadWidth > i) {
         PadLine(i, w >> 1, c, block);
         i = w >> 1;
         dwPadWidth = w - i;
@@ -204,14 +212,12 @@ template <typename T> void PadLine(CMP_DWORD i, CMP_BYTE w, CMP_BYTE c, T block[
     memcpy(&block[i*c], &block[0], dwPadWidth * c * sizeof(T));
 }
 
-template <typename T> void PadBlock(CMP_DWORD j, CMP_BYTE w, CMP_BYTE h, CMP_BYTE c, T block[])
-{
+template <typename T> void PadBlock(CMP_DWORD j, CMP_BYTE w, CMP_BYTE h, CMP_BYTE c, T block[]) {
     // So who do we perform generic padding ?
     // In powers of two
 
     CMP_DWORD dwPadHeight = h - j;
-    if(dwPadHeight > j)
-    {
+    if(dwPadHeight > j) {
         PadBlock(j, w, h >> 1, c, block);
         j = h >> 1;
         dwPadHeight = h - j;
@@ -219,58 +225,77 @@ template <typename T> void PadBlock(CMP_DWORD j, CMP_BYTE w, CMP_BYTE h, CMP_BYT
     memcpy(&block[j*w*c], &block[0], dwPadHeight * w * c * sizeof(T));
 }
 
-class CCodecBuffer  
-{
-public:
+class CCodecBuffer {
+  public:
 
     CCodecBuffer(
-                 CMP_BYTE nBlockWidth, CMP_BYTE nBlockHeight, CMP_BYTE nBlockDepth,
-                 CMP_DWORD dwWidth, CMP_DWORD dwHeight, CMP_DWORD dwPitch = 0, 
-                 CMP_BYTE* pData = 0,
-                 CMP_DWORD dwDataSize = 0);
+        CMP_BYTE nBlockWidth, CMP_BYTE nBlockHeight, CMP_BYTE nBlockDepth,
+        CMP_DWORD dwWidth, CMP_DWORD dwHeight, CMP_DWORD dwPitch = 0,
+        CMP_BYTE* pData = 0,
+        CMP_DWORD dwDataSize = 0);
     virtual ~CCodecBuffer();
 
     virtual void Copy(CCodecBuffer& srcBuffer);
 
-    virtual CodecBufferType GetBufferType() const {return CBT_Unknown;};
+    virtual CodecBufferType GetBufferType() const {
+        return CBT_Unknown;
+    };
     virtual CMP_DWORD GetChannelDepth() const = 0;
     virtual CMP_DWORD GetChannelCount() const = 0;
     virtual bool IsFloat() const = 0;
 
-    inline const CMP_DWORD GetWidth()  const {return m_dwWidth;};
-    inline const CMP_DWORD GetHeight() const {return m_dwHeight;};
-    inline const CMP_DWORD GetPitch()  const {return m_dwPitch;};
+    inline const CMP_DWORD GetWidth()  const {
+        return m_dwWidth;
+    };
+    inline const CMP_DWORD GetHeight() const {
+        return m_dwHeight;
+    };
+    inline const CMP_DWORD GetPitch()  const {
+        return m_dwPitch;
+    };
 
-    inline const void SetPitch(CMP_DWORD dwPitch)  
-    { 
+    inline const void SetPitch(CMP_DWORD dwPitch) {
         m_dwPitch = dwPitch;
     };
 
-    inline const void SetFormat(CMP_FORMAT dwFormat) 
-    {
+    inline const void SetFormat(CMP_FORMAT dwFormat) {
         m_dwFormat = dwFormat;
     };
 
-    inline const void SetTranscodeFormat(CMP_FORMAT Format) 
-    {
+    inline const void SetTranscodeFormat(CMP_FORMAT Format) {
         m_dwTranscodeFormat = Format;
     };
 
-    inline const void SetDataSize(CMP_DWORD dwDataSize)  
-    { 
+    inline const void SetDataSize(CMP_DWORD dwDataSize) {
         m_DataSize = dwDataSize;
     };
 
-    inline const CMP_FORMAT GetFormat() const { return m_dwFormat;};
-    inline const CMP_FORMAT GetTranscodeFormat() const { return m_dwTranscodeFormat;};
+    inline const CMP_FORMAT GetFormat() const {
+        return m_dwFormat;
+    };
+    inline const CMP_FORMAT GetTranscodeFormat() const {
+        return m_dwTranscodeFormat;
+    };
 
-    inline const CMP_BYTE GetBlockWidth()  const { return m_nBlockWidth; };
-    inline const CMP_BYTE GetBlockHeight() const { return m_nBlockHeight; };
-    inline const CMP_BYTE GetBlockDepth()  const { return m_nBlockDepth; };
+    inline const CMP_BYTE GetBlockWidth()  const {
+        return m_nBlockWidth;
+    };
+    inline const CMP_BYTE GetBlockHeight() const {
+        return m_nBlockHeight;
+    };
+    inline const CMP_BYTE GetBlockDepth()  const {
+        return m_nBlockDepth;
+    };
 
-    inline const void SetBlockWidth(CMP_BYTE BlockWidth)      { m_nBlockWidth  = BlockWidth;   };
-    inline const void SetBlockHeight(CMP_BYTE BlockHeight)    { m_nBlockHeight = BlockHeight;  };
-    inline const void SetBlockDepth(CMP_BYTE BlockDepth)      { m_nBlockDepth  = BlockDepth;   };
+    inline const void SetBlockWidth(CMP_BYTE BlockWidth)      {
+        m_nBlockWidth  = BlockWidth;
+    };
+    inline const void SetBlockHeight(CMP_BYTE BlockHeight)    {
+        m_nBlockHeight = BlockHeight;
+    };
+    inline const void SetBlockDepth(CMP_BYTE BlockDepth)      {
+        m_nBlockDepth  = BlockDepth;
+    };
 
 
 
@@ -278,6 +303,12 @@ public:
     virtual bool ReadBlockG(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, CMP_BYTE cBlock[]);
     virtual bool ReadBlockB(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, CMP_BYTE cBlock[]);
     virtual bool ReadBlockA(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, CMP_BYTE cBlock[]);
+
+    virtual bool ReadBlockR(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, CMP_SBYTE cBlock[]);
+    virtual bool ReadBlockG(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, CMP_SBYTE cBlock[]);
+    virtual bool ReadBlockB(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, CMP_SBYTE cBlock[]);
+    virtual bool ReadBlockA(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, CMP_SBYTE cBlock[]);
+
 
     virtual bool ReadBlockR(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, CMP_WORD wblock[]);
     virtual bool ReadBlockG(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, CMP_WORD wblock[]);
@@ -309,6 +340,11 @@ public:
     virtual bool WriteBlockB(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, CMP_BYTE cBlock[]);
     virtual bool WriteBlockA(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, CMP_BYTE cBlock[]);
 
+    virtual bool WriteBlockR(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, CMP_SBYTE cBlock[]);
+    virtual bool WriteBlockG(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, CMP_SBYTE cBlock[]);
+    virtual bool WriteBlockB(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, CMP_SBYTE cBlock[]);
+    virtual bool WriteBlockA(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, CMP_SBYTE cBlock[]);
+
     virtual bool WriteBlockR(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, CMP_WORD wblock[]);
     virtual bool WriteBlockG(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, CMP_WORD wblock[]);
     virtual bool WriteBlockB(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, CMP_WORD wblock[]);
@@ -334,6 +370,9 @@ public:
     virtual bool WriteBlockB(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, double dBlock[]);
     virtual bool WriteBlockA(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, double dBlock[]);
 
+    virtual bool ReadBlockRGBA(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, CMP_SBYTE cBlock[]);
+    virtual bool WriteBlockRGBA(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, CMP_SBYTE cBlock[]);
+
     virtual bool ReadBlockRGBA(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, CMP_BYTE cBlock[]);
     virtual bool WriteBlockRGBA(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, CMP_BYTE h, CMP_BYTE cBlock[]);
 
@@ -355,42 +394,52 @@ public:
     virtual bool ReadBlock(CMP_DWORD x, CMP_DWORD y, CMP_DWORD* pBlock, CMP_DWORD dwBlockSize);
     virtual bool WriteBlock(CMP_DWORD x, CMP_DWORD y, CMP_DWORD* pBlock, CMP_DWORD dwBlockSize);
 
-    inline CMP_BYTE* GetData() const {return m_pData;}; 
-    inline CMP_DWORD GetDataSize() const {return m_DataSize;};
+    inline CMP_BYTE* GetData() const {
+        return m_pData;
+    };
+    inline CMP_DWORD GetDataSize() const {
+        return m_DataSize;
+    };
 
     bool m_bSwizzle;
 
-protected:
+  protected:
 
+    // Converts data from a source type  to a destination type
     void ConvertBlock(double dBlock[], float fBlock[], CMP_DWORD dwBlockSize);
     void ConvertBlock(double dBlock[], CMP_HALF hBlock[], CMP_DWORD dwBlockSize);
     void ConvertBlock(double dBlock[], CMP_DWORD dwBlock[], CMP_DWORD dwBlockSize);
     void ConvertBlock(double dBlock[], CMP_WORD wBlock[], CMP_DWORD dwBlockSize);
     void ConvertBlock(double dBlock[], CMP_BYTE cBlock[], CMP_DWORD dwBlockSize);
+    void ConvertBlock(double dBlock[], CMP_SBYTE cBlock[], CMP_DWORD dwBlockSize);
 
     void ConvertBlock(float fBlock[], double dBlock[], CMP_DWORD dwBlockSize);
     void ConvertBlock(float fBlock[], CMP_HALF hBlock[], CMP_DWORD dwBlockSize);
     void ConvertBlock(float fBlock[], CMP_DWORD dwBlock[], CMP_DWORD dwBlockSize);
     void ConvertBlock(float fBlock[], CMP_WORD wBlock[], CMP_DWORD dwBlockSize);
     void ConvertBlock(float fBlock[], CMP_BYTE cBlock[], CMP_DWORD dwBlockSize);
+    void ConvertBlock(float fBlock[], CMP_SBYTE cBlock[], CMP_DWORD dwBlockSize);
 
     void ConvertBlock(CMP_HALF hBlock[], double dBlock[], CMP_DWORD dwBlockSize);
     void ConvertBlock(CMP_HALF hBlock[], float fBlock[], CMP_DWORD dwBlockSize);
     void ConvertBlock(CMP_HALF hBlock[], CMP_DWORD dwBlock[], CMP_DWORD dwBlockSize);
     void ConvertBlock(CMP_HALF hBlock[], CMP_WORD wBlock[], CMP_DWORD dwBlockSize);
     void ConvertBlock(CMP_HALF hBlock[], CMP_BYTE cBlock[], CMP_DWORD dwBlockSize);
+    void ConvertBlock(CMP_HALF hBlock[], CMP_SBYTE cBlock[], CMP_DWORD dwBlockSize);
 
     void ConvertBlock(CMP_DWORD dwBlock[], double dBlock[], CMP_DWORD dwBlockSize);
     void ConvertBlock(CMP_DWORD dwBlock[], float fBlock[], CMP_DWORD dwBlockSize);
     void ConvertBlock(CMP_DWORD dwBlock[], CMP_HALF hBlock[], CMP_DWORD dwBlockSize);
     void ConvertBlock(CMP_DWORD dwBlock[], CMP_WORD wBlock[], CMP_DWORD dwBlockSize);
     void ConvertBlock(CMP_DWORD dwBlock[], CMP_BYTE cBlock[], CMP_DWORD dwBlockSize);
+    void ConvertBlock(CMP_DWORD dwBlock[], CMP_SBYTE cBlock[], CMP_DWORD dwBlockSize);
 
     void ConvertBlock(CMP_WORD wBlock[], double dBlock[], CMP_DWORD dwBlockSize);
     void ConvertBlock(CMP_WORD wBlock[], float fBlock[], CMP_DWORD dwBlockSize);
     void ConvertBlock(CMP_WORD wBlock[], CMP_HALF hBlock[], CMP_DWORD dwBlockSize);
     void ConvertBlock(CMP_WORD wBlock[], CMP_DWORD dwBlock[], CMP_DWORD dwBlockSize);
     void ConvertBlock(CMP_WORD wBlock[], CMP_BYTE cBlock[], CMP_DWORD dwBlockSize);
+    void ConvertBlock(CMP_WORD wBlock[], CMP_SBYTE cBlock[], CMP_DWORD dwBlockSize);
 
     void ConvertBlock(CMP_BYTE cBlock[], double dBlock[], CMP_DWORD dwBlockSize);
     void ConvertBlock(CMP_BYTE cBlock[], float fBlock[], CMP_DWORD dwBlockSize);
@@ -398,15 +447,25 @@ protected:
     void ConvertBlock(CMP_BYTE cBlock[], CMP_DWORD dwBlock[], CMP_DWORD dwBlockSize);
     void ConvertBlock(CMP_BYTE cBlock[], CMP_WORD wBlock[], CMP_DWORD dwBlockSize);
 
+    // Signed Conversions
+    void ConvertBlock(CMP_BYTE cBlock[], CMP_SBYTE wBlock[], CMP_DWORD dwBlockSize);
+    void ConvertBlock(CMP_SBYTE cBlock[], double dBlock[], CMP_DWORD dwBlockSize);
+    void ConvertBlock(CMP_SBYTE cBlock[], float fBlock[], CMP_DWORD dwBlockSize);
+    void ConvertBlock(CMP_SBYTE cBlock[], CMP_HALF hBlock[], CMP_DWORD dwBlockSize);
+    void ConvertBlock(CMP_SBYTE cBlock[], CMP_DWORD dwBlock[], CMP_DWORD dwBlockSize);
+    void ConvertBlock(CMP_SBYTE cBlock[], CMP_WORD wBlock[], CMP_DWORD dwBlockSize);
+    void ConvertBlock(CMP_SBYTE cBlock[], CMP_BYTE wBlock[], CMP_DWORD dwBlockSize);
+
+
     void SwizzleBlock(double dBlock[], CMP_DWORD dwBlockSize);
     void SwizzleBlock(float fBlock[], CMP_DWORD dwBlockSize);
     void SwizzleBlock(CMP_HALF hBlock[], CMP_DWORD dwBlockSize);
     void SwizzleBlock(CMP_DWORD dwBlock[], CMP_DWORD dwBlockSize);
     void SwizzleBlock(CMP_WORD wBlock[], CMP_DWORD dwBlockSize);
 
-    CMP_DWORD m_dwWidth;        // Final Image Width  
-    CMP_DWORD m_dwHeight;       // Final Image Height 
-    CMP_DWORD m_dwDepth;        // Final Image Depth  
+    CMP_DWORD m_dwWidth;        // Final Image Width
+    CMP_DWORD m_dwHeight;       // Final Image Height
+    CMP_DWORD m_dwDepth;        // Final Image Depth
     CMP_DWORD m_dwPitch;
     CMP_FORMAT m_dwFormat;
     CMP_FORMAT m_dwTranscodeFormat;
@@ -422,7 +481,7 @@ protected:
     bool m_bPerformingConversion;
 };
 
-CCodecBuffer*   CreateCodecBuffer(CodecBufferType nCodecBufferType, 
+CCodecBuffer*   CreateCodecBuffer(CodecBufferType nCodecBufferType,
                                   CMP_BYTE nBlockWidth, CMP_BYTE nBlockHeight, CMP_BYTE nBlockDepth,
                                   CMP_DWORD dwWidth, CMP_DWORD dwHeight, CMP_DWORD dwPitch = 0, CMP_BYTE* pData = 0,
                                   CMP_DWORD dwDataSize = 0);

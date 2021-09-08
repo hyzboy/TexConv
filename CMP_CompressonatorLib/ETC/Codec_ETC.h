@@ -9,10 +9,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -29,8 +29,8 @@
 #ifndef _Codec_ETC_H_INCLUDED_
 #define _Codec_ETC_H_INCLUDED_
 
-#include "Common.h"
-#include "Codec_Block_4x4.h"
+#include "common.h"
+#include "codec_block_4x4.h"
 
 #ifdef USE_ETCPACK
 #include "etcpack.h"
@@ -46,13 +46,12 @@ void cmp_compressBlockETC2FastPerceptual(uint8 *img, uint8 *imgdec, unsigned int
 #define ATC_OFFSET_ALPHA 0
 #define ATC_OFFSET_RGB 2
 
-class CCodec_ETC : public CCodec_Block_4x4
-{
-public:
+class CCodec_ETC : public CCodec_Block_4x4 {
+  public:
     CCodec_ETC(CodecType codecType);
     virtual ~CCodec_ETC();
 
-protected:
+  protected:
     CodecError CompressRGBBlock(CMP_BYTE rgbBlock[BLOCK_SIZE_4X4X4], CMP_DWORD compressedBlock[2]);
     CodecError CompressRGBABlock_ExplicitAlpha(CMP_BYTE rgbaBlock[BLOCK_SIZE_4X4X4], CMP_DWORD compressedBlock[4]);
     CodecError CompressRGBABlock_InterpolatedAlpha(CMP_BYTE rgbaBlock[BLOCK_SIZE_4X4X4], CMP_DWORD compressedBlock[4]);

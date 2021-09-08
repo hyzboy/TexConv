@@ -1,16 +1,16 @@
-//==============================================================================
-// Copyright (c) 2020    Advanced Micro Devices, Inc. All rights reserved.
+//============================================================================== 
+// Copyright (c) 2021    Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
+// to use, copy, modify, merge, publish, distribute, sublicense, and / or sell 
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -18,43 +18,74 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-//
+// 
 //===============================================================================
+#include "common_def.h"
+
+//============================================== BC1 INTERFACES  =======================================================
+#ifndef ASPM_OPENCL
+#define USE_NEW_SINGLE_HEADER_INTERFACES // Else use HPC v4.1 codec if using OpenCL
+
+#ifdef USE_NEW_SINGLE_HEADER_INTERFACES
+#define USE_CMP
+//#define USE_RGBCX
+//#define USE_ICBC
+//#define USE_BETSY
+//#define USE_INT
+//#define USE_STB
+//#define USE_SQUISH
+//#define USE_HUMUS
+#endif
+#endif
+
+#include "bc1_encode_kernel.h"      // new header for testing common encoders
 
 // Heat Mapping
 // This is code that compares quality of two similar or equal codecs with varying quality settings
-// A resulting compressed codec data block is colored according to three colors conditions 
+// A resulting compressed codec data block is colored according to three colors conditions
 // The base codec, lowest quality is colored green and the varying quality code is colored red.
-// If the quality of the base matches that of the varying codec then the color is set to blue 
+// If the quality of the base matches that of the varying codec then the color is set to blue
 // Base codecs can be local to CMP_Core or imported using a external set of files, the base codec
 
 #ifndef TEST_HEATMAP
 //#define TEST_HEATMAP   // Enable this to run heat map tests on BC1 codec
 #endif
 
-#include "BC1_Encode_kernel.h"
-
-#ifdef TEST_HEATMAP 
-#include "ExternCodec.h" // Use external codec for testing 
+#ifdef TEST_HEATMAP
+#include "externcodec.h"  // Use external codec for testing
 #endif
-//============================================== BC1 INTERFACES  =======================================================
- 
-#ifndef ASPM_HLSL
 
-void  CompressBlockBC1_Internal( 
-    const       CMP_Vec4uc      srcBlockTemp[16],
-    CMP_GLOBAL  CGU_UINT32      compressedBlock[2],
-    CMP_GLOBAL  CMP_BC15Options *BC15options)
+#ifndef ASPM_HLSL
+void  CompressBlockBC1_Internal(const       CMP_Vec4uc      srcBlockTemp[16],
+                                CMP_GLOBAL  CGU_UINT32      compressedBlock[2],
+                                CMP_GLOBAL  CMP_BC15Options *BC15options) 
 {
+
+#ifdef USE_NEW_SINGLE_HEADER_INTERFACES
+    CGU_Vec2ui cmpBlock2 = {0,0};
+    CGU_Vec4f  image_src[16];
+    //int        px = 0;
+    for (int i = 0; i < 16; i++)
+    {
+        image_src[i].x = srcBlockTemp[i].x / 255.0f;
+        image_src[i].y = srcBlockTemp[i].y / 255.0f;
+        image_src[i].z = srcBlockTemp[i].z / 255.0f;
+        image_src[i].w = srcBlockTemp[i].w / 255.0f;
+    }
+
+    cmpBlock2          = CompressBlockBC1_UNORM2(image_src, *BC15options);
+    compressedBlock[0] = cmpBlock2.x;
+    compressedBlock[1] = cmpBlock2.y;
+#else
     CGU_UINT8    srcindex = 0;
     CGU_FLOAT    BlockA[16];
     CGU_Vec3f    rgbBlockUV[16];
     for ( CGU_INT32 j = 0; j < 4; j++) {
-     for ( CGU_INT32 i = 0; i < 4; i++) {
-        rgbBlockUV[srcindex].x = (CGU_FLOAT)(srcBlockTemp[srcindex].x & 0xFF)/ 255.0f;  // R
-        rgbBlockUV[srcindex].y = (CGU_FLOAT)(srcBlockTemp[srcindex].y & 0xFF)/ 255.0f;  // G
-        rgbBlockUV[srcindex].z = (CGU_FLOAT)(srcBlockTemp[srcindex].z & 0xFF)/ 255.0f;  // B
-        srcindex++;
+        for ( CGU_INT32 i = 0; i < 4; i++) {
+            rgbBlockUV[srcindex].x = (CGU_FLOAT)(srcBlockTemp[srcindex].x & 0xFF)/ 255.0f;  // R
+            rgbBlockUV[srcindex].y = (CGU_FLOAT)(srcBlockTemp[srcindex].y & 0xFF)/ 255.0f;  // G
+            rgbBlockUV[srcindex].z = (CGU_FLOAT)(srcBlockTemp[srcindex].z & 0xFF)/ 255.0f;  // B
+            srcindex++;
         }
     }
 
@@ -64,17 +95,17 @@ void  CompressBlockBC1_Internal(
     CGU_BOOL   isSRGB             = internalOptions.m_bIsSRGB; // feature not supported in this section of code until v4.1
     CGU_Vec2ui  cmpBlock    = 0;
 
-//#define CMP_PRINTRESULTS 
+//#define CMP_PRINTRESULTS
 #ifdef TEST_HEATMAP
 
-    #ifdef CMP_PRINTRESULTS
-        static int q1= 0,q2= 0,same = 0;
-        static int testnum = 0;
-        printf("%4d ",testnum); 
-    #endif
+#ifdef CMP_PRINTRESULTS
+    static int q1= 0,q2= 0,same = 0;
+    static int testnum = 0;
+    printf("%4d ",testnum);
+#endif
     {
 
-        // Heatmap test: See BCn_Common_Kernel for details 
+        // Heatmap test: See BCn_Common_Kernel for details
         CGU_Vec2ui red   = {0xf800f800,0};
         CGU_Vec2ui green = {0x07e007e0,0};
         CGU_Vec2ui blue  = {0x001f001f,0};
@@ -93,91 +124,98 @@ void  CompressBlockBC1_Internal(
             err = err1-err2;
         }
 
-        if (err > 0.0f) 
-        {
+        if (err > 0.0f) {
             cmpBlock = red;
-        }
-        else if (err < 0.0f) {
+        } else if (err < 0.0f) {
             cmpBlock = green;
-        }
-        else {
+        } else {
             cmpBlock = blue;
         }
     }
-    #ifdef CMP_PRINTRESULTS
-        printf("Q1 [%4X:%4X]  %.3f, ",cmpBlockQ1.x,cmpBlockQ1.y,err1);
-        printf("Q2 [%4X:%4X]  %.3f, ",cmpBlock.x,cmpBlock.y  ,err2); 
-        testnum++;
-    #endif
+#ifdef CMP_PRINTRESULTS
+    printf("Q1 [%4X:%4X]  %.3f, ",cmpBlockQ1.x,cmpBlockQ1.y,err1);
+    printf("Q2 [%4X:%4X]  %.3f, ",cmpBlock.x,cmpBlock.y,err2);
+    testnum++;
+#endif
 #else
 
     // printf("q = %f\n",internalOptions.m_fquality);
-    cmpBlock = CompressBlockBC1_RGBA_Internal( 
-                       rgbBlockUV, 
-                       BlockA,
-                       channelWeights,
-                       0, //internalOptions.m_nAlphaThreshold, bug to investigate in debug is ok release has issue!
-                       1,
-                       internalOptions.m_fquality,
-                       isSRGB
-                       );
+    cmpBlock = CompressBlockBC1_RGBA_Internal(
+                   rgbBlockUV,
+                   BlockA,
+                   channelWeights,
+                   0, //internalOptions.m_nAlphaThreshold, bug to investigate in debug is ok release has issue!
+                   1,
+                   internalOptions.m_fquality,
+                   isSRGB
+               );
 #endif
     compressedBlock[0] = cmpBlock.x;
     compressedBlock[1] = cmpBlock.y;
 
+    union {
+        unsigned char buf[8];
+        uint32        blocks[2];
+    } cmp;
 
-}
+    cmp.blocks[0] = compressedBlock[0];
+    cmp.blocks[1] = compressedBlock[1];
+
+//   printf("[%3d,%3d,%3d,%3d:%3d,%3d,%3d,%3d]\n",
+//       cmp.buf[0], cmp.buf[1], cmp.buf[2], cmp.buf[3],
+//       cmp.buf[4], cmp.buf[5], cmp.buf[6], cmp.buf[7]);
 #endif
+}
+#endif // ASPM_HLSL
 
-//============================================== CPU USER INTERFACES  ========================================================
+//============================================== CPU INTERFACES  ========================================================
 #ifndef ASPM_GPU
-int CMP_CDECL CreateOptionsBC1(void **options)
-{
+int CMP_CDECL CreateOptionsBC1(void **options) {
     CMP_BC15Options *BC15optionsDefault = new CMP_BC15Options;
     if (BC15optionsDefault) {
-      SetDefaultBC15Options(BC15optionsDefault);
-      (*options) = BC15optionsDefault;
-    }
-    else {
+        SetDefaultBC15Options(BC15optionsDefault);
+        (*options) = BC15optionsDefault;
+    } else {
         (*options) = NULL;
         return CGU_CORE_ERR_NEWMEM;
     }
     return CGU_CORE_OK;
 }
 
-int CMP_CDECL DestroyOptionsBC1(void *options)
-{
+int CMP_CDECL DestroyOptionsBC1(void *options) {
     if (!options) return CGU_CORE_ERR_INVALIDPTR;
     CMP_BC15Options *BCOptions = reinterpret_cast <CMP_BC15Options *>(options);
     delete BCOptions;
     return CGU_CORE_OK;
 }
 
-int CMP_CDECL SetQualityBC1(void *options, 
-                            CGU_FLOAT fquality)
-{
+int CMP_CDECL SetQualityBC1(void *options, CGU_FLOAT fquality) {
     if (!options) return CGU_CORE_ERR_NEWMEM;
     CMP_BC15Options *BC15optionsDefault =  reinterpret_cast <CMP_BC15Options *>(options);
     if (fquality < 0.0f) fquality = 0.0f;
-    else
-    if (fquality > 1.0f) fquality = 1.0f;
+    else if (fquality > 1.0f) fquality = 1.0f;
     BC15optionsDefault->m_fquality = fquality;
     return CGU_CORE_OK;
 }
 
+int CMP_CDECL SetRefineStepsBC1(void *options, CGU_UINT32 steps) {
+    if (!options) return CGU_CORE_ERR_NEWMEM;
+    CMP_BC15Options *BC15optionsDefault =  reinterpret_cast <CMP_BC15Options *>(options);
+    if (steps < 0) steps = 1;
+    else if (steps > 1) steps = 1;
+    BC15optionsDefault->m_nRefinementSteps = steps;
+    return CGU_CORE_OK;
+}
 
-int CMP_CDECL SetAlphaThresholdBC1(void *options, 
-                                   CGU_UINT8 alphaThreshold)
-{
+
+int CMP_CDECL SetAlphaThresholdBC1(void *options, CGU_UINT8 alphaThreshold) {
     if (!options) return CGU_CORE_ERR_INVALIDPTR;
     CMP_BC15Options *BC15optionsDefault =  reinterpret_cast <CMP_BC15Options *>(options);
     BC15optionsDefault->m_nAlphaThreshold = alphaThreshold;
     return CGU_CORE_OK;
 }
 
-int CMP_CDECL SetDecodeChannelMapping(void *options,
-                              CGU_BOOL mapRGBA)
-{
+int CMP_CDECL SetDecodeChannelMapping(void *options, CGU_BOOL mapRGBA) {
     if (!options) return CGU_CORE_ERR_INVALIDPTR;
     CMP_BC15Options *BC15optionsDefault =  reinterpret_cast <CMP_BC15Options *>(options);
     BC15optionsDefault->m_mapDecodeRGBA = mapRGBA;
@@ -185,9 +223,9 @@ int CMP_CDECL SetDecodeChannelMapping(void *options,
 }
 
 int CMP_CDECL SetChannelWeightsBC1(void *options,
-                              CGU_FLOAT WeightRed,
-                              CGU_FLOAT WeightGreen,
-                              CGU_FLOAT WeightBlue) {
+                                   CGU_FLOAT WeightRed,
+                                   CGU_FLOAT WeightGreen,
+                                   CGU_FLOAT WeightBlue) {
     if (!options) return CGU_CORE_ERR_INVALIDPTR;
     CMP_BC15Options *BC15optionsDefault = (CMP_BC15Options *)options;
 
@@ -202,8 +240,7 @@ int CMP_CDECL SetChannelWeightsBC1(void *options,
     return CGU_CORE_OK;
 }
 
-int CMP_CDECL SetGammaBC1(void *options,
-                          CGU_BOOL sRGB) {
+int CMP_CDECL SetGammaBC1(void *options, CGU_BOOL sRGB) {
     if (!options) return CGU_CORE_ERR_INVALIDPTR;
     CMP_BC15Options *BC15optionsDefault = (CMP_BC15Options *)options;
 
@@ -222,11 +259,9 @@ int CMP_CDECL CompressBlockBC1(const unsigned char *srcBlock,
     //----------------------------------
     CGU_INT srcpos = 0;
     CGU_INT dstptr = 0;
-    for (CGU_UINT8 row=0; row < 4; row++)
-    {
+    for (CGU_UINT8 row=0; row < 4; row++) {
         srcpos = row * srcStrideInBytes;
-        for (CGU_UINT8 col = 0; col < 4; col++)
-        {
+        for (CGU_UINT8 col = 0; col < 4; col++) {
             inBlock[dstptr].x = CGU_UINT8(srcBlock[srcpos++]);
             inBlock[dstptr].y = CGU_UINT8(srcBlock[srcpos++]);
             inBlock[dstptr].z = CGU_UINT8(srcBlock[srcpos++]);
@@ -237,8 +272,7 @@ int CMP_CDECL CompressBlockBC1(const unsigned char *srcBlock,
 
     CMP_BC15Options *BC15options = (CMP_BC15Options *)options;
     CMP_BC15Options BC15optionsDefault;
-    if (BC15options == NULL)
-    {
+    if (BC15options == NULL) {
         BC15options     = &BC15optionsDefault;
         SetDefaultBC15Options(BC15options);
     }
@@ -247,13 +281,12 @@ int CMP_CDECL CompressBlockBC1(const unsigned char *srcBlock,
     return CGU_CORE_OK;
 }
 
-int CMP_CDECL DecompressBlockBC1(const unsigned char cmpBlock[8], 
+int CMP_CDECL DecompressBlockBC1(const unsigned char cmpBlock[8],
                                  CMP_GLOBAL unsigned char srcBlock[64],
                                  const void *options = NULL) {
     CMP_BC15Options *BC15options = (CMP_BC15Options *)options;
     CMP_BC15Options BC15optionsDefault;
-    if (BC15options == NULL)
-    {
+    if (BC15options == NULL) {
         BC15options     = &BC15optionsDefault;
         SetDefaultBC15Options(BC15options);
     }
@@ -283,8 +316,7 @@ CMP_STATIC CMP_KERNEL void CMP_GPUEncoder(
     CMP_GLOBAL  CGU_UINT8*          ImageDestination,
     CMP_GLOBAL  Source_Info*        SourceInfo,
     CMP_GLOBAL  CMP_BC15Options*    BC15options
-)
-{
+) {
     CGU_UINT32 xID;
     CGU_UINT32 yID;
 

@@ -1,5 +1,5 @@
 // AMD AMDUtils code
-// 
+//
 // Copyright(c) 2017 Advanced Micro Devices, Inc.All rights reserved.
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
@@ -18,9 +18,9 @@
 // THE SOFTWARE.
 #pragma once
 
-#include "GltfTechnique.h"
+#include "gltftechnique.h"
 
-#include "TextureVK.h"
+#include "texturevk.h"
 
 #include <glm/matrix.hpp>
 
@@ -39,8 +39,7 @@ class UploadHeapVK;
 
 // This class takes a GltfCommon class (that holds all the non-GPU specific data) as an input and loads all the GPU specific data
 //
-struct DepthMaterial
-{
+struct DepthMaterial {
     int m_textureCount = 0;
 
     VkDescriptorSet m_descriptorSet;
@@ -50,8 +49,7 @@ struct DepthMaterial
     bool m_doubleSided;
 };
 
-struct DepthPrimitives : public Primitives
-{
+struct DepthPrimitives : public Primitives {
     DepthMaterial* m_pMaterial = NULL;
 
     VkPipeline m_pipeline;
@@ -62,21 +60,17 @@ struct DepthPrimitives : public Primitives
     VkDescriptorSetLayout m_descriptorSetLayout;
 };
 
-struct DepthMesh
-{
+struct DepthMesh {
     std::vector<DepthPrimitives> m_pPrimitives;
 };
 
-class GltfDepthPass : public GltfTechnique
-{
-public:
-    struct per_batch
-    {
+class GltfDepthPass : public GltfTechnique {
+  public:
+    struct per_batch {
         glm::mat4x4 mViewProj;
     };
 
-    struct per_object
-    {
+    struct per_object {
         glm::mat4x4 mWorld;
     };
 
@@ -92,7 +86,7 @@ public:
     void OnDestroy();
     GltfDepthPass::per_batch* SetPerBatchConstants();
 
-private:
+  private:
     DeviceVK* m_pDevice;
     ResourceViewHeapsVK* m_pResourceViewHeaps;
 

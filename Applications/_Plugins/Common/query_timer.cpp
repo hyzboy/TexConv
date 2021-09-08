@@ -1,5 +1,5 @@
 //=====================================================================
-// Copyright (c) 2020    Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2021    Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
@@ -7,10 +7,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -28,42 +28,37 @@
 cmp_timeval  query_timer::m_frequency;
 int          query_timer::m_elapsed_count;
 
-void cmp_cputimer::initialize()
-    {
+void cmp_cputimer::initialize() {
 #ifdef _WIN32
-        for (int i=0; i<CMP_TIMER_REFMAX; i++) m_start[i].QuadPart = 0;
-        QueryPerformanceFrequency(&m_cpufrequency);
-        m_fcpufrequency = 1.0f/float(m_cpufrequency.QuadPart);
+    for (int i=0; i<CMP_TIMER_REFMAX; i++) m_start[i].QuadPart = 0;
+    QueryPerformanceFrequency(&m_cpufrequency);
+    m_fcpufrequency = 1.0f/float(m_cpufrequency.QuadPart);
 #endif
+}
+
+void cmp_cputimer::Start(CMP_INT ref) {
+    if (ref > CMP_TIMER_REFMAX) ref = 0;
+#ifdef _WIN32
+    m_end[ref].QuadPart = 0;
+    QueryPerformanceCounter(&m_start[ref]);
+#else
+    gettimeofday(&m_start[ref], NULL);
+#endif
+}
+
+void cmp_cputimer::Stop(CMP_INT ref) {
+    if (ref > CMP_TIMER_REFMAX) ref = 0;
+#ifdef _WIN32
+    if (m_start[ref].QuadPart == 0) m_end[ref].QuadPart = 0;
+    else {
+        QueryPerformanceCounter(&m_end[ref]);
     }
-
-void cmp_cputimer::Start(CMP_INT ref)
-{
-    if (ref > CMP_TIMER_REFMAX) ref = 0;
-#ifdef _WIN32
-        m_end[ref].QuadPart = 0;
-        QueryPerformanceCounter(&m_start[ref]);
 #else
-        gettimeofday(&m_start[ref], NULL);
+    gettimeofday(&m_end[ref], NULL);
 #endif
 }
 
-void cmp_cputimer::Stop(CMP_INT ref)
-{
-    if (ref > CMP_TIMER_REFMAX) ref = 0;
-#ifdef _WIN32
-        if (m_start[ref].QuadPart == 0) m_end[ref].QuadPart = 0;
-        else
-        {
-            QueryPerformanceCounter(&m_end[ref]);
-        }
-#else
-        gettimeofday(&m_end[ref], NULL);
-#endif
-}
-
-void cmp_cputimer::Reset(int ref)
-{
+void cmp_cputimer::Reset(int ref) {
 #ifdef _WIN32
     m_start[ref].QuadPart = 0;
     m_end[ref].QuadPart = 0;
@@ -71,8 +66,7 @@ void cmp_cputimer::Reset(int ref)
 }
 
 
-CMP_FLOAT cmp_cputimer::GetMS(CMP_INT ref)
-{
+CMP_FLOAT cmp_cputimer::GetMS(CMP_INT ref) {
     if (ref > CMP_TIMER_REFMAX) ref = 0;
 #ifdef _WIN32
     if (ref > CMP_TIMER_REFMAX) ref = 0;

@@ -1,5 +1,5 @@
 // AMD AMDUtils code
-// 
+//
 // Copyright(c) 2017 Advanced Micro Devices, Inc.All rights reserved.
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
@@ -18,12 +18,12 @@
 // THE SOFTWARE.
 #pragma once
 
-#include "GltfTechnique.h"
-//#include "SkyDome.h"
+#include "gltftechnique.h"
+//#include "skydome.h"
 
-#include "TextureVK.h"
+#include "texturevk.h"
 
-#include <json/json.h>
+#include <json/json.hpp>
 
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
@@ -40,8 +40,7 @@ class DynamicBufferRingVK;
 class StaticBufferPoolVK;
 class GLTFCommon;
 
-struct PBRMaterial
-{
+struct PBRMaterial {
     int m_textureCount = 0;
 
     VkDescriptorSet m_descriptorSet;
@@ -55,8 +54,7 @@ struct PBRMaterial
     float    roughnessFactor;
 };
 
-struct PBRPrimitives : public Primitives
-{
+struct PBRPrimitives : public Primitives {
     PBRMaterial* m_pMaterial = NULL;
 
     VkPipeline m_pipeline = VK_NULL_HANDLE;
@@ -68,18 +66,15 @@ struct PBRPrimitives : public Primitives
     //SAMPLER                                    *m_sampler;
 };
 
-struct PBRMesh
-{
+struct PBRMesh {
     std::vector<PBRPrimitives> m_pPrimitives;
 };
 
 // This class takes a GltfCommon class (that holds all the non-GPU specific data) as an input and loads all the GPU specific data
 //
-class GltfPbrVK : public GltfTechnique
-{
-public:
-    struct per_batch
-    {
+class GltfPbrVK : public GltfTechnique {
+  public:
+    struct per_batch {
         glm::mat4x4 mCameraViewProj;
         glm::vec4 cameraPos;
         glm::mat4x4 mLightViewProj;
@@ -89,8 +84,7 @@ public:
         float    iblFactor;
     };
 
-    struct per_object
-    {
+    struct per_object {
         glm::mat4x4 mWorld;
         glm::vec4 u_emissiveFactor;
         glm::vec4 u_baseColorFactor;
@@ -114,7 +108,7 @@ public:
     void OnDestroy();
     GltfPbrVK::per_batch* SetPerBatchConstants();
 
-private:
+  private:
     DeviceVK* m_pDevice;
     ResourceViewHeapsVK* m_pResourceViewHeaps;
 

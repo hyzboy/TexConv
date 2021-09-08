@@ -9,10 +9,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -25,8 +25,9 @@
 #define _BC7_ENCODE_H_
 
 #include <float.h>
-#include "BC7_Definitions.h"
+#include "bc7_definitions.h"
 #include "debug.h"
+#include "cmp_core.h"
 
 #include <mutex>
 
@@ -35,84 +36,77 @@
 extern double g_qFAST_THRESHOLD;
 extern double g_HIGHQULITY_THRESHOLD;
 
-class BC7BlockEncoder
-{
-public:
+class BC7BlockEncoder {
+  public:
 
     BC7BlockEncoder(CMP_DWORD validModeMask,
-        CMP_BOOL  imageNeedsAlpha,
+                    CMP_BOOL  imageNeedsAlpha,
                     double quality,
-        CMP_BOOL colourRestrict,
-        CMP_BOOL alphaRestrict,
+                    CMP_BOOL colourRestrict,
+                    CMP_BOOL alphaRestrict,
                     double performance = 1.0
-                    )
-                    {
-                        // Bug check : ModeMask must be > 0
-                        if (validModeMask <= 0) 
-                            m_validModeMask = 0xCF;
-                        else
-                            m_validModeMask = validModeMask;
+                   ) {
+        // Bug check : ModeMask must be > 0
+        if (validModeMask <= 0)
+            m_validModeMask = 0xCF;
+        else
+            m_validModeMask = validModeMask;
 
-                        m_quality            = min(1.0, max(quality,0.0));
-                        m_performance        = min(1.0, max(performance,0.0));
-                        m_imageNeedsAlpha    = imageNeedsAlpha;
-                        m_smallestError      = DBL_MAX;
-                        m_largestError       = 0.0;
-                        m_colourRestrict     = colourRestrict;
-                        m_alphaRestrict      = alphaRestrict;
-                        
-                        m_quantizerRangeThreshold  = 255 * m_performance;
+        m_quality            = cmp_minT(1.0, cmp_maxT(quality, 0.0));
+        m_performance        = cmp_minT(1.0, cmp_maxT(performance, 0.0));
+        m_imageNeedsAlpha    = imageNeedsAlpha;
+        m_smallestError      = DBL_MAX;
+        m_largestError       = 0.0;
+        m_colourRestrict     = colourRestrict;
+        m_alphaRestrict      = alphaRestrict;
 
-                        if(m_quality < g_qFAST_THRESHOLD) // Make sure this is below 0.5 since we are x2 below.
-                        {
-                            m_shakerRangeThreshold = 0.;
-                        
-                            // Scale m_quality to be a linar range 0 to 1 in this section 
-                            // to maximize quality with fast performance...
-                            m_errorThreshold = 256. * (1.0 - ((m_quality*2.0)/g_qFAST_THRESHOLD));
-                            // Limit the size of the partition search space based on Quality
-                            m_partitionSearchSize = max( (1.0/16.0) , ((m_quality*2.0) / g_qFAST_THRESHOLD));
-                        }
-                        else
-                        {
-                            // m_qaulity = set the quality user want to see on encoding 
-                            // higher values will produce better encoding results.
-                            // m_performance  - sets a perfoamce level for a specified quality level 
+        m_quantizerRangeThreshold  = 255 * m_performance;
+
+        if(m_quality < g_qFAST_THRESHOLD) { // Make sure this is below 0.5 since we are x2 below.
+            m_shakerRangeThreshold = 0.;
+
+            // Scale m_quality to be a linar range 0 to 1 in this section
+            // to maximize quality with fast performance...
+            m_errorThreshold = 256. * (1.0 - ((m_quality*2.0)/g_qFAST_THRESHOLD));
+            // Limit the size of the partition search space based on Quality
+            m_partitionSearchSize = cmp_maxT( (1.0/16.0), ((m_quality*2.0) / g_qFAST_THRESHOLD));
+        } else {
+            // m_qaulity = set the quality user want to see on encoding
+            // higher values will produce better encoding results.
+            // m_performance  - sets a perfoamce level for a specified quality level
 
 
-                            if(m_quality < g_HIGHQULITY_THRESHOLD)
-                            {
-                                m_shakerRangeThreshold  = 255 * (m_quality / 10);                    // gain  performance within FAST_THRESHOLD and HIGHQULITY_THRESHOLD range
-                                m_errorThreshold = 256. * (1.0 - (m_quality/g_qFAST_THRESHOLD));
-                                // Limit the size of the partition search space based on Quality
-                                m_partitionSearchSize = max( (1.0/16.0) , (m_quality / g_qFAST_THRESHOLD));
-                            }
-                            else
-                            {
-                                m_shakerRangeThreshold  = 255 * m_quality;     // lowers performance with incresing values
-                                m_errorThreshold = 0;                         // Dont exit early 
-                                m_partitionSearchSize   = 1.0;                 // use all partitions for best quality
-                            }
-                        }
+            if(m_quality < g_HIGHQULITY_THRESHOLD) {
+                m_shakerRangeThreshold  = 255 * (m_quality / 10);                    // gain  performance within FAST_THRESHOLD and HIGHQULITY_THRESHOLD range
+                m_errorThreshold = 256. * (1.0 - (m_quality/g_qFAST_THRESHOLD));
+                // Limit the size of the partition search space based on Quality
+                m_partitionSearchSize = cmp_maxT( (1.0/16.0), (m_quality / g_qFAST_THRESHOLD));
+            } else {
+                m_shakerRangeThreshold  = 255 * m_quality;     // lowers performance with incresing values
+                m_errorThreshold = 0;                         // Dont exit early
+                m_partitionSearchSize   = 1.0;                 // use all partitions for best quality
+            }
+        }
 #ifdef USE_DBGTRACE
-                DbgTrace(("shakerRangeThreshold [%3.3f] errorThreshold [%3.3f] partitionSearchSize [%3.3f]",m_shakerRangeThreshold,m_errorThreshold,m_partitionSearchSize));
+        DbgTrace(("shakerRangeThreshold [%3.3f] errorThreshold [%3.3f] partitionSearchSize [%3.3f]",m_shakerRangeThreshold,m_errorThreshold,m_partitionSearchSize));
 #endif
     };
 
 
-    ~BC7BlockEncoder()
-    {
+    ~BC7BlockEncoder() {
 #ifdef USE_DBGTRACE
-                DbgTrace(("Smallest Error %f", (float)m_smallestError));
-                DbgTrace(("Largest Error %f", (float)m_largestError));
+        DbgTrace(("Smallest Error %f", (float)m_smallestError));
+        DbgTrace(("Largest Error %f", (float)m_largestError));
 #endif
     };
 
     // This routine compresses a block and returns the RMS error
     double CompressBlock(double in[MAX_SUBSET_SIZE][MAX_DIMENSION_BIG],
-        CMP_BYTE   out[COMPRESSED_BLOCK_SIZE]);
+                         CMP_BYTE   out[COMPRESSED_BLOCK_SIZE]);
 
-private:
+  private:
+
+
     double quant_single_point_d(
         double data[MAX_ENTRIES][MAX_DIMENSION_BIG],
         int numEntries, int index[MAX_ENTRIES],
@@ -133,7 +127,7 @@ private:
         int size,
         int Mi_,             // last cluster
         int bits,            // total for all channels
-                             // defined by total numbe of bits and dimensioin
+        // defined by total numbe of bits and dimensioin
         int dimension,
         double epo[2][MAX_DIMENSION_BIG]
 
@@ -147,33 +141,33 @@ private:
         int epo_code[2][MAX_DIMENSION_BIG],
         int Mi_,                // last cluster
         int bits[3],            // including parity
-        CMP_qt type,
+        CMP_qt_cpu type,
         int dimension
     );
 
     void    BlockSetup(CMP_DWORD blockMode);
     void    EncodeSingleIndexBlock(CMP_DWORD blockMode,
-        CMP_DWORD partition,
-        CMP_DWORD colour[MAX_SUBSETS][2],
+                                   CMP_DWORD partition,
+                                   CMP_DWORD colour[MAX_SUBSETS][2],
                                    int   indices[MAX_SUBSETS][MAX_SUBSET_SIZE],
-        CMP_BYTE  block[COMPRESSED_BLOCK_SIZE]);
+                                   CMP_BYTE  block[COMPRESSED_BLOCK_SIZE]);
 
     // This routine compresses a block to any of the single index modes
     double CompressSingleIndexBlock(double in[MAX_SUBSET_SIZE][MAX_DIMENSION_BIG],
-        CMP_BYTE   out[COMPRESSED_BLOCK_SIZE],
-        CMP_DWORD  blockMode);
+                                    CMP_BYTE   out[COMPRESSED_BLOCK_SIZE],
+                                    CMP_DWORD  blockMode);
 
     void EncodeDualIndexBlock(CMP_DWORD blockMode,
-        CMP_DWORD indexSelection,
-        CMP_DWORD componentRotation,
+                              CMP_DWORD indexSelection,
+                              CMP_DWORD componentRotation,
                               int endpoint[2][2][MAX_DIMENSION_BIG],
                               int indices[2][MAX_SUBSET_SIZE],
-        CMP_BYTE   out[COMPRESSED_BLOCK_SIZE]);
+                              CMP_BYTE   out[COMPRESSED_BLOCK_SIZE]);
 
     // This routine compresses a block to any of the dual index modes
     double CompressDualIndexBlock(double in[MAX_SUBSET_SIZE][MAX_DIMENSION_BIG],
-        CMP_BYTE   out[COMPRESSED_BLOCK_SIZE],
-        CMP_DWORD  blockMode);
+                                  CMP_BYTE   out[COMPRESSED_BLOCK_SIZE],
+                                  CMP_DWORD  blockMode);
 
     // Bulky temporary data used during compression of a block
     int     m_storedIndices[MAX_PARTITIONS][MAX_SUBSETS][MAX_SUBSET_SIZE];
@@ -191,7 +185,7 @@ private:
     double m_quantizerRangeThreshold;
     double m_shakerRangeThreshold;
     double m_partitionSearchSize;
-    
+
     // Global data setup at initialisation time
     double m_quality;
     double m_performance;

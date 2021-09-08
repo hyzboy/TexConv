@@ -9,10 +9,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -25,9 +25,8 @@
 #ifndef _CMP_BOX_FILTER_H
 #define _CMP_BOX_FILTER_H
 
-#include <Compressonator.h>
+#include <compressonator.h>
 
-void CMP_GenerateMipLevel(CMP_MipLevel* pCurMipLevel, CMP_MipLevel* pPrevMipLevelOne, CMP_MipLevel* pPrevMipLevelTwo = NULL);
 template <typename T> void CMP_GenerateMipLevelF(CMP_MipLevel* pCurMipLevel, CMP_MipLevel* pPrevMipLevelOne, CMP_MipLevel* pPrevMipLevelTwo = NULL, T* curMipData = NULL, T* prevMip1Data = NULL, T* prevMip2Data = NULL);
 
 #endif

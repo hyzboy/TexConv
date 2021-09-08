@@ -9,10 +9,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -26,20 +26,17 @@
 #define _ASTC_ENCODE_H_
 
 #include <float.h>
-#include "ASTC_Definitions.h"
-#include "ASTC_Encode_Kernel.h"
+#include "astc_definitions.h"
+#include "astc_encode_kernel.h"
 
-class ASTCBlockEncoder
-{
-public:
+class ASTCBlockEncoder {
+  public:
 
-    ASTCBlockEncoder()
-    {
+    ASTCBlockEncoder() {
     };
 
 
-    ~ASTCBlockEncoder()
-    {
+    ~ASTCBlockEncoder() {
     };
 
     // This routine compresses a block and returns the RMS error
@@ -52,7 +49,7 @@ public:
         ASTC_Encoder::ASTC_Encode  *ASTCEncode
     );
 
-private:
+  private:
     imageblock                  m_pb;
     symbolic_compressed_block   m_scb;
     physical_compressed_block   m_pcb;

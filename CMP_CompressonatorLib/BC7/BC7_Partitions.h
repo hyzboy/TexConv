@@ -9,10 +9,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -24,19 +24,19 @@
 #ifndef _BC7_PARTITIONS_H_
 #define _BC7_PARTITIONS_H_
 
-#include "BC7_Definitions.h"
+#include "bc7_definitions.h"
 #include "debug.h"
 
-extern CMP_DWORD    BC7_PARTITIONS[MAX_SUBSETS][MAX_PARTITIONS][MAX_SUBSET_SIZE];
+extern CMP_DWORD    BC7_PARTITIONS_CPU[MAX_SUBSETS][MAX_PARTITIONS][MAX_SUBSET_SIZE];       // cpu
 extern CMP_DWORD    BC7_FIXUPINDICES[MAX_SUBSETS][MAX_PARTITIONS][3];
 
 
 extern void    Partition(CMP_DWORD partition,
-                  double in[][MAX_DIMENSION_BIG],
-                  double subsets[MAX_SUBSETS][MAX_SUBSET_SIZE][MAX_DIMENSION_BIG],
-    CMP_DWORD count[MAX_SUBSETS],
-    CMP_DWORD blockType,
-                  int   dimension);
+                         double in[][MAX_DIMENSION_BIG],
+                         double subsets[MAX_SUBSETS][MAX_SUBSET_SIZE][MAX_DIMENSION_BIG],
+                         CMP_DWORD count[MAX_SUBSETS],
+                         CMP_DWORD blockType,
+                         int   dimension);
 
 
 #endif

@@ -9,10 +9,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -25,7 +25,7 @@
 #ifndef _DDS_H
 #define _DDS_H
 
-#include "PluginInterface.h"
+#include "plugininterface.h"
 
 #ifdef _WIN32
 #include "ddraw.h"
@@ -34,7 +34,7 @@
 
 // {F3D02C4D-BE5F-4074-9098-BB13D59EF875}
 #ifdef _WIN32
-static const GUID g_GUID ={ 0xf3d02c4d, 0xbe5f, 0x4074, { 0x90, 0x98, 0xbb, 0x13, 0xd5, 0x9e, 0xf8, 0x75 } };
+static const GUID g_GUID = { 0xf3d02c4d, 0xbe5f, 0x4074, { 0x90, 0x98, 0xbb, 0x13, 0xd5, 0x9e, 0xf8, 0x75 } };
 #else
 static const GUID g_GUID = {0};
 #endif
@@ -49,18 +49,17 @@ static const GUID g_GUID = {0};
 
 // #define _USEDIRECTX
 
-class Plugin_DDS : public PluginInterface_Image
-{
-    public: 
-        Plugin_DDS();
-        virtual ~Plugin_DDS();
+class Plugin_DDS : public PluginInterface_Image {
+  public:
+    Plugin_DDS();
+    virtual ~Plugin_DDS();
 
-        int TC_PluginGetVersion(TC_PluginVersion* pPluginVersion);
-        int TC_PluginSetSharedIO(void *Shared);
-        int TC_PluginFileLoadTexture(const char* pszFilename, MipSet* pMipSet);
-        int TC_PluginFileSaveTexture(const char* pszFilename, MipSet* pMipSet);
-        int TC_PluginFileLoadTexture(const char* pszFilename, CMP_Texture *srcTexture);
-        int TC_PluginFileSaveTexture(const char* pszFilename, CMP_Texture *srcTexture);
+    int TC_PluginGetVersion(TC_PluginVersion* pPluginVersion);
+    int TC_PluginSetSharedIO(void *Shared);
+    int TC_PluginFileLoadTexture(const char* pszFilename, MipSet* pMipSet);
+    int TC_PluginFileSaveTexture(const char* pszFilename, MipSet* pMipSet);
+    int TC_PluginFileLoadTexture(const char* pszFilename, CMP_Texture *srcTexture);
+    int TC_PluginFileSaveTexture(const char* pszFilename, CMP_Texture *srcTexture);
 
 };
 

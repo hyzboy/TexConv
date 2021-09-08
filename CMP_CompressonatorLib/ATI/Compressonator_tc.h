@@ -9,10 +9,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -23,8 +23,8 @@
 //
 //  Project        ATI Handheld Graphics -- ATI Texture Compression
 //
-//  Description    This source code is part of the CMP texture compression 
-//                 library.  It's used to compress textures for OpenGL ES.  
+//  Description    This source code is part of the CMP texture compression
+//                 library.  It's used to compress textures for OpenGL ES.
 //
 //
 //////////////////////////////////////////////////////////////////////////////
@@ -43,20 +43,20 @@ typedef struct _Color888 {
 } Color888_t;
 
 extern unsigned int
-atiEncodeRGBBlockATITC( 
-                Color888_t      (*pPixels)[4][4],
-                unsigned int    *pColorLow565or1555Ret, // Return value
-                unsigned int    *pColorHigh565Ret       // Return value
-              );
+atiEncodeRGBBlockATITC(
+    Color888_t      (*pPixels)[4][4],
+    unsigned int    *pColorLow565or1555Ret, // Return value
+    unsigned int    *pColorHigh565Ret       // Return value
+);
 
 
 extern void
-atiDecodeRGBBlockATITC( 
-                Color888_t      (*pPixelsOut)[4][4],
-                unsigned int    bitIndices,
-                unsigned int    colorLow565or1555,
-                unsigned int    colorHigh565
-              );
+atiDecodeRGBBlockATITC(
+    Color888_t      (*pPixelsOut)[4][4],
+    unsigned int    bitIndices,
+    unsigned int    colorLow565or1555,
+    unsigned int    colorHigh565
+);
 
 
 extern void

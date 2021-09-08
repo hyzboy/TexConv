@@ -1,17 +1,17 @@
 // The MIT License (MIT)
 //
 // Copyright(c) 2018 Microsoft Corp
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this
 // software and associated documentation files(the "Software"), to deal in the Software
 // without restriction, including without limitation the rights to use, copy, modify,
 // merge, publish, distribute, sublicense, and / or sell copies of the Software, and to
 // permit persons to whom the Software is furnished to do so, subject to the following
 // conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in all copies
 // or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
 // INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
 // PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
@@ -20,7 +20,7 @@
 // OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 // Modifications Copyright (C) 2018 Advanced Micro Devices, Inc.
-// 
+//
 // Copyright(c) 2017 Advanced Micro Devices, Inc.All rights reserved.
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
@@ -44,16 +44,17 @@
 // This file holds all the structures/classes used to load a glTF model
 //
 
-#include "GltfFeatures.h"
+#include "gltffeatures.h"
 
-#include <json/json.h>
+#include <json/json.hpp>
 
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
+
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/transform.hpp>
 
-struct tfNode
-{
+struct tfNode {
     std::vector<tfNode *> m_children;
 
     int meshIndex = -1;
@@ -70,14 +71,12 @@ struct tfNode
     }
 };
 
-struct tfScene
-{
+struct tfScene {
     std::vector<tfNode *> m_nodes;
 };
 
-class tfAccessor
-{
-public:
+class tfAccessor {
+  public:
     void *m_data = NULL;
     int m_count = 0;
     int m_stride;
@@ -87,21 +86,18 @@ public:
     glm::vec4 m_min;
     glm::vec4 m_max;
 
-    void *Get(int i)
-    {
+    void *Get(int i) {
         if (i >= m_count)
             i = m_count - 1;
 
         return (char*)m_data + m_stride*i;
     }
 
-    int FindClosestFloatIndex(float val)
-    {
+    int FindClosestFloatIndex(float val) {
         int ini = 0;
         int fin = m_count - 1;
 
-        while (ini <= fin)
-        {
+        while (ini <= fin) {
             int mid = (ini + fin) / 2;
             float v = *(float*)Get(mid);
 
@@ -112,14 +108,11 @@ public:
         }
 
         {
-            if (*(float*)Get(fin) > val)
-            {
+            if (*(float*)Get(fin) > val) {
                 // Error !!
             }
-            if (fin < m_count)
-            {
-                if (*(float*)Get(fin + 1) < val)
-                {
+            if (fin < m_count) {
+                if (*(float*)Get(fin + 1) < val) {
                     // Error !!
                 }
             }
@@ -129,14 +122,12 @@ public:
     }
 };
 
-class tfSampler
-{
-public:
+class tfSampler {
+  public:
     tfAccessor m_time;
     tfAccessor m_value;
 
-    void SampleLinear(float time, float *frac, float **pCurr, float **pNext)
-    {
+    void SampleLinear(float time, float *frac, float **pCurr, float **pNext) {
         int curr_index = m_time.FindClosestFloatIndex(time);
         int next_index = (std::min)(curr_index + 1, m_time.m_count - 1);
 
@@ -149,11 +140,9 @@ public:
     }
 };
 
-class tfChannel
-{
-public:
-    ~tfChannel()
-    {
+class tfChannel {
+  public:
+    ~tfChannel() {
         delete m_pTranslation;
         delete m_pRotation;
         delete m_pScale;
@@ -164,8 +153,7 @@ public:
     tfSampler *m_pScale;
 };
 
-struct tfAnimation
-{
+struct tfAnimation {
     float m_duration;
     std::map<int, tfChannel> m_channels;
 };

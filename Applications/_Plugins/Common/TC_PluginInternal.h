@@ -12,10 +12,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -40,9 +40,9 @@
 #include <windows.h>
 #endif
 
-#include "Compressonator.h"
-#include "Common.h"
-#include "TC_PluginAPI.h"
+#include "compressonator.h"
+#include "common.h"
+#include "tc_pluginapi.h"
 
 #if _MSC_VER > 1000
 #pragma once
@@ -176,30 +176,29 @@ typedef void ( * TC_AppUpdateViewParentPROC) (HPLUGIN hPlugin, HWND hParent, UIN
 typedef void ( * TC_AppEnableCommandPROC) (HPLUGIN hPlugin, HWND hParent, UINT nCommand, bool bEnable);
 typedef void (* TC_AppCheckCommandPROC) (HPLUGIN hPlugin, HWND hParent, UINT nCommand, bool bCheck);
 
-typedef struct _TC_AppPointers
-{
-   TC_GetAppAPIVersionPROC                    pAppGetAppAPIVersionMajor;
-   TC_GetAppAPIVersionPROC                    pAppGetAppAPIVersionMinor;
-   TC_AppHandleErrorPROC                    pAppHandleError;
-   TC_AppRegisterFileTypePROC                pAppRegisterFileType;
-   TC_AppUnregisterFileTypePROC                pAppUnregisterFileType;
-   TC_AppRegisterCodecPROC                    pAppRegisterCodec;
-   TC_AppUnregisterCodecPROC                pAppUnregisterCodec;
-   TC_AppRegisterMipGeneratorPROC            pAppRegisterMipGenerator;
-   TC_AppUnregisterMipGeneratorPROC            pAppUnregisterMipGenerator;
-   TC_AppRegisterViewTypePROC                pAppRegisterViewType;
-   TC_AppUnregisterViewTypePROC                pAppUnregisterViewType;
-   TC_AppGetMipLevelPROC                    pAppGetMipLevel;
-   //Memory (de)allocation
-   TC_AppAllocateMipSetPROC                    pAppAllocateMipSet;
-   TC_AppAllocateMipLevelDataPROC            pAppAllocateMipLevelData;
-   TC_AppAllocateCompressedMipLevelDataPROC    pAppAllocateCompressedMipLevelData;
-   TC_AppFreeMipLevelDataPROC                pAppFreeMipLevelData;
-   TC_AppCompressTextureCallbackPROC        pAppCompressTextureCallback;
-   TC_AppUpdateViewParentPROC                pAppUpdateViewParent;
-   TC_AppEnableCommandPROC                    pAppEnableCommand;
-   TC_AppCheckCommandPROC                    pAppCheckCommand;
-   TC_AppDebugStringPROC                    pAppDebugString;
+typedef struct _TC_AppPointers {
+    TC_GetAppAPIVersionPROC                    pAppGetAppAPIVersionMajor;
+    TC_GetAppAPIVersionPROC                    pAppGetAppAPIVersionMinor;
+    TC_AppHandleErrorPROC                    pAppHandleError;
+    TC_AppRegisterFileTypePROC                pAppRegisterFileType;
+    TC_AppUnregisterFileTypePROC                pAppUnregisterFileType;
+    TC_AppRegisterCodecPROC                    pAppRegisterCodec;
+    TC_AppUnregisterCodecPROC                pAppUnregisterCodec;
+    TC_AppRegisterMipGeneratorPROC            pAppRegisterMipGenerator;
+    TC_AppUnregisterMipGeneratorPROC            pAppUnregisterMipGenerator;
+    TC_AppRegisterViewTypePROC                pAppRegisterViewType;
+    TC_AppUnregisterViewTypePROC                pAppUnregisterViewType;
+    TC_AppGetMipLevelPROC                    pAppGetMipLevel;
+    //Memory (de)allocation
+    TC_AppAllocateMipSetPROC                    pAppAllocateMipSet;
+    TC_AppAllocateMipLevelDataPROC            pAppAllocateMipLevelData;
+    TC_AppAllocateCompressedMipLevelDataPROC    pAppAllocateCompressedMipLevelData;
+    TC_AppFreeMipLevelDataPROC                pAppFreeMipLevelData;
+    TC_AppCompressTextureCallbackPROC        pAppCompressTextureCallback;
+    TC_AppUpdateViewParentPROC                pAppUpdateViewParent;
+    TC_AppEnableCommandPROC                    pAppEnableCommand;
+    TC_AppCheckCommandPROC                    pAppCheckCommand;
+    TC_AppDebugStringPROC                    pAppDebugString;
 } TC_AppPointers;
 
 TC_PluginError TC_PluginInitialise(const TC_AppPointers* pAppPointers, HPLUGIN hThis);

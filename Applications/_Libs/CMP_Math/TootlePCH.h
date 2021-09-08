@@ -8,41 +8,43 @@
 
 // disable VC++ 2K5 warnings about deprecated standard C functions
 #if defined( _MSC_VER )
-    #if _MSC_VER >= 1400
-        #define _CRT_SECURE_NO_DEPRECATE
-    #endif
+#if _MSC_VER >= 1400
+#define _CRT_SECURE_NO_DEPRECATE
+#endif
 #endif
 
 #ifndef _SOFTWARE_ONLY_VERSION
 #define _SOFTWARE_ONLY_VERSION          // Do not use DirectX SDK 
 #endif // !_SOFTWARE_ONLY_VERSION
 
-#ifdef _LINUX
-    #define __cdecl
-    #define _isnan(x) isnan(x)
-    #define _finite(x) finite(x)
+#ifdef __linux__
+#define __cdecl
+#define cmp_isnan(x)  isnan(x)
+#define cmp_finite(x) finite(x)
+#else
+#define cmp_isnan(x) std::isnan(x)
 #endif
 
 #ifdef __cplusplus
 
-    #include <cstddef>
-    #include <cstdio>
-    #include <cstdlib>
-    #include <cstring>
-    #include <cmath>
-    #include <functional>
-    #include <list>
-    #include <map>
-    #include <queue>
-    #include <set>
-    #include <string>
-    #include <vector>
+#include <cstddef>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <cmath>
+#include <functional>
+#include <list>
+#include <map>
+#include <queue>
+#include <set>
+#include <string>
+#include <vector>
 #else
 
-    #include <stdio.h>
-    #include <stdlib.h>
-    #include <string.h>
-    #include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdarg.h>
 
 #endif
 

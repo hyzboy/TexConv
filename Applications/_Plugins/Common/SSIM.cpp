@@ -57,10 +57,10 @@ the use of this software, even if advised of the possibility of such damage.
  to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
  copies of the Software, and to permit persons to whom the Software is
  furnished to do so, subject to the following conditions :
- 
+
  The above copyright notice and this permission notice shall be included in
  all copies or substantial portions of the Software.
- 
+
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -71,11 +71,10 @@ the use of this software, even if advised of the possibility of such damage.
 ========================================================================================
 */
 
-#include "TestReport.h"
-#include "SSIM.h"
+#include "testreport.h"
+#include "ssim.h"
 
-void getMSE_PSNR( const Mat& I1, const Mat& I2, double  &mse, double &psnr)
-{
+void getMSE_PSNR( const Mat& I1, const Mat& I2, double  &mse, double &psnr) {
     Mat s1;
     absdiff(I1, I2, s1);       // |I1 - I2|
     s1.convertTo(s1, CV_32F);  // cannot make a square on 8 bits
@@ -85,20 +84,16 @@ void getMSE_PSNR( const Mat& I1, const Mat& I2, double  &mse, double &psnr)
 
     double sse = s.val[0] + s.val[1] + s.val[2]; // sum channels
 
-    if( sse <= 1e-10) // for small values return zero
-    {
+    if( sse <= 1e-10) { // for small values return zero
         mse     = 0;
         psnr    = 0;
-    }
-    else
-    {
+    } else {
         mse     = sse /(double)(I1.channels() * I1.total());
         psnr    = 10.0*log10((255*255)/mse);
     }
 }
 
-Scalar getSSIM( const Mat& i1, const Mat& i2, CMP_Feedback_Proc pFeedbackProc)
-{
+Scalar getSSIM( const Mat& i1, const Mat& i2, CMP_Feedback_Proc pFeedbackProc) {
     const double C1 = 6.5025, C2 = 58.5225;
     /***************************** INITS **********************************/
     int d     = CV_32F;
@@ -113,8 +108,7 @@ Scalar getSSIM( const Mat& i1, const Mat& i2, CMP_Feedback_Proc pFeedbackProc)
 
 
     // Progress
-    if (pFeedbackProc)
-    {
+    if (pFeedbackProc) {
         if (pFeedbackProc(50.0, NULL, NULL))
             return -1; //abort
     }

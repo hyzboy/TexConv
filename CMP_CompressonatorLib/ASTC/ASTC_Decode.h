@@ -8,10 +8,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -25,25 +25,24 @@
 #ifndef _ASTC_DECODE_H_
 #define _ASTC_DECODE_H_
 
-#include "ASTC/ASTC_Definitions.h"
+#include "astc/astc_definitions.h"
 
-class ASTCBlockDecoder
-{
-public:
+class ASTCBlockDecoder {
+  public:
     ASTCBlockDecoder()     {};
 
     ~ASTCBlockDecoder() {};
 
     // *out is determined by ImageData::m_DataType
     void DecompressBlock(
-                         BYTE BlockWidth,
-                         BYTE BlockHeight,
-                         BYTE bitness,
-                         float  out[][4],
-                         BYTE   in[ASTC_COMPRESSED_BLOCK_SIZE]);
+        BYTE BlockWidth,
+        BYTE BlockHeight,
+        BYTE bitness,
+        float  out[][4],
+        BYTE   in[ASTC_COMPRESSED_BLOCK_SIZE]);
 
-private:
-    
+  private:
+
 };
 
 

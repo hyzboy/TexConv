@@ -9,10 +9,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -29,11 +29,10 @@
 #ifndef _CODEC_ATC_RGBA_INTERP_H_INCLUDED_
 #define _CODEC_ATC_RGBA_INTERP_H_INCLUDED_
 
-#include "Codec_ATC.h"
+#include "codec_atc.h"
 
-class CCodec_ATC_RGBA_Interpolated : public CCodec_ATC  
-{
-public:
+class CCodec_ATC_RGBA_Interpolated : public CCodec_ATC {
+  public:
     CCodec_ATC_RGBA_Interpolated();
     virtual ~CCodec_ATC_RGBA_Interpolated();
 

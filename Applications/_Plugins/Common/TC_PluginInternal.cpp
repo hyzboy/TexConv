@@ -12,10 +12,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -26,8 +26,8 @@
 //
 
 
-#include "TC_PluginAPI.h"
-#include "Version.h"
+#include "tc_pluginapi.h"
+#include "version.h"
 #include <stdio.h>
 
 #ifdef _WIN32
@@ -47,8 +47,7 @@ HINSTANCE g_hInstance = NULL;
 //}
 
 
-int FaceIndex(const MipSet* pMipSet, MS_CubeFace face)
-{
+int FaceIndex(const MipSet* pMipSet, MS_CubeFace face) {
     if(pMipSet->m_TextureType != TT_CubeMap)
         return face;
 
@@ -90,11 +89,9 @@ int FaceIndex(const MipSet* pMipSet, MS_CubeFace face)
     return -1;    //indicating error
 }
 
-CMP_DWORD MakeFourCC(const TCHAR* pszFourCC)
-{
+CMP_DWORD MakeFourCC(const TCHAR* pszFourCC) {
     CMP_DWORD dwFourCC = CMP_MAKEFOURCC(' ', ' ', ' ', ' ');
-    if(pszFourCC)
-    {
+    if(pszFourCC) {
         char* pFourCC = (char*) &dwFourCC;
 
         int nIndex = 0;
@@ -107,8 +104,7 @@ CMP_DWORD MakeFourCC(const TCHAR* pszFourCC)
 
 #ifdef _AFXDLL
 #ifdef _WIN32
-HINSTANCE GetInstance()
-{
+HINSTANCE GetInstance() {
     return AfxGetInstanceHandle();
 }
 
@@ -116,27 +112,23 @@ HINSTANCE GetInstance()
 #define MAX_ERROR_LENGTH 240
 
 
-void Error(TCHAR* pszCaption, TC_ErrorLevel errorLevel, UINT nErrorString, ...)
-{
+void Error(TCHAR* pszCaption, TC_ErrorLevel errorLevel, UINT nErrorString, ...) {
     AFX_MANAGE_STATE(AfxGetStaticModuleState());
 
     CString strFormat, strErrorMessage;
-    if(strFormat.LoadString(nErrorString))
-   {
-       va_list args;
-       va_start(args, nErrorString);
-       strErrorMessage.FormatV(strFormat, args);
+    if(strFormat.LoadString(nErrorString)) {
+        va_list args;
+        va_start(args, nErrorString);
+        strErrorMessage.FormatV(strFormat, args);
 
-       va_end(args);
-   }
-   else
-      strErrorMessage = "Unknown Error";
+        va_end(args);
+    } else
+        strErrorMessage = "Unknown Error";
 
     TC_AppHandleError(errorLevel, pszCaption, strErrorMessage);
 }
 
-void DebugString(TCHAR* pszString, ...)
-{
+void DebugString(TCHAR* pszString, ...) {
     CString strFormat(pszString), strString;
 
     va_list args;
@@ -161,14 +153,12 @@ void DebugString(TCHAR* pszString, ...)
 BOOL APIENTRY DllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,
                        LPVOID lpReserved
-                     )
-{
+                     ) {
     UNREFERENCED_PARAMETER(lpReserved);
 
     g_hInstance = static_cast<HINSTANCE>(hModule);
 
-    switch (ul_reason_for_call)
-    {
+    switch (ul_reason_for_call) {
     case DLL_PROCESS_ATTACH:
     case DLL_THREAD_ATTACH:
     case DLL_THREAD_DETACH:
@@ -179,16 +169,14 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 }
 
 
-HINSTANCE GetInstance()
-{
+HINSTANCE GetInstance() {
     return g_hInstance;
 }
 
 #define MAX_FORMAT_LENGTH 160
 #define MAX_ERROR_LENGTH 240
 
-void Error(TCHAR* pszCaption, TC_ErrorLevel errorLevel, UINT nErrorString, ...)
-{
+void Error(TCHAR* pszCaption, TC_ErrorLevel errorLevel, UINT nErrorString, ...) {
     TCHAR szFormat[MAX_FORMAT_LENGTH];
     TCHAR szBuffer[MAX_ERROR_LENGTH];
 
@@ -203,11 +191,10 @@ void Error(TCHAR* pszCaption, TC_ErrorLevel errorLevel, UINT nErrorString, ...)
 
     TC_AppHandleError(errorLevel, pszCaption, szBuffer);
 
-    printf(szBuffer); // Movethis 
+    printf(szBuffer); // Movethis
 }
 
-void DebugString(TCHAR* pszString, ...)
-{
+void DebugString(TCHAR* pszString, ...) {
     TCHAR szBuffer[MAX_ERROR_LENGTH];
 
     va_list args;
@@ -221,8 +208,7 @@ void DebugString(TCHAR* pszString, ...)
 }
 #endif // !_AFXDLL
 
-TC_PluginError _cdecl TC_PluginInitialise(const TC_AppPointers* pAppPointers, HPLUGIN hThis)
-{
+TC_PluginError _cdecl TC_PluginInitialise(const TC_AppPointers* pAppPointers, HPLUGIN hThis) {
     assert(hThis);
     assert(pAppPointers);
 
@@ -254,11 +240,9 @@ TC_PluginError _cdecl TC_PluginInitialise(const TC_AppPointers* pAppPointers, HP
     return PE_OK;
 }
 
-TC_PluginError _cdecl TC_PluginGetVersion(TC_PluginVersion* pPluginVersion)
-{
+TC_PluginError _cdecl TC_PluginGetVersion(TC_PluginVersion* pPluginVersion) {
     assert(pPluginVersion);
-    if(pPluginVersion)
-    {
+    if(pPluginVersion) {
         //pPluginVersion->guid = g_GUID;
         pPluginVersion->dwAPIVersionMajor = TC_API_VERSION_MAJOR;
         pPluginVersion->dwAPIVersionMinor = TC_API_VERSION_MINOR;
@@ -271,8 +255,7 @@ TC_PluginError _cdecl TC_PluginGetVersion(TC_PluginVersion* pPluginVersion)
 }
 
 
-TC_ErrorResponse TC_AppHandleError(TC_ErrorLevel errorLevel, const TCHAR* pszCaption, const TCHAR* pszText)
-{
+TC_ErrorResponse TC_AppHandleError(TC_ErrorLevel errorLevel, const TCHAR* pszCaption, const TCHAR* pszText) {
     assert(g_hThis);
     assert(g_AppPointers.pAppHandleError);
     if(g_AppPointers.pAppHandleError)
@@ -281,16 +264,14 @@ TC_ErrorResponse TC_AppHandleError(TC_ErrorLevel errorLevel, const TCHAR* pszCap
     return ER_OK;
 }
 
-void TC_AppDebugString(const TCHAR* pszString)
-{
+void TC_AppDebugString(const TCHAR* pszString) {
     assert(g_hThis);
     assert(g_AppPointers.pAppDebugString);
     if(g_AppPointers.pAppDebugString)
         g_AppPointers.pAppDebugString(g_hThis, pszString);
 }
 
-HFILETYPE TC_AppRegisterFileType(TCHAR* pszFileTypeDescription, TCHAR* pszFileTypeExtensions[], bool bSaveFile)
-{
+HFILETYPE TC_AppRegisterFileType(TCHAR* pszFileTypeDescription, TCHAR* pszFileTypeExtensions[], bool bSaveFile) {
     assert(g_hThis);
     assert(g_AppPointers.pAppRegisterFileType);
     if(g_AppPointers.pAppRegisterFileType)
@@ -299,8 +280,7 @@ HFILETYPE TC_AppRegisterFileType(TCHAR* pszFileTypeDescription, TCHAR* pszFileTy
     return NULL;
 }
 
-void TC_AppUnregisterFileType(HFILETYPE hFileType)
-{
+void TC_AppUnregisterFileType(HFILETYPE hFileType) {
     assert(g_hThis);
     assert(g_AppPointers.pAppUnregisterFileType);
     assert(hFileType);
@@ -308,8 +288,7 @@ void TC_AppUnregisterFileType(HFILETYPE hFileType)
         g_AppPointers.pAppUnregisterFileType(g_hThis, hFileType);
 }
 
-HCODEC TC_AppRegisterCodec(TCHAR* pszCodecDescription, DWORD dwFourCCs[], bool bDecompressorOnly)
-{
+HCODEC TC_AppRegisterCodec(TCHAR* pszCodecDescription, DWORD dwFourCCs[], bool bDecompressorOnly) {
     assert(g_hThis);
     assert(g_AppPointers.pAppRegisterCodec);
     if(g_AppPointers.pAppRegisterCodec)
@@ -318,8 +297,7 @@ HCODEC TC_AppRegisterCodec(TCHAR* pszCodecDescription, DWORD dwFourCCs[], bool b
     return NULL;
 }
 
-void TC_AppUnregisterCodec(HCODEC hCodec)
-{
+void TC_AppUnregisterCodec(HCODEC hCodec) {
     assert(g_hThis);
     assert(g_AppPointers.pAppUnregisterCodec);
     assert(hCodec);
@@ -327,8 +305,7 @@ void TC_AppUnregisterCodec(HCODEC hCodec)
         g_AppPointers.pAppUnregisterCodec(g_hThis, hCodec);
 }
 
-HMIPPER TC_AppRegisterMipGenerator(TCHAR* pszMipGeneratorDescription)
-{
+HMIPPER TC_AppRegisterMipGenerator(TCHAR* pszMipGeneratorDescription) {
     assert(g_hThis);
     assert(g_AppPointers.pAppRegisterMipGenerator);
     if(g_AppPointers.pAppRegisterMipGenerator)
@@ -337,8 +314,7 @@ HMIPPER TC_AppRegisterMipGenerator(TCHAR* pszMipGeneratorDescription)
     return NULL;
 }
 
-void TC_AppUnregisterMipGenerator(HMIPPER hMipper)
-{
+void TC_AppUnregisterMipGenerator(HMIPPER hMipper) {
     assert(g_hThis);
     assert(g_AppPointers.pAppUnregisterMipGenerator);
     assert(hMipper);
@@ -346,8 +322,7 @@ void TC_AppUnregisterMipGenerator(HMIPPER hMipper)
         g_AppPointers.pAppUnregisterMipGenerator(g_hThis, hMipper);
 }
 
-HVIEWTYPE TC_AppRegisterViewType(TCHAR* pszViewDescription, bool bDefaultView)
-{
+HVIEWTYPE TC_AppRegisterViewType(TCHAR* pszViewDescription, bool bDefaultView) {
     assert(g_hThis);
     assert(g_AppPointers.pAppRegisterViewType);
     if(g_AppPointers.pAppRegisterViewType)
@@ -356,8 +331,7 @@ HVIEWTYPE TC_AppRegisterViewType(TCHAR* pszViewDescription, bool bDefaultView)
     return NULL;
 }
 
-void TC_AppUnregisterViewType(HVIEWTYPE hViewType)
-{
+void TC_AppUnregisterViewType(HVIEWTYPE hViewType) {
     assert(g_hThis);
     assert(g_AppPointers.pAppUnregisterViewType);
     assert(hViewType);
@@ -365,8 +339,7 @@ void TC_AppUnregisterViewType(HVIEWTYPE hViewType)
         g_AppPointers.pAppUnregisterViewType(g_hThis, hViewType);
 }
 
-MipLevel* TC_AppGetMipLevel(const MipSet* pMipSet, int nMipLevel, int nFaceOrSlice)
-{
+MipLevel* TC_AppGetMipLevel(const MipSet* pMipSet, int nMipLevel, int nFaceOrSlice) {
     assert(g_hThis);
     assert(g_AppPointers.pAppGetMipLevel);
     if(g_AppPointers.pAppGetMipLevel)
@@ -376,8 +349,7 @@ MipLevel* TC_AppGetMipLevel(const MipSet* pMipSet, int nMipLevel, int nFaceOrSli
 }
 
 //Memory (de)allocation
-bool TC_AppAllocateMipSet(MipSet* pMipSet, ChannelFormat channelFormat, TextureDataType textureDataType, TextureType textureType, int nWidth, int nHeight, int nDepth)
-{
+bool TC_AppAllocateMipSet(MipSet* pMipSet, ChannelFormat channelFormat, TextureDataType textureDataType, TextureType textureType, int nWidth, int nHeight, int nDepth) {
     assert(g_hThis);
     assert(g_AppPointers.pAppAllocateMipSet);
     if(g_AppPointers.pAppAllocateMipSet)
@@ -386,8 +358,7 @@ bool TC_AppAllocateMipSet(MipSet* pMipSet, ChannelFormat channelFormat, TextureD
     return false;
 }
 
-bool TC_AppAllocateMipLevelData(MipLevel* pMipLevel, int nWidth, int nHeight, ChannelFormat channelFormat, TextureDataType textureDataType)
-{
+bool TC_AppAllocateMipLevelData(MipLevel* pMipLevel, int nWidth, int nHeight, ChannelFormat channelFormat, TextureDataType textureDataType) {
     assert(g_hThis);
     assert(g_AppPointers.pAppAllocateMipLevelData);
     if(g_AppPointers.pAppAllocateMipLevelData)
@@ -396,8 +367,7 @@ bool TC_AppAllocateMipLevelData(MipLevel* pMipLevel, int nWidth, int nHeight, Ch
     return false;
 }
 
-bool TC_AppAllocateCompressedMipLevelData(MipLevel* pMipLevel, int nWidth, int nHeight, DWORD dwSize)
-{
+bool TC_AppAllocateCompressedMipLevelData(MipLevel* pMipLevel, int nWidth, int nHeight, DWORD dwSize) {
     assert(g_hThis);
     assert(g_AppPointers.pAppAllocateCompressedMipLevelData);
     if(g_AppPointers.pAppAllocateCompressedMipLevelData)
@@ -405,16 +375,14 @@ bool TC_AppAllocateCompressedMipLevelData(MipLevel* pMipLevel, int nWidth, int n
 
     return false;
 }
-void TC_AppFreeMipLevelData(MipLevel* pMipLevel)
-{
+void TC_AppFreeMipLevelData(MipLevel* pMipLevel) {
     assert(g_hThis);
     assert(g_AppPointers.pAppFreeMipLevelData);
     if(g_AppPointers.pAppFreeMipLevelData)
         return g_AppPointers.pAppFreeMipLevelData(g_hThis, pMipLevel);
 }
 
-bool TC_AppCompressTextureCallback(float fProgress, DWORD_PTR pUser1, DWORD_PTR pUser2)
-{
+bool TC_AppCompressTextureCallback(float fProgress, DWORD_PTR pUser1, DWORD_PTR pUser2) {
     assert(g_hThis);
     assert(g_AppPointers.pAppCompressTextureCallback);
     if(g_AppPointers.pAppCompressTextureCallback)
@@ -423,24 +391,21 @@ bool TC_AppCompressTextureCallback(float fProgress, DWORD_PTR pUser1, DWORD_PTR 
         return false;
 }
 
-void TC_AppUpdateViewParent(HWND hParent, UINT nWidth, UINT nHeight)
-{
+void TC_AppUpdateViewParent(HWND hParent, UINT nWidth, UINT nHeight) {
     assert(g_hThis);
     assert(g_AppPointers.pAppUpdateViewParent);
     if(g_AppPointers.pAppUpdateViewParent)
         g_AppPointers.pAppUpdateViewParent(g_hThis, hParent, nWidth, nHeight);
 }
 
-void TC_AppEnableCommand(HWND hParent, UINT nCommand, BOOL bEnable)
-{
+void TC_AppEnableCommand(HWND hParent, UINT nCommand, BOOL bEnable) {
     assert(g_hThis);
     assert(g_AppPointers.pAppEnableCommand);
     if(g_AppPointers.pAppEnableCommand)
         g_AppPointers.pAppEnableCommand(g_hThis, hParent, nCommand, bEnable);
 }
 
-void TC_AppCheckCommand(HWND hParent, UINT nCommand, BOOL bCheck)
-{
+void TC_AppCheckCommand(HWND hParent, UINT nCommand, BOOL bCheck) {
     assert(g_hThis);
     assert(g_AppPointers.pAppCheckCommand);
     if(g_AppPointers.pAppCheckCommand)

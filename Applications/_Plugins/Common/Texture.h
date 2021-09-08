@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //
 //  File Name:   Texture.h
-//  Description: Definition of Texture structures as used by the ATI Texture 
+//  Description: Definition of Texture structures as used by the ATI Texture
 //  Plugin API
 //
 //  Copyright (c) 2007,2008,2016    Advanced Micro Devices, Inc.
@@ -21,7 +21,7 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
-#include "PluginInterface.h"
+#include "plugininterface.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -88,12 +88,17 @@ extern "C" {
 #define CMP_FOURCC_DXT5_BRGX               CMP_MAKEFOURCC('B', 'R', 'G', 'X')
 
 #define CMP_FOURCC_BC1                     CMP_MAKEFOURCC('B', 'C', '1', ' ')
+#define CMP_FOURCC_BC1U                    CMP_MAKEFOURCC('B', 'C', '1', 'U')
 #define CMP_FOURCC_BC2                     CMP_MAKEFOURCC('B', 'C', '2', ' ')
+#define CMP_FOURCC_BC2U                    CMP_MAKEFOURCC('B', 'C', '2', 'U')
 #define CMP_FOURCC_BC3                     CMP_MAKEFOURCC('B', 'C', '3', ' ')
+#define CMP_FOURCC_BC3U                    CMP_MAKEFOURCC('B', 'C', '3', 'U')
 #define CMP_FOURCC_BC4                     CMP_MAKEFOURCC('B', 'C', '4', ' ')
+#define CMP_FOURCC_BC4U                    CMP_MAKEFOURCC('B', 'C', '4', 'U')
 #define CMP_FOURCC_BC4S                    CMP_MAKEFOURCC('B', 'C', '4', 'S')
 #define CMP_FOURCC_BC4U                    CMP_MAKEFOURCC('B', 'C', '4', 'U')
 #define CMP_FOURCC_BC5                     CMP_MAKEFOURCC('B', 'C', '5', ' ')
+#define CMP_FOURCC_BC5U                    CMP_MAKEFOURCC('B', 'C', '5', 'U')
 #define CMP_FOURCC_BC5S                    CMP_MAKEFOURCC('B', 'C', '5', 'S')
 
 #define CMP_FOURCC_DX10                    CMP_MAKEFOURCC('D', 'X', '1', '0')
@@ -103,6 +108,9 @@ extern "C" {
 #define CMP_FOURCC_BC6H                    CMP_MAKEFOURCC('B', 'C', '6', 'H')
 #define CMP_FOURCC_BC7                     CMP_MAKEFOURCC('B', 'C', '7', 'x')
 #define CMP_FOURCC_ASTC                    CMP_MAKEFOURCC('A', 'S', 'T', 'C')
+#ifdef USE_APC
+#define CMP_FOURCC_APC                     CMP_MAKEFOURCC('A', 'P', 'C', 'x')  // This is not a standard
+#endif
 #ifdef USE_GTC
 #define CMP_FOURCC_GTC                     CMP_MAKEFOURCC('G', 'T', 'C', 'x')       // This is not a standard
 #endif
@@ -130,47 +138,43 @@ extern "C" {
 
 
 
-typedef enum
-{
-   MS_Default        = 0,
-   MS_AlphaPremult   = 1,
-   MS_DisableMipMapping = 2,
+typedef enum {
+    MS_Default        = 0,
+    MS_AlphaPremult   = 1,
+    MS_DisableMipMapping = 2,
 } MS_Flags;
 
 
 /// A set of flags indicating cube-map faces.
-typedef enum
-{
-   MS_CF_None        = 0x00, ///< No cube-map faces.
-   MS_CF_PositiveX   = 0x01, ///< The positive-X cube-map face.
-   MS_CF_NegativeX   = 0x02, ///< The negative-X cube-map face.
-   MS_CF_PositiveY   = 0x04, ///< The positive-Y cube-map face.
-   MS_CF_NegativeY   = 0x08, ///< The negative-Y cube-map face.
-   MS_CF_PositiveZ   = 0x10, ///< The positive-Z cube-map face.
-   MS_CF_NegativeZ   = 0x20, ///< The negative-Z cube-map face.
-   MS_CF_All         = 0x3f, ///< All the cube-map faces.
+typedef enum {
+    MS_CF_None        = 0x00, ///< No cube-map faces.
+    MS_CF_PositiveX   = 0x01, ///< The positive-X cube-map face.
+    MS_CF_NegativeX   = 0x02, ///< The negative-X cube-map face.
+    MS_CF_PositiveY   = 0x04, ///< The positive-Y cube-map face.
+    MS_CF_NegativeY   = 0x08, ///< The negative-Y cube-map face.
+    MS_CF_PositiveZ   = 0x10, ///< The positive-Z cube-map face.
+    MS_CF_NegativeZ   = 0x20, ///< The negative-Z cube-map face.
+    MS_CF_All         = 0x3f, ///< All the cube-map faces.
 } MS_CubeFace;
 
-/// A MipLevel is the fundamental unit for containing texture data. 
+/// A MipLevel is the fundamental unit for containing texture data.
 /// \remarks
 /// One logical mip level can be composed of many MipLevels, see the documentation of MipSet for explanation.
-/// \sa \link TC_AppAllocateMipLevelData() TC_AppAllocateMipLevelData \endlink, 
-/// \link TC_AppAllocateCompressedMipLevelData() TC_AppAllocateCompressedMipLevelData \endlink, 
+/// \sa \link TC_AppAllocateMipLevelData() TC_AppAllocateMipLevelData \endlink,
+/// \link TC_AppAllocateCompressedMipLevelData() TC_AppAllocateCompressedMipLevelData \endlink,
 /// \link MipSet \endlink
-typedef struct
-{
-   int             m_nWidth;         ///< Width of the data in pixels.
-   int             m_nHeight;        ///< Height of the data in pixels.
-   CMP_DWORD       m_dwLinearSize;   ///< Size of the data in bytes.
-   union
-   {    
-      CMP_BYTE*    m_pbData;         ///< A pointer to the texture data that this MipLevel contains.
-      CMP_WORD*    m_pwData;         ///< A pointer to the texture data that this MipLevel contains.
-      CMP_COLOR*   m_pcData;         ///< A pointer to the texture data that this MipLevel contains.
-      CMP_FLOAT*   m_pfData;         ///< A pointer to the texture data that this MipLevel contains.
-      CMP_HALFSHORT*    m_phfsData;  ///< A pointer to the texture data that this MipLevel contains.
-      CMP_DWORD*   m_pdwData;        ///< A pointer to the texture data that this MipLevel contains.
-   };
+typedef struct {
+    int             m_nWidth;         ///< Width of the data in pixels.
+    int             m_nHeight;        ///< Height of the data in pixels.
+    CMP_DWORD       m_dwLinearSize;   ///< Size of the data in bytes.
+    union {
+        CMP_BYTE*    m_pbData;         ///< A pointer to the texture data that this MipLevel contains.
+        CMP_WORD*    m_pwData;         ///< A pointer to the texture data that this MipLevel contains.
+        CMP_COLOR*   m_pcData;         ///< A pointer to the texture data that this MipLevel contains.
+        CMP_FLOAT*   m_pfData;         ///< A pointer to the texture data that this MipLevel contains.
+        CMP_HALFSHORT*    m_phfsData;  ///< A pointer to the texture data that this MipLevel contains.
+        CMP_DWORD*   m_pdwData;        ///< A pointer to the texture data that this MipLevel contains.
+    };
 } TXT_MipLevel;
 
 typedef TXT_MipLevel* TXT_MipLevelTable; ///< A pointer to a set of MipLevels.
@@ -193,8 +197,7 @@ typedef struct cmp_rgb_s {
 } cmp_rgb_t;
 
 // Data struct used for casting m_pReservedData ref
-typedef union mapset_data_u
-{
+typedef union mapset_data_u {
     cmp_rgb_t rgb;
     cmp_yuv_t yuv;
 } mapset_data_t;
@@ -208,7 +211,7 @@ typedef union mapset_data_u
 /// Cube maps have multiple faces or sides for each mip-map level . Instead of making a totally new data type, we just made each one of these faces be represented by a MipLevel, even though the terminology can be a bit confusing at first. So if your cube map consists of 6 faces for each mip-map level, then your first mip-map level will consist of 6 MipLevels, each having the same m_nWidth, m_nHeight. The next mip-map level will have half the m_nWidth & m_nHeight as the previous, but will be composed of 6 MipLevels still.
 /// \remarks
 /// A volume texture is a 3D texture. Again, instead of creating a new data type, we chose to make use of multiple MipLevels to create a single mip-map level of a volume texture. So a single mip-map level of a volume texture will consist of many MipLevels, all having the same m_nWidth and m_nHeight. The next mip-map level will have m_nWidth and m_nHeight half of the previous mip-map level's (to a minimum of 1) and will be composed of half as many MipLevels as the previous mip-map level (the first mip-map level takes this number from the MipSet it's part of), to a minimum of one.
-/// \sa \link TC_AppAllocateMipSet() TC_AppAllocateMipSet \endlink, 
+/// \sa \link TC_AppAllocateMipSet() TC_AppAllocateMipSet \endlink,
 /// \link MipLevel \endlink
 // typedef struct
 // {
@@ -218,7 +221,7 @@ typedef union mapset_data_u
 //    unsigned int      m_Flags;             ///< Flags that for this mip-map set.
 //    CMP_BYTE          m_CubeFaceMask;      ///< A mask of MS_CubeFace values indicating which cube-map faces are present.
 //    CMP_DWORD         m_dwFourCC;          ///< The FourCC for this mip-map set. 0 if the mip-map set is uncompressed. Generated using MAKEFOURCC (defined in the Platform SDK or DX SDK).
-//    CMP_DWORD         m_dwFourCC2;         ///< An extra FourCC used by The Compressonator internally. Our DDS plugin saves/loads m_dwFourCC2 from pDDSD->ddpfPixelFormat.dwPrivateFormatBitCount (since it's not really used by anything else) whether or not it is 0. Generated using MAKEFOURCC (defined in the Platform SDK or DX SDK). The FourCC2 field is currently used to allow differentiation between the various swizzled DXT5 formats. These formats must have a FourCC of DXT5 to be supported by the DirectX runtime but The Compressonator needs to know the swizzled FourCC to correctly display the texture. 
+//    CMP_DWORD         m_dwFourCC2;         ///< An extra FourCC used by The Compressonator internally. Our DDS plugin saves/loads m_dwFourCC2 from pDDSD->ddpfPixelFormat.dwPrivateFormatBitCount (since it's not really used by anything else) whether or not it is 0. Generated using MAKEFOURCC (defined in the Platform SDK or DX SDK). The FourCC2 field is currently used to allow differentiation between the various swizzled DXT5 formats. These formats must have a FourCC of DXT5 to be supported by the DirectX runtime but The Compressonator needs to know the swizzled FourCC to correctly display the texture.
 //    int               m_nMaxMipLevels;     ///< Set by The Compressonator when you call TC_AppAllocateMipSet based on the width, height, depth, and textureType values passed in. Is really the maximum number of mip-map levels possible for that texture including the topmost mip-map level if you integer divide width height and depth by 2, rounding down but never falling below 1 until all three of them are 1. So a 5x10 2D texture would have a m_nMaxMipLevels of 4 (5x10 -> 2x5 -> 1x2 -> 1x1).
 //    int               m_nMipLevels;        ///< The number of mip-map levels in the mip-map set that actually have data. Always less than or equal to m_nMaxMipLevels. Set to 0 after TC_AppAllocateMipSet.
 //    int               m_nWidth;            ///< Width in pixels of the topmost mip-map level of the mip-map set. Initialized by TC_AppAllocateMipSet.
@@ -228,16 +231,16 @@ typedef union mapset_data_u
 //    bool              m_compressed;        ///< New Flags if data is compressed (example Block Compressed data in form of BCxx)
 //    CMP_FORMAT        m_isDeCompressed;    ///< The New MipSet is a decompressed result from a prior Compressed MipSet Format specified
 //    bool              m_swizzle;           ///< Flag is used by image load and save to indicate compression is to be or has occured on the data; Compression data is typically ARGB.
-//    int               m_nBlockWidth;       ///< Width in pixels of the Compression Block that is to be processed default for ASTC is 4 
+//    int               m_nBlockWidth;       ///< Width in pixels of the Compression Block that is to be processed default for ASTC is 4
 //    int               m_nBlockHeight;      ///< Height in pixels of the Compression Block that is to be processed default for ASTC is 4
 //    int               m_nBlockDepth;       ///< Depth in pixels of the Compression Block that is to be processed default for ASTC is 1
-// 
+//
 //    // These values change when processing MipLevels
 //    CMP_DWORD         dwWidth;             ///< Width of the current active miplevel. if toplevel mipmap then value is same as m_nWidth
 //    CMP_DWORD         dwHeight;            ///< Height of the current active miplevel. if toplevel mipmap then value is same as m_nHeight
 //    CMP_DWORD         dwDataSize;          ///< Size of the current active miplevel allocated texture data.
 //    CMP_BYTE*         pData;               ///< Pointer to the current active miplevel texture data: used in MipLevelTable
-// 
+//
 //    // Structure to hold all mip levels
 //    MipLevelTable*    m_pMipLevelTable;    ///< This is an implementation dependent way of storing the MipLevels that this mip-map set contains. Do not depend on it, use TC_AppGetMipLevel to access a mip-map set's MipLevels.
 //    void*             m_pReservedData;     ///< Pointer to reserved data types

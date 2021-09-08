@@ -31,20 +31,20 @@
 #pragma warning(disable:4101)    // Ignore warnings of unreferenced local variable
 #pragma warning(disable:4996)   // This function or variable may be unsafe
 
-#include "Common.h"
-#include "Compressonator.h"
+#include "common.h"
+#include "compressonator.h"
 
-#include "ASTC/Codec_ASTC.h"
-#include "ASTC/ASTC_Library.h"
+#include "astc/codec_astc.h"
+#include "astc/astc_library.h"
 
-#include "ASTC/ARM/astc_codec_internals.h"
+#include "astc/arm/astc_codec_internals.h"
 #include "debug.h"
 
 #include <chrono>
 #include <cstring>
 
 #ifdef ASTC_COMPDEBUGGER
-#include "CompClient.h"
+#include "compclient.h"
 extern    CompViewerClient g_CompClient;
 #endif
 
@@ -54,8 +54,7 @@ extern    CompViewerClient g_CompClient;
 // Gets the total numver of active processor cores on the running host system
 extern CMP_INT CMP_GetNumberOfProcessors();
 
-struct ASTCEncodeThreadParam
-{
+struct ASTCEncodeThreadParam {
     ASTCBlockEncoder   *encoder;
 
     // Encoder params
@@ -80,8 +79,7 @@ static ASTCEncodeThreadParam *g_EncodeParameterStorage = NULL;
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////////////
 
-CCodec_ASTC::CCodec_ASTC() : CCodec_DXTC(CT_ASTC)
-{
+CCodec_ASTC::CCodec_ASTC() : CCodec_DXTC(CT_ASTC) {
     m_LibraryInitialized    = false;
     m_AbortRequested        = false;
     m_NumThreads            = 0;
@@ -95,16 +93,12 @@ CCodec_ASTC::CCodec_ASTC() : CCodec_DXTC(CT_ASTC)
 }
 
 
-CCodec_ASTC::~CCodec_ASTC()
-{
-    if (m_LibraryInitialized)
-    {
+CCodec_ASTC::~CCodec_ASTC() {
+    if (m_LibraryInitialized) {
 
-        if (m_Use_MultiThreading)
-        {
+        if (m_Use_MultiThreading) {
             // Tell all the live threads that they can exit when they have finished any current work
-            for (int i = 0; i < m_LiveThreads; i++)
-            {
+            for (int i = 0; i < m_LiveThreads; i++) {
                 // If a thread is in the running state then we need to wait for it to finish
                 // any queued work from the producer before we can tell it to exit.
                 //
@@ -113,10 +107,8 @@ CCodec_ASTC::~CCodec_ASTC()
                 // the exit flag before it runs then its block will not be processed.
 #pragma warning(push)
 #pragma warning(disable:4127) //warning C4127: conditional expression is constant
-                while (1)
-                {
-                    if (g_EncodeParameterStorage[i].run != TRUE)
-                    {
+                while (1) {
+                    if (g_EncodeParameterStorage[i].run != TRUE) {
                         break;
                     }
                 }
@@ -126,18 +118,15 @@ CCodec_ASTC::~CCodec_ASTC()
             }
 
             // Now wait for all threads to have exited
-            if (m_LiveThreads > 0)
-            {
-                for ( CMP_DWORD dwThread = 0; dwThread < m_LiveThreads; dwThread++ )
-                {
+            if (m_LiveThreads > 0) {
+                for ( CMP_DWORD dwThread = 0; dwThread < m_LiveThreads; dwThread++ ) {
                     std::thread& curThread = m_EncodingThreadHandle[dwThread];
 
                     curThread.join();
                 }
             }
 
-            for (unsigned int i = 0; i < m_LiveThreads; i++)
-            {
+            for (unsigned int i = 0; i < m_LiveThreads; i++) {
                 std::thread& curThread = m_EncodingThreadHandle[i];
 
                 curThread = std::thread();
@@ -148,25 +137,21 @@ CCodec_ASTC::~CCodec_ASTC()
 
         m_EncodingThreadHandle = NULL;
 
-        if (g_EncodeParameterStorage)
-        {
+        if (g_EncodeParameterStorage) {
             delete[] g_EncodeParameterStorage;
             g_EncodeParameterStorage = NULL;
         }
 
 
-        for (int i = 0; i < m_NumEncodingThreads; i++)
-        {
-            if (m_encoder[i])
-            {
+        for (int i = 0; i < m_NumEncodingThreads; i++) {
+            if (m_encoder[i]) {
                 delete m_encoder[i];
                 m_encoder[i] = NULL;
             }
         }
 
 
-        if (m_decoder)
-        {
+        if (m_decoder) {
             delete m_decoder;
             m_decoder = NULL;
         }
@@ -176,8 +161,7 @@ CCodec_ASTC::~CCodec_ASTC()
 }
 
 
-void CCodec_ASTC::find_closest_blockdim_2d(float target_bitrate, int *x, int *y, int consider_illegal)
-{
+void CCodec_ASTC::find_closest_blockdim_2d(float target_bitrate, int *x, int *y, int consider_illegal) {
     int blockdims[6] = { 4, 5, 6, 8, 10, 12 };
 
     float best_error = 1000;
@@ -185,21 +169,17 @@ void CCodec_ASTC::find_closest_blockdim_2d(float target_bitrate, int *x, int *y,
     int i, j;
 
     // Y dimension
-    for (i = 0; i < 6; i++)
-    {
+    for (i = 0; i < 6; i++) {
         // X dimension
-        for (j = i; j < 6; j++)
-        {
+        for (j = i; j < 6; j++) {
             //              NxN       MxN         8x5               10x5              10x6
             int is_legal = (j==i) || (j==i+1) || (j==3 && j==1) || (j==4 && j==1) || (j==4 && j==2);
 
-            if(consider_illegal || is_legal)
-            {
+            if(consider_illegal || is_legal) {
                 float bitrate = 128.0f / (blockdims[i] * blockdims[j]);
                 float bitrate_error = fabs(bitrate - target_bitrate);
                 float aspect = (float)blockdims[j] / blockdims[i];
-                if (bitrate_error < best_error || (bitrate_error == best_error && aspect < aspect_of_best))
-                {
+                if (bitrate_error < best_error || (bitrate_error == best_error && aspect < aspect_of_best)) {
                     *x = blockdims[j];
                     *y = blockdims[i];
                     best_error = bitrate_error;
@@ -210,33 +190,27 @@ void CCodec_ASTC::find_closest_blockdim_2d(float target_bitrate, int *x, int *y,
     }
 }
 
-void CCodec_ASTC::find_closest_blockxy_2d(int *x, int *y, int consider_illegal)
-{
+void CCodec_ASTC::find_closest_blockxy_2d(int *x, int *y, int consider_illegal) {
     int blockdims[6] = { 4, 5, 6, 8, 10, 12 };
 
     bool exists_x = std::find(std::begin(blockdims), std::end(blockdims), (*x)) != std::end(blockdims);
     bool exists_y = std::find(std::begin(blockdims), std::end(blockdims), (*y)) != std::end(blockdims);
 
-    if (exists_x && exists_y)
-    {
-        if ((*x) < (*y))
-        {
+    if (exists_x && exists_y) {
+        if ((*x) < (*y)) {
             int temp = *x;
             *x = *y;
             *y = temp;
         }
         float bitrateF = float(128.0f / ((*x)*(*y)));
         find_closest_blockdim_2d(bitrateF, x, y, 0);
-    }
-    else
-    {
+    } else {
         float bitrateF = float(128.0f / ((*x)*(*y)));
         find_closest_blockdim_2d(bitrateF, x, y, 0);
     }
 }
 
-void CCodec_ASTC::find_closest_blockdim_3d(float target_bitrate, int *x, int *y, int *z, int consider_illegal)
-{
+void CCodec_ASTC::find_closest_blockdim_3d(float target_bitrate, int *x, int *y, int *z, int consider_illegal) {
     int blockdims[4] = { 3, 4, 5, 6 };
 
     float best_error = 1000;
@@ -245,19 +219,16 @@ void CCodec_ASTC::find_closest_blockdim_3d(float target_bitrate, int *x, int *y,
 
     for (i = 0; i < 4; i++)    // Z
         for (j = i; j < 4; j++) // Y
-            for (k = j; k < 4; k++) // X
-            {
+            for (k = j; k < 4; k++) { // X
                 //              NxNxN              MxNxN                  MxMxN
                 int is_legal = ((k==j)&&(j==i)) || ((k==j+1)&&(j==i)) || ((k==j)&&(j==i+1));
 
-                if(consider_illegal || is_legal)
-                {
+                if(consider_illegal || is_legal) {
                     float bitrate = 128.0f / (blockdims[i] * blockdims[j] * blockdims[k]);
                     float bitrate_error = fabs(bitrate - target_bitrate);
                     float aspect = (float)blockdims[k] / blockdims[j] + (float)blockdims[j] / blockdims[i] + (float)blockdims[k] / blockdims[i];
 
-                    if (bitrate_error < best_error || (bitrate_error == best_error && aspect < aspect_of_best))
-                    {
+                    if (bitrate_error < best_error || (bitrate_error == best_error && aspect < aspect_of_best)) {
                         *x = blockdims[k];
                         *y = blockdims[j];
                         *z = blockdims[i];
@@ -268,26 +239,20 @@ void CCodec_ASTC::find_closest_blockdim_3d(float target_bitrate, int *x, int *y,
             }
 }
 
-bool CCodec_ASTC::SetParameter(const CMP_CHAR* pszParamName, CMP_CHAR* sValue)
-{
+bool CCodec_ASTC::SetParameter(const CMP_CHAR* pszParamName, CMP_CHAR* sValue) {
     if (sValue == NULL) return false;
 
-    if(strcmp(pszParamName, "NumThreads") == 0)
-    {
+    if(strcmp(pszParamName, "NumThreads") == 0) {
         m_NumThreads = (CMP_BYTE) std::stoi(sValue) & 0xFF;
     }
-    if(strcmp(pszParamName, "BlockRate") == 0)
-    {
+    if(strcmp(pszParamName, "BlockRate") == 0) {
 
         // BlockRate can be a bit value or dimension
 
-        if (strchr(sValue, '.') != NULL)
-        {
+        if (strchr(sValue, '.') != NULL) {
             m_target_bitrate = static_cast < float >(atof(sValue));
             find_closest_blockdim_2d(m_target_bitrate, &m_xdim, &m_ydim, DEBUG_ALLOW_ILLEGAL_BLOCK_SIZES);
-        }
-        else
-        {
+        } else {
             int dimensions = sscanf(sValue, "%dx%dx", &m_xdim, &m_ydim);
             if (dimensions < 2) return false;
             find_closest_blockxy_2d(&m_xdim, &m_ydim, DEBUG_ALLOW_ILLEGAL_BLOCK_SIZES);
@@ -300,36 +265,29 @@ bool CCodec_ASTC::SetParameter(const CMP_CHAR* pszParamName, CMP_CHAR* sValue)
             if ((m_ydim == 7) || (m_ydim == 9) || (m_ydim == 11)) return false;
         }
     }
-    if (strcmp(pszParamName, "Quality") == 0)
-    {
+    if (strcmp(pszParamName, "Quality") == 0) {
         m_Quality = std::stof(sValue);
-        if ((m_Quality < 0) || (m_Quality > 1.0))
-        {
+        if ((m_Quality < 0) || (m_Quality > 1.0)) {
             return false;
         }
-    }
-    else
+    } else
         return CCodec_DXTC::SetParameter(pszParamName, sValue);
     return true;
 }
 
-bool CCodec_ASTC::SetParameter(const CMP_CHAR* pszParamName, CMP_DWORD dwValue)
-{
-    if(strcmp(pszParamName, "NumThreads") == 0)
-    {
+bool CCodec_ASTC::SetParameter(const CMP_CHAR* pszParamName, CMP_DWORD dwValue) {
+    if(strcmp(pszParamName, "NumThreads") == 0) {
         m_NumThreads = (CMP_BYTE) dwValue;
-    }
-    else
+    } else
         return CCodec_DXTC::SetParameter(pszParamName, dwValue);
     return true;
 }
 
-bool CCodec_ASTC::SetParameter(const CMP_CHAR* pszParamName, CODECFLOAT fValue)
-{
+bool CCodec_ASTC::SetParameter(const CMP_CHAR* pszParamName, CODECFLOAT fValue) {
     if (strcmp(pszParamName, "Quality") == 0)
         m_Quality = fValue;
     else
-    return CCodec_DXTC::SetParameter(pszParamName, fValue);
+        return CCodec_DXTC::SetParameter(pszParamName, fValue);
     return true;
 }
 
@@ -342,18 +300,15 @@ bool CCodec_ASTC::SetParameter(const CMP_CHAR* pszParamName, CODECFLOAT fValue)
 // it should set the exit flag in the parameters to allow the tread to quit
 //
 
-#include "ASTC_Host.h"
+#include "astc_host.h"
 ASTC_Encoder::ASTC_Encode  g_ASTCEncode;
 
 
-unsigned int ASTCThreadProcEncode(void* param)
-{
+unsigned int ASTCThreadProcEncode(void* param) {
     ASTCEncodeThreadParam *tp = (ASTCEncodeThreadParam*)param;
 
-    while (tp->exit == FALSE)
-    {
-        if (tp->run == TRUE)
-        {
+    while (tp->exit == FALSE) {
+        if (tp->run == TRUE) {
             g_ASTCEncode.m_xdim = tp->xdim;
             g_ASTCEncode.m_ydim = tp->ydim;
             g_ASTCEncode.m_zdim = tp->zdim;
@@ -369,19 +324,15 @@ unsigned int ASTCThreadProcEncode(void* param)
             tp->run = FALSE;
         }
 
-        using namespace std::chrono_literals;
-
-        std::this_thread::sleep_for( 0ms );
+        std::this_thread::sleep_for(std::chrono::milliseconds(0));
     }
 
     return 0;
 }
 
 
-CodecError CCodec_ASTC::InitializeASTCLibrary()
-{
-    if (!m_LibraryInitialized)
-    {
+CodecError CCodec_ASTC::InitializeASTCLibrary() {
+    if (!m_LibraryInitialized) {
         g_ASTCEncode.m_decode_mode              = ASTC_Encoder::DECODE_HDR;
         g_ASTCEncode.m_rgb_force_use_of_hdr     = 0;
         g_ASTCEncode.m_alpha_force_use_of_hdr   = 0;
@@ -394,17 +345,15 @@ CodecError CCodec_ASTC::InitializeASTCLibrary()
         ASTC_Encoder::init_ASTC(&g_ASTCEncode);
 
         //====================== Threads
-        for (CMP_DWORD i = 0; i < MAX_ASTC_THREADS; i++)
-        {
+        for (CMP_DWORD i = 0; i < MAX_ASTC_THREADS; i++) {
             m_encoder[i] = NULL;
         }
 
         // Create threaded encoder instances
         m_LiveThreads = 0;
         m_LastThread = 0;
-        m_NumEncodingThreads = min(m_NumThreads, (decltype(m_NumThreads))MAX_ASTC_THREADS);
-        if (m_NumEncodingThreads == 0)
-        {
+        m_NumEncodingThreads = MIN(m_NumThreads, (decltype(m_NumThreads))MAX_ASTC_THREADS);
+        if (m_NumEncodingThreads == 0) {
             m_NumEncodingThreads = CMP_GetNumberOfProcessors();
             if (m_NumEncodingThreads <= 2)
                 m_NumEncodingThreads = 8; // fallback to a default!
@@ -414,14 +363,12 @@ CodecError CCodec_ASTC::InitializeASTCLibrary()
         m_Use_MultiThreading = (m_NumEncodingThreads != 1);
 
         g_EncodeParameterStorage = new ASTCEncodeThreadParam[m_NumEncodingThreads];
-        if (!g_EncodeParameterStorage)
-        {
+        if (!g_EncodeParameterStorage) {
             return CE_Unknown;
         }
 
         m_EncodingThreadHandle = new std::thread[m_NumEncodingThreads];
-        if (!m_EncodingThreadHandle)
-        {
+        if (!m_EncodingThreadHandle) {
             delete[] g_EncodeParameterStorage;
             g_EncodeParameterStorage = NULL;
 
@@ -430,15 +377,13 @@ CodecError CCodec_ASTC::InitializeASTCLibrary()
 
         CMP_INT   i;
 
-        for (i = 0; i < m_NumEncodingThreads; i++)
-        {
+        for (i = 0; i < m_NumEncodingThreads; i++) {
             // Create single encoder instance
             m_encoder[i] = new ASTCBlockEncoder();
 
 
             // Cleanup if problem!
-            if (!m_encoder[i])
-            {
+            if (!m_encoder[i]) {
 
                 delete[] g_EncodeParameterStorage;
                 g_EncodeParameterStorage = NULL;
@@ -446,8 +391,7 @@ CodecError CCodec_ASTC::InitializeASTCLibrary()
                 delete[] m_EncodingThreadHandle;
                 m_EncodingThreadHandle = NULL;
 
-                for (CMP_INT j = 0; j<i; j++)
-                {
+                for (CMP_INT j = 0; j<i; j++) {
                     delete m_encoder[j];
                     m_encoder[j] = NULL;
                 }
@@ -462,8 +406,7 @@ CodecError CCodec_ASTC::InitializeASTCLibrary()
         }
 
         // Create the encoding threads
-        for (i = 0; i<m_NumEncodingThreads; i++)
-        {
+        for (i = 0; i<m_NumEncodingThreads; i++) {
             // Initialize thread parameters.
             g_EncodeParameterStorage[i].encoder = m_encoder[i];
             // Inform the thread that at the moment it doesn't have any work to do
@@ -472,19 +415,17 @@ CodecError CCodec_ASTC::InitializeASTCLibrary()
             g_EncodeParameterStorage[i].exit = FALSE;
 
             m_EncodingThreadHandle[i] = std::thread(
-                ASTCThreadProcEncode,
-                (void*)&g_EncodeParameterStorage[i]
-            );
+                                            ASTCThreadProcEncode,
+                                            (void*)&g_EncodeParameterStorage[i]
+                                        );
             m_LiveThreads++;
         }
 
         // Create single decoder instance
         m_decoder = new ASTCBlockDecoder();
 
-        if (!m_decoder)
-        {
-            for (CMP_INT j = 0; j<m_NumEncodingThreads; j++)
-            {
+        if (!m_decoder) {
+            for (CMP_INT j = 0; j<m_NumEncodingThreads; j++) {
                 delete m_encoder[j];
                 m_encoder[j] = NULL;
             }
@@ -504,31 +445,26 @@ CodecError CCodec_ASTC::EncodeASTCBlock(
     int zdim,
     int x,
     int y,
-    int z)
-{
-    if (m_Use_MultiThreading)
-    {
+    int z) {
+    if (m_Use_MultiThreading) {
         CMP_WORD   threadIndex;
 
         // Loop and look for an available thread
         CMP_BOOL found = FALSE;
         threadIndex = m_LastThread;
-        while (found == FALSE)
-        {
+        while (found == FALSE) {
 
             if (g_EncodeParameterStorage == NULL)
                 return CE_Unknown;
 
-            if (g_EncodeParameterStorage[threadIndex].run == FALSE)
-            {
+            if (g_EncodeParameterStorage[threadIndex].run == FALSE) {
                 found = TRUE;
                 break;
             }
 
             // Increment and wrap the thread index
             threadIndex++;
-            if (threadIndex == m_LiveThreads)
-            {
+            if (threadIndex == m_LiveThreads) {
                 threadIndex = 0;
             }
         }
@@ -545,16 +481,14 @@ CodecError CCodec_ASTC::EncodeASTCBlock(
         g_EncodeParameterStorage[threadIndex].z = z;
         // Tell the thread to start working
         g_EncodeParameterStorage[threadIndex].run = TRUE;
-    }
-    else
-    {
+    } else {
         g_ASTCEncode.m_xdim = xdim;
         g_ASTCEncode.m_ydim = ydim;
         g_ASTCEncode.m_zdim = zdim;
 
         m_encoder[0]->CompressBlock_kernel(
-            (ASTC_Encoder::astc_codec_image *)input_image, 
-            bp, 
+            (ASTC_Encoder::astc_codec_image *)input_image,
+            bp,
             x,
             y,
             z,
@@ -564,38 +498,29 @@ CodecError CCodec_ASTC::EncodeASTCBlock(
 }
 
 
-CodecError CCodec_ASTC::FinishASTCEncoding(void)
-{
-    if (!m_LibraryInitialized)
-    {
+CodecError CCodec_ASTC::FinishASTCEncoding(void) {
+    if (!m_LibraryInitialized) {
         return CE_Unknown;
     }
 
-    if (!g_EncodeParameterStorage)
-    {
+    if (!g_EncodeParameterStorage) {
         return CE_Unknown;
     }
 
-    if (m_Use_MultiThreading)
-    {
+    if (m_Use_MultiThreading) {
         // Wait for all the live threads to finish any current work
-        for (CMP_DWORD i = 0; i < m_LiveThreads; i++)
-        {
+        for (CMP_DWORD i = 0; i < m_LiveThreads; i++) {
             // If a thread is in the running state then we need to wait for it to finish
             // its work from the producer
-            while (g_EncodeParameterStorage[i].run == TRUE)
-            {
-                using namespace std::chrono;
-
-                std::this_thread::sleep_for( 1ms );
+            while (g_EncodeParameterStorage[i].run == TRUE) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
             }
         }
     }
     return CE_OK;
 }
 
-struct encode_astc_image_info
-{
+struct encode_astc_image_info {
     int xdim;
     int ydim;
     int zdim;
@@ -615,8 +540,7 @@ struct encode_astc_image_info
 
 #define USE_ARM_CODE
 
-CodecError CCodec_ASTC::Compress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut, Codec_Feedback_Proc pFeedbackProc, CMP_DWORD_PTR pUser1, CMP_DWORD_PTR pUser2)
-{
+CodecError CCodec_ASTC::Compress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut, Codec_Feedback_Proc pFeedbackProc, CMP_DWORD_PTR pUser1, CMP_DWORD_PTR pUser2) {
     m_AbortRequested = false;
 
     int xsize = bufferIn.GetWidth();
@@ -631,11 +555,10 @@ CodecError CCodec_ASTC::Compress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut
 
 #ifdef ASTC_COMPDEBUGGER
     CompViewerClient    g_CompClient;
-    if (g_CompClient.connect())
-    {
-        #ifdef USE_DBGTRACE
-            DbgTrace(("-------> Remote Server Connected\n"));
-        #endif
+    if (g_CompClient.connect()) {
+#ifdef USE_DBGTRACE
+        DbgTrace(("-------> Remote Server Connected\n"));
+#endif
     }
 #endif
 
@@ -650,14 +573,19 @@ CodecError CCodec_ASTC::Compress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut
 
 
     int bitness = 0; //todo: replace astc_codec_image with bufferIn and rewrite fetch_imageblock()
-    switch (bufferIn.GetBufferType())
-    {
-    case CBT_RGBA8888:
+    switch (bufferIn.GetBufferType()) {
     case CBT_BGRA8888:
     case CBT_ARGB8888:
+    case CBT_RGBA8888:
     case CBT_RGB888:
     case CBT_RG8:
     case CBT_R8:
+        bitness = 8;
+        break;
+    case CBT_RGBA8888S:
+    case CBT_RGB888S:
+    case CBT_RG8S:
+    case CBT_R8S:
         bitness = 8;
         break;
     case CBT_RGBA2101010:
@@ -690,7 +618,7 @@ CodecError CCodec_ASTC::Compress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut
     if (!input_image)
         assert("Unable to allocate image buffer");
 
-    // Loop through the original input image and setup compression threads for each 
+    // Loop through the original input image and setup compression threads for each
     // block to encode  we will load the buffer to pass to ASTC code as 8 bit 4x4 blocks
     // the fill in source image. ASTC code will then use the adaptive sizes for process on the input
     BYTE *pData = bufferIn.GetData();
@@ -708,14 +636,13 @@ CodecError CCodec_ASTC::Compress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut
         }
     }
 
-    m_NumEncodingThreads = min(m_NumThreads, (decltype(m_NumThreads))MAX_ASTC_THREADS);
-    if (m_NumEncodingThreads == 0)
-    {
+    m_NumEncodingThreads = MIN(m_NumThreads, (decltype(m_NumThreads))MAX_ASTC_THREADS);
+    if (m_NumEncodingThreads == 0) {
         m_NumEncodingThreads = CMP_GetNumberOfProcessors();
         if (m_NumEncodingThreads <= 2)
             m_NumEncodingThreads = 8; // fallback to a default!
-            if (m_NumEncodingThreads > 128)
-                m_NumEncodingThreads = 128;
+        if (m_NumEncodingThreads > 128)
+            m_NumEncodingThreads = 128;
 
     }
 
@@ -734,23 +661,18 @@ CodecError CCodec_ASTC::Compress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut
     float TotalBlocks = (float) (yblocks * xblocks);
     int processingBlock = 0;
 
-    for (z = 0; z < zblocks; z++)
-    {
-        for (y = 0; y < yblocks; y++)
-        {
-            for (x = 0; x < xblocks; x++)
-            {
+    for (z = 0; z < zblocks; z++) {
+        for (y = 0; y < yblocks; y++) {
+            for (x = 0; x < xblocks; x++) {
                 int offset = ((z * yblocks + y) * xblocks + x) * 16;
                 uint8_t *bp = bufferOutput + offset;
                 EncodeASTCBlock((astc_codec_image *)input_image, bp, xdim, ydim, zdim, x * xdim, y * ydim, z * zdim);
                 processingBlock++;
             }
 
-            if (pFeedbackProc)
-            {
+            if (pFeedbackProc) {
                 float fProgress = 100.f * ((float)(processingBlock) / TotalBlocks);
-                if (pFeedbackProc(fProgress, pUser1, pUser2))
-                {
+                if (pFeedbackProc(fProgress, pUser1, pUser2)) {
                     result = CE_Aborted;
                     break;
                 }
@@ -776,8 +698,7 @@ CodecError CCodec_ASTC::Compress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut
 // notes:
 // Slow CPU based decompression : Should look into also using HW based decompression with this interface
 //
-CodecError CCodec_ASTC::Decompress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut, Codec_Feedback_Proc pFeedbackProc, CMP_DWORD_PTR pUser1, CMP_DWORD_PTR pUser2)
-{
+CodecError CCodec_ASTC::Decompress(CCodecBuffer& bufferIn, CCodecBuffer& bufferOut, Codec_Feedback_Proc pFeedbackProc, CMP_DWORD_PTR pUser1, CMP_DWORD_PTR pUser2) {
     m_xdim = bufferIn.GetBlockWidth();
     m_ydim = bufferIn.GetBlockHeight();
     m_zdim = 1;
@@ -813,18 +734,14 @@ CodecError CCodec_ASTC::Decompress(CCodecBuffer& bufferIn, CCodecBuffer& bufferO
 
     const CMP_DWORD dwBlocksXY = dwBlocksX*dwBlocksY;
 
-    for(CMP_DWORD cmpRowY = 0; cmpRowY < dwBlocksY; cmpRowY++)        // Compressed images row = height
-    {
-        for(CMP_DWORD cmpColX = 0; cmpColX < dwBlocksX; cmpColX++)    // Compressed images Col = width
-        {
-            union FBLOCKS
-            {
+    for(CMP_DWORD cmpRowY = 0; cmpRowY < dwBlocksY; cmpRowY++) {      // Compressed images row = height
+        for(CMP_DWORD cmpColX = 0; cmpColX < dwBlocksX; cmpColX++) {  // Compressed images Col = width
+            union FBLOCKS {
                 float decodedBlock[144][4];            // max 12x12 block size
                 float destBlock[576];                  // max 12x12x4
             } DecData;
-    
-            union BBLOCKS
-            {
+
+            union BBLOCKS {
                 CMP_DWORD       compressedBlock[4];
                 BYTE            out[16];
                 BYTE            in[16];
@@ -834,42 +751,35 @@ CodecError CCodec_ASTC::Decompress(CCodecBuffer& bufferIn, CCodecBuffer& bufferO
 
             // Encode to the appropriate location in the compressed image
             m_decoder->DecompressBlock(Block_Width, Block_Height, bitness, DecData.decodedBlock,CompData.in);
-            
+
             // Now that we have a decoded block lets copy that data over to the target image buffer
             CMP_DWORD outCol = cmpColX*Block_Width;
             CMP_DWORD outRow = cmpRowY*Block_Height;
             CMP_DWORD outImgRow = outRow;
             CMP_DWORD outImgCol = outCol;
 
-            for (int row = 0; row < Block_Height; row++)
-            {
+            for (int row = 0; row < Block_Height; row++) {
                 CMP_DWORD  nextRowCol  = (outRow+row)*dwPitch + (outCol * 4);
                 CMP_BYTE*  pData       = (CMP_BYTE*)(pDataOut + nextRowCol);
-                if ((outImgRow + row) < imageHeight)
-                {
+                if ((outImgRow + row) < imageHeight) {
                     outImgCol = outCol;
-                    for (int col = 0; col < Block_Width; col++)
-                    {
+                    for (int col = 0; col < Block_Width; col++) {
                         CMP_DWORD w = outImgCol + col;
-                        if (w < imageWidth)
-                        {
+                        if (w < imageWidth) {
                             int index = row*Block_Width + col;
                             *pData++ = (CMP_BYTE)DecData.decodedBlock[index][BC_COMP_RED];
                             *pData++ = (CMP_BYTE)DecData.decodedBlock[index][BC_COMP_GREEN];
                             *pData++ = (CMP_BYTE)DecData.decodedBlock[index][BC_COMP_BLUE];
                             *pData++ = (CMP_BYTE)DecData.decodedBlock[index][BC_COMP_ALPHA];
-                        }
-                        else break;
+                        } else break;
                     }
                 }
             }
         }
 
-        if (pFeedbackProc)
-        {
+        if (pFeedbackProc) {
             float fProgress = 100.f * (cmpRowY * dwBlocksX) / dwBlocksXY;
-            if (pFeedbackProc(fProgress, pUser1, pUser2))
-            {
+            if (pFeedbackProc(fProgress, pUser1, pUser2)) {
                 return CE_Aborted;
             }
         }

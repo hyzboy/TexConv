@@ -7,10 +7,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -21,22 +21,19 @@
 //
 //=====================================================================
 
-#include "TootlePCH.h"
-#include "JRTCommon.h"
-#include "JMLFuncs.h"
+#include "tootlepch.h"
+#include "jrtcommon.h"
+#include "jmlfuncs.h"
 
 #include <assert.h>
 
-namespace JML
-{
+namespace JML {
 
-float RandomFloat()
-{
+float RandomFloat() {
     return (float)rand() / (float)RAND_MAX;
 }
 
-void TransformPoint(const Vec3f* pPoint, const Matrix4f* pMatrix, Vec3f* pPointOut)
-{
+void TransformPoint(const Vec3f* pPoint, const Matrix4f* pMatrix, Vec3f* pPointOut) {
     // multiplication from the right, assume point.w = 1
     /*const float* values = pMatrix->GetValues();
     SSEVec4 col1(values);
@@ -67,16 +64,13 @@ void TransformPoint(const Vec3f* pPoint, const Matrix4f* pMatrix, Vec3f* pPointO
 
     float vals_out[4] = {0};
 
-    for (unsigned int row = 0; row < 4; row++)
-    {
-        for (unsigned int  col = 0; col < 4; col++)
-        {
+    for (unsigned int row = 0; row < 4; row++) {
+        for (unsigned int  col = 0; col < 4; col++) {
             vals_out[row] += pMatrix->Get(row, col) * vals[col];
         }
     }
 
-    if (vals_out[3] != 0.0f)
-    {
+    if (vals_out[3] != 0.0f) {
         vals_out[0] /= vals_out[3];
         vals_out[1] /= vals_out[3];
         vals_out[2] /= vals_out[3];
@@ -85,8 +79,7 @@ void TransformPoint(const Vec3f* pPoint, const Matrix4f* pMatrix, Vec3f* pPointO
     *pPointOut = Vec3f(vals_out);
 }
 
-void FastTransformPoint(const Vec3f* pPoint, const Matrix4f* pMatrix, Vec3f* pPointOut)
-{
+void FastTransformPoint(const Vec3f* pPoint, const Matrix4f* pMatrix, Vec3f* pPointOut) {
     // multiplication from the right, assume point.w = 1
     const float* values = pMatrix->GetValues();
     SSEVec4 col1(values);
@@ -109,8 +102,7 @@ void FastTransformPoint(const Vec3f* pPoint, const Matrix4f* pMatrix, Vec3f* pPo
 }
 
 
-void TransformVector(const Vec3f* pVector, const Matrix4f* pMatrix, Vec3f* pVecOut)
-{
+void TransformVector(const Vec3f* pVector, const Matrix4f* pMatrix, Vec3f* pVecOut) {
 
     // multiplication from the right, assume point.w = 0
 
@@ -142,10 +134,8 @@ void TransformVector(const Vec3f* pVector, const Matrix4f* pMatrix, Vec3f* pVecO
 
     float vals_out[4] = {0};
 
-    for (unsigned int row = 0; row < 4; row++)
-    {
-        for (unsigned int  col = 0; col < 4; col++)
-        {
+    for (unsigned int row = 0; row < 4; row++) {
+        for (unsigned int  col = 0; col < 4; col++) {
             vals_out[row] += pMatrix->Get(row, col) * vals[col];
         }
     }
@@ -173,8 +163,7 @@ void TransformVector(const Vec3f* pVector, const Matrix4f* pMatrix, Vec3f* pVecO
 }*/
 
 
-void Vec4TransformPoint(const SSEVec4& rPoint, const Matrix4f* pMatrix, SSEVec4& rVecOut)
-{
+void Vec4TransformPoint(const SSEVec4& rPoint, const Matrix4f* pMatrix, SSEVec4& rVecOut) {
     // multiplication from the right, assume point.w = 1
     const float* values = pMatrix->GetValues();
     SSEVec4 col1(values);
@@ -193,8 +182,7 @@ void Vec4TransformPoint(const SSEVec4& rPoint, const Matrix4f* pMatrix, SSEVec4&
     SSEVec4 zero = SSEVecZero();
     SSEVec4 one = SSEVec4(1.0f);
 
-    if (SSEVecIsXNEqual(W, zero) && SSEVecIsXNEqual(W, one))
-    {
+    if (SSEVecIsXNEqual(W, zero) && SSEVecIsXNEqual(W, one)) {
         res *= SSEVecRCP(W);
     }
 
@@ -202,8 +190,7 @@ void Vec4TransformPoint(const SSEVec4& rPoint, const Matrix4f* pMatrix, SSEVec4&
 }
 
 
-void Vec4TransformVector(const SSEVec4& rVector, const Matrix4f* pMatrix, SSEVec4& rVecOut)
-{
+void Vec4TransformVector(const SSEVec4& rVector, const Matrix4f* pMatrix, SSEVec4& rVecOut) {
     // multiply from left, assume w = 0
     const float* pVals = pMatrix->GetValues();
     SSEVec4 col1(pVals);
@@ -220,8 +207,7 @@ void Vec4TransformVector(const SSEVec4& rVector, const Matrix4f* pMatrix, SSEVec
     SSEVec4 zero = SSEVecZero();
     SSEVec4 one = SSEVec4(1.0f);
 
-    if (SSEVecIsXNEqual(W, zero) && SSEVecIsXNEqual(W, one))
-    {
+    if (SSEVecIsXNEqual(W, zero) && SSEVecIsXNEqual(W, one)) {
         col1 *= SSEVecRCP(W);
     }
 
@@ -229,8 +215,7 @@ void Vec4TransformVector(const SSEVec4& rVector, const Matrix4f* pMatrix, SSEVec
 }
 
 
-void Vec4TransformVectorTranspose(const SSEVec4& rVector, const Matrix4f* pMatrix, SSEVec4& rVecOut)
-{
+void Vec4TransformVectorTranspose(const SSEVec4& rVector, const Matrix4f* pMatrix, SSEVec4& rVecOut) {
     // multiplication from the left, assume point.w = 0
     const float* pVals = pMatrix->GetValues();
     SSEVec4 col1(pVals);
@@ -244,8 +229,7 @@ void Vec4TransformVectorTranspose(const SSEVec4& rVector, const Matrix4f* pMatri
     float w = SSEVec3Dot(rVector, col4);
 
     // we still need divide-by-W in case bottom row is not 0 0 0 1
-    if (w != 0.0f && w != 1.0f)
-    {
+    if (w != 0.0f && w != 1.0f) {
         w = FastRCP(w);
         x *= w;
         y *= w;
@@ -257,23 +241,19 @@ void Vec4TransformVectorTranspose(const SSEVec4& rVector, const Matrix4f* pMatri
 }
 
 
-Vec3f BarycentricLerp3f(const Vec3f& v1, const Vec3f& v2, const Vec3f& v3, const float barycentrics[3])
-{
+Vec3f BarycentricLerp3f(const Vec3f& v1, const Vec3f& v2, const Vec3f& v3, const float barycentrics[3]) {
     // TODO: make this fast using SSE if possible
     return (v1 * barycentrics[0]) + (v2 * barycentrics[1]) + (v3 * barycentrics[2]);
 }
 
-Vec2f BarycentricLerp2f(const Vec2f& v1, const Vec2f& v2, const Vec2f& v3, const float barycentrics[3])
-{
+Vec2f BarycentricLerp2f(const Vec2f& v1, const Vec2f& v2, const Vec2f& v3, const float barycentrics[3]) {
     // TODO: make this fast using SSE if possible
     return (v1 * barycentrics[0]) + (v2 * barycentrics[1]) + (v3 * barycentrics[2]);
 }
 
 
-Matrix4f MatrixScale(float x, float y, float z)
-{
-    float values[] =
-    {
+Matrix4f MatrixScale(float x, float y, float z) {
+    float values[] = {
         x, 0, 0, 0,
         0, y, 0, 0,
         0, 0, z, 0,
@@ -284,8 +264,7 @@ Matrix4f MatrixScale(float x, float y, float z)
 }
 
 
-Matrix4f MatrixTranslate(float x, float y, float z)
-{
+Matrix4f MatrixTranslate(float x, float y, float z) {
     Matrix4f xlate;
     xlate.Set(0, 3, x);
     xlate.Set(1, 3, y);
@@ -295,13 +274,11 @@ Matrix4f MatrixTranslate(float x, float y, float z)
 }
 
 
-Matrix4f MatrixIdentity()
-{
+Matrix4f MatrixIdentity() {
     return Matrix4f();
 }
 
-Matrix4f MatrixRotate(float x, float y, float z, float fAngleInRads)
-{
+Matrix4f MatrixRotate(float x, float y, float z, float fAngleInRads) {
     Vec3f r(x, y, z);
     r = Normalize(r);
 
@@ -326,8 +303,7 @@ Matrix4f MatrixRotate(float x, float y, float z, float fAngleInRads)
     return rotation;
 }
 
-Matrix4f MatrixLookAt(const Vec3f& rEye, const Vec3f& rAt, const Vec3f& rUp)
-{
+Matrix4f MatrixLookAt(const Vec3f& rEye, const Vec3f& rAt, const Vec3f& rUp) {
     Vec3f z = Normalize(rAt - rEye);
     Vec3f x = Cross(rUp, z);
     Vec3f y = Cross(z, x);
@@ -353,13 +329,11 @@ Matrix4f MatrixLookAt(const Vec3f& rEye, const Vec3f& rAt, const Vec3f& rUp)
 
 }
 
-Matrix4f MatrixAlignZToVector(const Vec3f& rVec)
-{
+Matrix4f MatrixAlignZToVector(const Vec3f& rVec) {
     Vec3f vn = Normalize(rVec);
     Vec3f up(0, 1, 0);
 
-    if (vn.x == 0.0f && vn.z == 0.0f)
-    {
+    if (vn.x == 0.0f && vn.z == 0.0f) {
         // vector is aligned to the y axis, use a different vector for the cross
         up = Vec3f(1, 0, 0);
     }
@@ -367,8 +341,7 @@ Matrix4f MatrixAlignZToVector(const Vec3f& rVec)
     return MatrixLookAt(Vec3f(0, 0, 0), vn, up);
 }
 
-Matrix4f MatrixCoordinateFrame(const Vec3f& x, const Vec3f& y, const Vec3f& z)
-{
+Matrix4f MatrixCoordinateFrame(const Vec3f& x, const Vec3f& y, const Vec3f& z) {
     Matrix4f mat;
     mat.Set(0, 0, x.x);
     mat.Set(0, 1, x.y);

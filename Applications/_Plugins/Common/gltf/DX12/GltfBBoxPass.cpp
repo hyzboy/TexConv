@@ -1,5 +1,5 @@
 // AMD AMDUtils code
-// 
+//
 // Copyright(c) 2017 Advanced Micro Devices, Inc.All rights reserved.
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
@@ -17,12 +17,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include "GltfBBoxPass.h"
-#include "GltfHelpers.h"
+#include "gltfbboxpass.h"
+#include "gltfhelpers.h"
 
-#include <Error.h>
+#include <error.h>
 
-#include <DirectXMath.h>
+#include <directxmath.h>
 #include <d3dcompiler.h>
 
 using namespace DirectX;
@@ -33,8 +33,7 @@ void GltfBBoxPass::OnCreate(
     ResourceViewHeapsDX12 *pHeaps,
     DynamicBufferRingDX12 *pDynamicBufferRing,
     StaticBufferPoolDX12 *pStaticBufferPool,
-    GLTFCommon *pGLTFData,  void *pluginManager, void *msghandler)
-{
+    GLTFCommon *pGLTFData,  void *pluginManager, void *msghandler) {
     m_pGLTFData = pGLTFData;
     m_pDynamicBufferRing = pDynamicBufferRing;
     m_pResourceViewHeaps = pHeaps;
@@ -44,8 +43,7 @@ void GltfBBoxPass::OnCreate(
 
     void *pDest;
     m_pStaticBufferPool->AllocIndexBuffer(m_NumIndices, sizeof(DWORD), &pDest, &m_IBV);
-    DWORD indices[] =
-    {
+    DWORD indices[] = {
         0,1, 1,2, 2,3, 3,0,
         4,5, 5,6, 6,7, 7,4,
         0,4,
@@ -56,21 +54,19 @@ void GltfBBoxPass::OnCreate(
     memcpy(pDest, indices, m_IBV.SizeInBytes);
 
     m_pStaticBufferPool->AllocVertexBuffer(8, 4 * sizeof(float), &pDest, &m_VBV);
-    float vertices[] =
-    {
-       -1,  -1,  1,  1,
-        1,  -1,  1,  1,
-        1,   1,  1,  1,
-       -1,   1,  1,  1,
-       -1,  -1, -1,  1,
-        1,  -1, -1,  1,
-        1,   1, -1,  1,
-       -1,   1, -1,  1,
-    };
+    float vertices[] = {
+        -1,  -1,  1,  1,
+            1,  -1,  1,  1,
+            1,   1,  1,  1,
+            -1,   1,  1,  1,
+            -1,  -1, -1,  1,
+            1,  -1, -1,  1,
+            1,   1, -1,  1,
+            -1,   1, -1,  1,
+        };
     memcpy(pDest, vertices, m_VBV.SizeInBytes);
 
-    D3D12_INPUT_ELEMENT_DESC layout[] =
-    {
+    D3D12_INPUT_ELEMENT_DESC layout[] = {
         { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0,  0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
     };
 
@@ -120,9 +116,8 @@ void GltfBBoxPass::OnCreate(
     {
         ID3DBlob *pError;
         D3DCompile(vertexShader, strlen(vertexShader), nullptr, nullptr, nullptr, "mainVS", "vs_5_0", 0, 0, &pBlobShaderVert, &pError);
-        D3DCompile(pixelShader , strlen(pixelShader) , nullptr, nullptr, nullptr, "mainPS", "ps_5_0", 0, 0, &pBlobShaderPixel, &pError);
-        if (pError != NULL)
-        {
+        D3DCompile(pixelShader, strlen(pixelShader), nullptr, nullptr, nullptr, "mainPS", "ps_5_0", 0, 0, &pBlobShaderPixel, &pError);
+        if (pError != NULL) {
             char *msg = (char *)pError->GetBufferPointer();
             MessageBoxA(0, msg, "", 0);
         }
@@ -135,27 +130,26 @@ void GltfBBoxPass::OnCreate(
         CD3DX12_ROOT_PARAMETER RTSlot[1];
         CD3DX12_ROOT_SIGNATURE_DESC descRootSignature = CD3DX12_ROOT_SIGNATURE_DESC();
 
-        DescRange[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);		// b0 <- per object color
+        DescRange[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);        // b0 <- per object color
 
         RTSlot[0].InitAsDescriptorTable(1, &DescRange[0], D3D12_SHADER_VISIBILITY_VERTEX);
 
-        // the root signature contains 3 slots to be used        
+        // the root signature contains 3 slots to be used
         descRootSignature.NumParameters = 1;
         descRootSignature.pParameters = RTSlot;
         descRootSignature.NumStaticSamplers = 0;
         descRootSignature.pStaticSamplers = NULL;
 
-        // deny uneccessary access to certain pipeline stages   
+        // deny uneccessary access to certain pipeline stages
         descRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_NONE
-            | D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT
-            | D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS
-            | D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS
-            | D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
+                                  | D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT
+                                  | D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS
+                                  | D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS
+                                  | D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
 
         ID3DBlob *pOutBlob, *pErrorBlob = NULL;
         D3D12SerializeRootSignature(&descRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &pOutBlob, &pErrorBlob);
-        if (pErrorBlob != NULL)
-        {
+        if (pErrorBlob != NULL) {
             char *msg = (char *)pErrorBlob->GetBufferPointer();
             MessageBoxA(0, msg, "", 0);
         }
@@ -198,14 +192,11 @@ void GltfBBoxPass::OnCreate(
     );
 }
 
-void GltfBBoxPass::OnDestroy()
-{
+void GltfBBoxPass::OnDestroy() {
 }
 
-void GltfBBoxPass::DrawMesh(ID3D12GraphicsCommandList* pCommandList, int meshIndex, XMMATRIX worldMatrix)
-{
-    struct per_object
-    {
+void GltfBBoxPass::DrawMesh(ID3D12GraphicsCommandList* pCommandList, int meshIndex, XMMATRIX worldMatrix) {
+    struct per_object {
         XMMATRIX mWorldViewProj;
         XMVECTOR vCenter;
         XMVECTOR vRadius;
@@ -224,8 +215,7 @@ void GltfBBoxPass::DrawMesh(ID3D12GraphicsCommandList* pCommandList, int meshInd
     XMMATRIX mWorldViewProj = worldMatrix * m_Camera;
 
     tfMesh *pMesh = &m_pGLTFData->m_meshes[meshIndex];
-    for (unsigned int p = 0; p < pMesh->m_pPrimitives.size(); p++)
-    {
+    for (unsigned int p = 0; p < pMesh->m_pPrimitives.size(); p++) {
         // Set per Object constants
         //
         per_object *cbPerObject;

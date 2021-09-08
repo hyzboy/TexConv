@@ -5,7 +5,6 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
-#define WIN32_LEAN_AND_MEAN        // Exclude rarely-used stuff from Windows headers
 // Windows Header Files:
 // TODO: reference additional headers your program requires here
 #include <assert.h>
@@ -14,7 +13,7 @@
 #include <tchar.h>
 #endif
 
-#include "PluginInterface.h"
+#include "plugininterface.h"
 
 // ---------------- TGA Plugin ------------------------
 #ifdef _WIN32
@@ -27,18 +26,17 @@ static const GUID g_GUID = {0};
 #define TC_PLUGIN_VERSION_MINOR    0
 
 
-class Plugin_TGA : public PluginInterface_Image
-{
-    public: 
-        Plugin_TGA();
-        virtual ~Plugin_TGA();
+class Plugin_TGA : public PluginInterface_Image {
+  public:
+    Plugin_TGA();
+    virtual ~Plugin_TGA();
 
-        int TC_PluginSetSharedIO(void* Shared);
-        int TC_PluginGetVersion(TC_PluginVersion* pPluginVersion);
-        int TC_PluginFileLoadTexture(const char* pszFilename, MipSet* pMipSet);
-        int TC_PluginFileSaveTexture(const char* pszFilename, MipSet* pMipSet);
-        int TC_PluginFileLoadTexture(const char* pszFilename, CMP_Texture *srcTexture);
-        int TC_PluginFileSaveTexture(const char* pszFilename, CMP_Texture *srcTexture);
+    int TC_PluginSetSharedIO(void* Shared);
+    int TC_PluginGetVersion(TC_PluginVersion* pPluginVersion);
+    int TC_PluginFileLoadTexture(const char* pszFilename, MipSet* pMipSet);
+    int TC_PluginFileSaveTexture(const char* pszFilename, MipSet* pMipSet);
+    int TC_PluginFileLoadTexture(const char* pszFilename, CMP_Texture *srcTexture);
+    int TC_PluginFileSaveTexture(const char* pszFilename, CMP_Texture *srcTexture);
 
 };
 
@@ -51,27 +49,27 @@ static const CMP_WORD TGA_HEADER = ((CMP_WORD)(CMP_BYTE)('B') | ((CMP_WORD)(CMP_
 #pragma pack(push)
 #pragma pack(1)
 
-typedef struct
-{                                       //Byte    Comments
+typedef struct {
+    //Byte    Comments
     CMP_BYTE cIDFieldLength;                //[0]     length of a string located after the header
     CMP_BYTE cColorMapType;                 //[1]     0  -  Image type (Supported)
-                                        //        1  -  Data type (Not supported)
+    //        1  -  Data type (Not supported)
     CMP_BYTE cImageType;                    //[2]     0  -  No image data included.
-                                        //        1  -  Uncompressed, color-mapped images.
-                                        //        2  -  Uncompressed, RGB images.
-                                        //        3  -  Uncompressed, black and white images.
-                                        //        9  -  Runlength encoded color-mapped images.
-                                        //        10  - Runlength encoded RGB images.
-                                        //        11  - Compressed, black and white images.
-                                        //        32  - Compressed color-mapped data, using Huffman, Delta, and
-                                        //              runlength encoding.
-                                        //        33  - Compressed color-mapped data, using Huffman, Delta, and
-                                        //              runlength encoding.  4-pass quadtree-type process.
+    //        1  -  Uncompressed, color-mapped images.
+    //        2  -  Uncompressed, RGB images.
+    //        3  -  Uncompressed, black and white images.
+    //        9  -  Runlength encoded color-mapped images.
+    //        10  - Runlength encoded RGB images.
+    //        11  - Compressed, black and white images.
+    //        32  - Compressed color-mapped data, using Huffman, Delta, and
+    //              runlength encoding.
+    //        33  - Compressed color-mapped data, using Huffman, Delta, and
+    //              runlength encoding.  4-pass quadtree-type process.
 
     short nFirstColorMapEntry;            // [3:4]
     short nColorMapLength;                // [5:6]
     CMP_BYTE cColorMapEntrySize;            // [7]
-    short nXOrigin;                        // [8:9]    
+    short nXOrigin;                        // [8:9]
     short nYOrigin;                        // [10:11]
     short nWidth;                        // [12:13]
     short nHeight;                        // [14:15]
@@ -90,8 +88,7 @@ static const CMP_BYTE ImageType_G8             =  3;        // Raw greyscale
 static const CMP_BYTE ImageType_ARGB8888_RLE = 10;        // RLE RGB
 static const CMP_BYTE ImageType_G8_RLE         = 11;        // RLE greyscale
 
-typedef struct
-{
+typedef struct {
     CMP_DWORD dwSize;
 
     bool bRLECompressed;

@@ -7,10 +7,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -21,7 +21,7 @@
 //
 //==============================================================================
 
-#include "COpenCL.h"
+#include "copencl.h"
 
 #ifdef USE_CPU_PERFORMANCE_COUNTERS
 #include "query_timer.h"  // can use CPU timing but pref is to use GPU counters
@@ -54,13 +54,11 @@ extern CMIPS *GPU_CLMips;
 #define KERNEL_ARG_SOURCEINFO    2
 #define KERNEL_ARG_ENCODE        3
 
-static bool is64Bit()
-{
+static bool is64Bit() {
     return (sizeof(int*) == 8);
 }
 
-void PrintCL(const char* Format, ... )
-{
+void PrintCL(const char* Format, ... ) {
     // define a pointer to save argument list
     va_list args;
     char buff[1024];
@@ -69,80 +67,195 @@ void PrintCL(const char* Format, ... )
     vsprintf_s(buff, Format, args);
     va_end(args);
 
-    if (GPU_CLMips)
-    {
+    if (GPU_CLMips) {
         GPU_CLMips->Print(buff);
-    }
-    else
-    {
+    } else {
         printf(buff);
     }
 }
 
-void PrintOCLError(cl_int error)
-{
-    switch (error)
-    {
-    case CL_DEVICE_NOT_FOUND: PrintCL("Error: CL_DEVICE_NOT_FOUND\n"); break;
-    case CL_DEVICE_NOT_AVAILABLE: PrintCL("Error: CL_DEVICE_NOT_AVAILABLE\n"); break;
-    case CL_COMPILER_NOT_AVAILABLE: PrintCL("Error: CL_COMPILER_NOT_AVAILABLE\n"); break;
-    case CL_MEM_OBJECT_ALLOCATION_FAILURE: PrintCL("Error: CL_MEM_OBJECT_ALLOCATION_FAILURE\n"); break;
-    case CL_OUT_OF_RESOURCES: PrintCL("Error: CL_OUT_OF_RESOURCES\n"); break;
-    case CL_OUT_OF_HOST_MEMORY: PrintCL("Error: CL_OUT_OF_HOST_MEMORY\n"); break;
-    case CL_PROFILING_INFO_NOT_AVAILABLE: PrintCL("Error: CL_PROFILING_INFO_NOT_AVAILABLE\n"); break;
-    case CL_MEM_COPY_OVERLAP: PrintCL("Error: CL_MEM_COPY_OVERLAP\n"); break;
-    case CL_IMAGE_FORMAT_MISMATCH: PrintCL("Error: CL_IMAGE_FORMAT_MISMATCH\n"); break;
-    case CL_IMAGE_FORMAT_NOT_SUPPORTED: PrintCL("Error: CL_IMAGE_FORMAT_NOT_SUPPORTED\n"); break;
-    case CL_BUILD_PROGRAM_FAILURE: PrintCL("Error: CL_BUILD_PROGRAM_FAILURE\n"); break;
-    case CL_MAP_FAILURE: PrintCL("Error: CL_MAP_FAILURE\n"); break;
-    case CL_MISALIGNED_SUB_BUFFER_OFFSET: PrintCL("Error: CL_MISALIGNED_SUB_BUFFER_OFFSET\n"); break;
-    case CL_EXEC_STATUS_ERROR_FOR_EVENTS_IN_WAIT_LIST: PrintCL("Error: CL_EXEC_STATUS_ERROR_FOR_EVENTS_IN_WAIT_LIST\n"); break;
-    case CL_COMPILE_PROGRAM_FAILURE: PrintCL("Error: CL_COMPILE_PROGRAM_FAILURE\n"); break;
-    case CL_LINKER_NOT_AVAILABLE: PrintCL("Error: CL_LINKER_NOT_AVAILABLE\n"); break;
-    case CL_LINK_PROGRAM_FAILURE: PrintCL("Error: CL_LINK_PROGRAM_FAILURE\n"); break;
-    case CL_DEVICE_PARTITION_FAILED: PrintCL("Error: CL_DEVICE_PARTITION_FAILED\n"); break;
-    case CL_KERNEL_ARG_INFO_NOT_AVAILABLE: PrintCL("Error: CL_KERNEL_ARG_INFO_NOT_AVAILABLE\n"); break;
-    case CL_INVALID_VALUE: PrintCL("Error: CL_INVALID_VALUE\n"); break;
-    case CL_INVALID_DEVICE_TYPE: PrintCL("Error: CL_INVALID_DEVICE_TYPE\n"); break;
-    case CL_INVALID_PLATFORM: PrintCL("Error: CL_INVALID_PLATFORM\n"); break;
-    case CL_INVALID_DEVICE: PrintCL("Error: CL_INVALID_DEVICE\n"); break;
-    case CL_INVALID_CONTEXT: PrintCL("Error: CL_INVALID_CONTEXT\n"); break;
-    case CL_INVALID_QUEUE_PROPERTIES: PrintCL("Error: CL_INVALID_QUEUE_PROPERTIES\n"); break;
-    case CL_INVALID_COMMAND_QUEUE: PrintCL("Error: CL_INVALID_COMMAND_QUEUE\n"); break;
-    case CL_INVALID_HOST_PTR: PrintCL("Error: CL_INVALID_HOST_PTR\n"); break;
-    case CL_INVALID_MEM_OBJECT: PrintCL("Error: CL_INVALID_MEM_OBJECT\n"); break;
-    case CL_INVALID_IMAGE_FORMAT_DESCRIPTOR: PrintCL("Error: CL_INVALID_IMAGE_FORMAT_DESCRIPTOR\n"); break;
-    case CL_INVALID_IMAGE_SIZE: PrintCL("Error: CL_INVALID_IMAGE_SIZE\n"); break;
-    case CL_INVALID_SAMPLER: PrintCL("Error: CL_INVALID_SAMPLER\n"); break;
-    case CL_INVALID_BINARY: PrintCL("Error: CL_INVALID_BINARY\n"); break;
-    case CL_INVALID_BUILD_OPTIONS: PrintCL("Error: CL_INVALID_BUILD_OPTIONS\n"); break;
-    case CL_INVALID_PROGRAM: PrintCL("Error: CL_INVALID_PROGRAM\n"); break;
-    case CL_INVALID_PROGRAM_EXECUTABLE: PrintCL("Error: CL_INVALID_PROGRAM_EXECUTABLE\n"); break;
-    case CL_INVALID_KERNEL_NAME: PrintCL("Error: CL_INVALID_KERNEL_NAME\n"); break;
-    case CL_INVALID_KERNEL_DEFINITION: PrintCL("Error: CL_INVALID_KERNEL_DEFINITION\n"); break;
-    case CL_INVALID_KERNEL: PrintCL("Error: CL_INVALID_KERNEL\n"); break;
-    case CL_INVALID_ARG_INDEX: PrintCL("Error: CL_INVALID_ARG_INDEX\n"); break;
-    case CL_INVALID_ARG_VALUE: PrintCL("Error: CL_INVALID_ARG_VALUE\n"); break;
-    case CL_INVALID_ARG_SIZE: PrintCL("Error: CL_INVALID_ARG_SIZE\n"); break;
-    case CL_INVALID_KERNEL_ARGS: PrintCL("Error: CL_INVALID_KERNEL_ARGS\n"); break;
-    case CL_INVALID_WORK_DIMENSION: PrintCL("Error: CL_INVALID_WORK_DIMENSION\n"); break;
-    case CL_INVALID_WORK_GROUP_SIZE: PrintCL("Error: CL_INVALID_WORK_GROUP_SIZE\n"); break;
-    case CL_INVALID_WORK_ITEM_SIZE: PrintCL("Error: CL_INVALID_WORK_ITEM_SIZE\n"); break;
-    case CL_INVALID_GLOBAL_OFFSET: PrintCL("Error: CL_INVALID_GLOBAL_OFFSET\n"); break;
-    case CL_INVALID_EVENT_WAIT_LIST: PrintCL("Error: CL_INVALID_EVENT_WAIT_LIST\n"); break;
-    case CL_INVALID_EVENT: PrintCL("Error: CL_INVALID_EVENT\n"); break;
-    case CL_INVALID_OPERATION: PrintCL("Error: CL_INVALID_OPERATION\n"); break;
-    case CL_INVALID_GL_OBJECT: PrintCL("Error: CL_INVALID_GL_OBJECT\n"); break;
-    case CL_INVALID_BUFFER_SIZE: PrintCL("Error: CL_INVALID_BUFFER_SIZE\n"); break;
-    case CL_INVALID_MIP_LEVEL: PrintCL("Error: CL_INVALID_MIP_LEVEL\n"); break;
-    case CL_INVALID_GLOBAL_WORK_SIZE: PrintCL("Error: CL_INVALID_GLOBAL_WORK_SIZE\n"); break;
-    case CL_INVALID_PROPERTY: PrintCL("Error: CL_INVALID_PROPERTY\n"); break;
-    case CL_INVALID_IMAGE_DESCRIPTOR: PrintCL("Error: CL_INVALID_IMAGE_DESCRIPTOR\n"); break;
-    case CL_INVALID_COMPILER_OPTIONS: PrintCL("Error: CL_INVALID_COMPILER_OPTIONS\n"); break;
-    case CL_INVALID_LINKER_OPTIONS: PrintCL("Error: CL_INVALID_LINKER_OPTIONS\n"); break;
-    case CL_INVALID_DEVICE_PARTITION_COUNT: PrintCL("Error: CL_INVALID_DEVICE_PARTITION_COUNT\n"); break;
-    case CL_INVALID_PIPE_SIZE: PrintCL("Error: CL_INVALID_PIPE_SIZE\n"); break;
-    case CL_INVALID_DEVICE_QUEUE: PrintCL("Error: CL_INVALID_DEVICE_QUEUE\n"); break;
+void PrintOCLError(cl_int error) {
+    switch (error) {
+    case CL_DEVICE_NOT_FOUND:
+        PrintCL("Error: CL_DEVICE_NOT_FOUND\n");
+        break;
+    case CL_DEVICE_NOT_AVAILABLE:
+        PrintCL("Error: CL_DEVICE_NOT_AVAILABLE\n");
+        break;
+    case CL_COMPILER_NOT_AVAILABLE:
+        PrintCL("Error: CL_COMPILER_NOT_AVAILABLE\n");
+        break;
+    case CL_MEM_OBJECT_ALLOCATION_FAILURE:
+        PrintCL("Error: CL_MEM_OBJECT_ALLOCATION_FAILURE\n");
+        break;
+    case CL_OUT_OF_RESOURCES:
+        PrintCL("Error: CL_OUT_OF_RESOURCES\n");
+        break;
+    case CL_OUT_OF_HOST_MEMORY:
+        PrintCL("Error: CL_OUT_OF_HOST_MEMORY\n");
+        break;
+    case CL_PROFILING_INFO_NOT_AVAILABLE:
+        PrintCL("Error: CL_PROFILING_INFO_NOT_AVAILABLE\n");
+        break;
+    case CL_MEM_COPY_OVERLAP:
+        PrintCL("Error: CL_MEM_COPY_OVERLAP\n");
+        break;
+    case CL_IMAGE_FORMAT_MISMATCH:
+        PrintCL("Error: CL_IMAGE_FORMAT_MISMATCH\n");
+        break;
+    case CL_IMAGE_FORMAT_NOT_SUPPORTED:
+        PrintCL("Error: CL_IMAGE_FORMAT_NOT_SUPPORTED\n");
+        break;
+    case CL_BUILD_PROGRAM_FAILURE:
+        PrintCL("Error: CL_BUILD_PROGRAM_FAILURE\n");
+        break;
+    case CL_MAP_FAILURE:
+        PrintCL("Error: CL_MAP_FAILURE\n");
+        break;
+    case CL_MISALIGNED_SUB_BUFFER_OFFSET:
+        PrintCL("Error: CL_MISALIGNED_SUB_BUFFER_OFFSET\n");
+        break;
+    case CL_EXEC_STATUS_ERROR_FOR_EVENTS_IN_WAIT_LIST:
+        PrintCL("Error: CL_EXEC_STATUS_ERROR_FOR_EVENTS_IN_WAIT_LIST\n");
+        break;
+    case CL_COMPILE_PROGRAM_FAILURE:
+        PrintCL("Error: CL_COMPILE_PROGRAM_FAILURE\n");
+        break;
+    case CL_LINKER_NOT_AVAILABLE:
+        PrintCL("Error: CL_LINKER_NOT_AVAILABLE\n");
+        break;
+    case CL_LINK_PROGRAM_FAILURE:
+        PrintCL("Error: CL_LINK_PROGRAM_FAILURE\n");
+        break;
+    case CL_DEVICE_PARTITION_FAILED:
+        PrintCL("Error: CL_DEVICE_PARTITION_FAILED\n");
+        break;
+    case CL_KERNEL_ARG_INFO_NOT_AVAILABLE:
+        PrintCL("Error: CL_KERNEL_ARG_INFO_NOT_AVAILABLE\n");
+        break;
+    case CL_INVALID_VALUE:
+        PrintCL("Error: CL_INVALID_VALUE\n");
+        break;
+    case CL_INVALID_DEVICE_TYPE:
+        PrintCL("Error: CL_INVALID_DEVICE_TYPE\n");
+        break;
+    case CL_INVALID_PLATFORM:
+        PrintCL("Error: CL_INVALID_PLATFORM\n");
+        break;
+    case CL_INVALID_DEVICE:
+        PrintCL("Error: CL_INVALID_DEVICE\n");
+        break;
+    case CL_INVALID_CONTEXT:
+        PrintCL("Error: CL_INVALID_CONTEXT\n");
+        break;
+    case CL_INVALID_QUEUE_PROPERTIES:
+        PrintCL("Error: CL_INVALID_QUEUE_PROPERTIES\n");
+        break;
+    case CL_INVALID_COMMAND_QUEUE:
+        PrintCL("Error: CL_INVALID_COMMAND_QUEUE\n");
+        break;
+    case CL_INVALID_HOST_PTR:
+        PrintCL("Error: CL_INVALID_HOST_PTR\n");
+        break;
+    case CL_INVALID_MEM_OBJECT:
+        PrintCL("Error: CL_INVALID_MEM_OBJECT\n");
+        break;
+    case CL_INVALID_IMAGE_FORMAT_DESCRIPTOR:
+        PrintCL("Error: CL_INVALID_IMAGE_FORMAT_DESCRIPTOR\n");
+        break;
+    case CL_INVALID_IMAGE_SIZE:
+        PrintCL("Error: CL_INVALID_IMAGE_SIZE\n");
+        break;
+    case CL_INVALID_SAMPLER:
+        PrintCL("Error: CL_INVALID_SAMPLER\n");
+        break;
+    case CL_INVALID_BINARY:
+        PrintCL("Error: CL_INVALID_BINARY\n");
+        break;
+    case CL_INVALID_BUILD_OPTIONS:
+        PrintCL("Error: CL_INVALID_BUILD_OPTIONS\n");
+        break;
+    case CL_INVALID_PROGRAM:
+        PrintCL("Error: CL_INVALID_PROGRAM\n");
+        break;
+    case CL_INVALID_PROGRAM_EXECUTABLE:
+        PrintCL("Error: CL_INVALID_PROGRAM_EXECUTABLE\n");
+        break;
+    case CL_INVALID_KERNEL_NAME:
+        PrintCL("Error: CL_INVALID_KERNEL_NAME\n");
+        break;
+    case CL_INVALID_KERNEL_DEFINITION:
+        PrintCL("Error: CL_INVALID_KERNEL_DEFINITION\n");
+        break;
+    case CL_INVALID_KERNEL:
+        PrintCL("Error: CL_INVALID_KERNEL\n");
+        break;
+    case CL_INVALID_ARG_INDEX:
+        PrintCL("Error: CL_INVALID_ARG_INDEX\n");
+        break;
+    case CL_INVALID_ARG_VALUE:
+        PrintCL("Error: CL_INVALID_ARG_VALUE\n");
+        break;
+    case CL_INVALID_ARG_SIZE:
+        PrintCL("Error: CL_INVALID_ARG_SIZE\n");
+        break;
+    case CL_INVALID_KERNEL_ARGS:
+        PrintCL("Error: CL_INVALID_KERNEL_ARGS\n");
+        break;
+    case CL_INVALID_WORK_DIMENSION:
+        PrintCL("Error: CL_INVALID_WORK_DIMENSION\n");
+        break;
+    case CL_INVALID_WORK_GROUP_SIZE:
+        PrintCL("Error: CL_INVALID_WORK_GROUP_SIZE\n");
+        break;
+    case CL_INVALID_WORK_ITEM_SIZE:
+        PrintCL("Error: CL_INVALID_WORK_ITEM_SIZE\n");
+        break;
+    case CL_INVALID_GLOBAL_OFFSET:
+        PrintCL("Error: CL_INVALID_GLOBAL_OFFSET\n");
+        break;
+    case CL_INVALID_EVENT_WAIT_LIST:
+        PrintCL("Error: CL_INVALID_EVENT_WAIT_LIST\n");
+        break;
+    case CL_INVALID_EVENT:
+        PrintCL("Error: CL_INVALID_EVENT\n");
+        break;
+    case CL_INVALID_OPERATION:
+        PrintCL("Error: CL_INVALID_OPERATION\n");
+        break;
+    case CL_INVALID_GL_OBJECT:
+        PrintCL("Error: CL_INVALID_GL_OBJECT\n");
+        break;
+    case CL_INVALID_BUFFER_SIZE:
+        PrintCL("Error: CL_INVALID_BUFFER_SIZE\n");
+        break;
+    case CL_INVALID_MIP_LEVEL:
+        PrintCL("Error: CL_INVALID_MIP_LEVEL\n");
+        break;
+    case CL_INVALID_GLOBAL_WORK_SIZE:
+        PrintCL("Error: CL_INVALID_GLOBAL_WORK_SIZE\n");
+        break;
+    case CL_INVALID_PROPERTY:
+        PrintCL("Error: CL_INVALID_PROPERTY\n");
+        break;
+    case CL_INVALID_IMAGE_DESCRIPTOR:
+        PrintCL("Error: CL_INVALID_IMAGE_DESCRIPTOR\n");
+        break;
+    case CL_INVALID_COMPILER_OPTIONS:
+        PrintCL("Error: CL_INVALID_COMPILER_OPTIONS\n");
+        break;
+    case CL_INVALID_LINKER_OPTIONS:
+        PrintCL("Error: CL_INVALID_LINKER_OPTIONS\n");
+        break;
+    case CL_INVALID_DEVICE_PARTITION_COUNT:
+        PrintCL("Error: CL_INVALID_DEVICE_PARTITION_COUNT\n");
+        break;
+    case CL_INVALID_PIPE_SIZE:
+        PrintCL("Error: CL_INVALID_PIPE_SIZE\n");
+        break;
+    case CL_INVALID_DEVICE_QUEUE:
+        PrintCL("Error: CL_INVALID_DEVICE_QUEUE\n");
+        break;
     default:
         PrintCL("Error: UKNOWN 0x%X\n", error);
         break;
@@ -152,8 +265,7 @@ void PrintOCLError(cl_int error)
 
 //====================================== Framework Common Interfaces : OpenCL Compute  ==========================================
 
-void COpenCL::Init()
-{
+void COpenCL::Init() {
     query_timer::initialize();
 
     m_initDeviceOk              = false;
@@ -181,13 +293,6 @@ void COpenCL::Init()
     m_version                   = "";
     m_maxUCores                 = 12;
 
-#ifdef USE_CRC
-    m_sourcefile_CRC32          = 0;
-#else
-    m_sourcefile_CRC32          = 1;
-#endif
-
-
     //-------------------------
     // OpenCL compiler options
     //-------------------------
@@ -195,9 +300,9 @@ void COpenCL::Init()
     m_compile_options[0] = 0;
 
     // Make all warnings into errors, use -w to Inhitit all warning messages
-    strncat_s(m_compile_options, cmp_opt_size, "-Werror ", _TRUNCATE);
+    // strncat_s(m_compile_options, cmp_opt_size, "-Werror ", _TRUNCATE);
 
-    // single and double precision denormalized numbers may be flushed to zero 
+    // single and double precision denormalized numbers may be flushed to zero
     strncat_s(m_compile_options, cmp_opt_size, "-cl-denorms-are-zero ", _TRUNCATE);
 
     // Looks for addtional include file in this sub-folder
@@ -211,24 +316,21 @@ void COpenCL::Init()
     m_force_rebuild = false;
 }
 
-COpenCL::COpenCL(ComputeOptions CLOptions)
-{
+COpenCL::COpenCL(ComputeOptions CLOptions) {
     Init();
     m_force_rebuild = CLOptions.force_rebuild;
 }
 
-COpenCL::~COpenCL()
-{
+COpenCL::~COpenCL() {
 #ifdef ENABLE_SVM
     if (m_context && m_svmData)
-       clSVMFree(m_context, m_svmData);
+        clSVMFree(m_context, m_svmData);
 #endif
 
     if (m_context)
         clReleaseContext(m_context);
 
-    if (m_programRun)
-    {
+    if (m_programRun) {
         CleanUpKernelAndIOBuffers();
         CleanUpProgramEncoder();
     }
@@ -236,52 +338,46 @@ COpenCL::~COpenCL()
 
 }
 
-void COpenCL::SetComputeOptions(ComputeOptions *CLOptions)
-{
+void COpenCL::SetComputeOptions(ComputeOptions *CLOptions) {
     m_force_rebuild = CLOptions->force_rebuild;
 }
 
-COpenCL::COpenCL(void *kerneloptions)
-{
+COpenCL::COpenCL(void *kerneloptions) {
     m_kernel_options = (KernelOptions *)kerneloptions;
     Init();
 }
 
-void COpenCL::CleanUpProgramEncoder()
-{
-   // Encoder Program & Buffer
+void COpenCL::CleanUpProgramEncoder() {
+    // Encoder Program & Buffer
     if (p_program.buffer)
         delete[] p_program.buffer;
-   if (m_program_encoder)
-       clReleaseProgram(m_program_encoder);
+    if (m_program_encoder)
+        clReleaseProgram(m_program_encoder);
 }
 
-void COpenCL::CleanUpKernelAndIOBuffers()
-{
-   // Command Queues and Kernel functions
-   if (m_command_queue)
-       clReleaseCommandQueue(m_command_queue);
-   if (m_kernel)
-       clReleaseKernel(m_kernel);
+void COpenCL::CleanUpKernelAndIOBuffers() {
+    // Command Queues and Kernel functions
+    if (m_command_queue)
+        clReleaseCommandQueue(m_command_queue);
+    if (m_kernel)
+        clReleaseKernel(m_kernel);
 
-   // IO Buffers
-   if (m_Encoder_buffer)
-       clReleaseMemObject(m_Encoder_buffer);
-   if (m_Source_Info_buffer)
-       clReleaseMemObject(m_Source_Info_buffer);
-   if (m_device_destination_buffer)
-       clReleaseMemObject(m_device_destination_buffer);
-   if (m_device_source_buffer)
-       clReleaseMemObject(m_device_source_buffer);
+    // IO Buffers
+    if (m_Encoder_buffer)
+        clReleaseMemObject(m_Encoder_buffer);
+    if (m_Source_Info_buffer)
+        clReleaseMemObject(m_Source_Info_buffer);
+    if (m_device_destination_buffer)
+        clReleaseMemObject(m_device_destination_buffer);
+    if (m_device_source_buffer)
+        clReleaseMemObject(m_device_source_buffer);
 }
 
-bool COpenCL::GetPlatformID()
-{
+bool COpenCL::GetPlatformID() {
     //QUERY_PERFORMANCE("Get Platform ID ");
 
     m_result = clGetPlatformIDs(MAX_PLATFORMS, m_platform_ids, &m_num_platforms);
-    if (m_result != CL_SUCCESS)
-    {
+    if (m_result != CL_SUCCESS) {
         PrintCL("Failed to get the GPU platforms!\n");
         PrintOCLError(m_result);
         return false;
@@ -289,11 +385,10 @@ bool COpenCL::GetPlatformID()
     return true;
 }
 
-bool COpenCL::SearchForGPU()
-{
+bool COpenCL::SearchForGPU() {
     for (uint32_t i = 0; i < m_num_platforms; i++) {
 
-        // Get the device ids.            
+        // Get the device ids.
         m_result = clGetDeviceIDs(m_platform_ids[i], CL_DEVICE_TYPE_GPU, 1, &m_device_id, NULL);
         if (m_result == CL_SUCCESS) {
 
@@ -312,8 +407,7 @@ bool COpenCL::SearchForGPU()
     return true;
 }
 
-bool COpenCL::GetDeviceInfo()
-{
+bool COpenCL::GetDeviceInfo() {
     // Show the device info.
     char device_name[256] = { 0 };
     if (clGetDeviceInfo(m_device_id, CL_DEVICE_NAME, sizeof(device_name), device_name, NULL) == CL_SUCCESS)
@@ -345,8 +439,7 @@ bool COpenCL::GetDeviceInfo()
     // SVM Support
     cl_device_svm_capabilities caps;
     clGetDeviceInfo(m_device_id, CL_DEVICE_SVM_CAPABILITIES, sizeof(cl_device_svm_capabilities), &caps, NULL);
-    if (caps > 0)
-    {
+    if (caps > 0) {
         m_svmSupport = true;
         PrintCL("SVM Course Grain Buffer Support: %s\n", (caps & CL_DEVICE_SVM_COARSE_GRAIN_BUFFER) ? "Yes" : "No");
         PrintCL("SVM Fine Grain Buffer Support  : %s\n", (caps & CL_DEVICE_SVM_FINE_GRAIN_BUFFER) ? "Yes" : "No");
@@ -358,8 +451,7 @@ bool COpenCL::GetDeviceInfo()
     return true;
 }
 
-bool COpenCL::CreateContext()
-{
+bool COpenCL::CreateContext() {
     // Create a context.
     m_context = clCreateContext(NULL, 1, &m_device_id, NULL, NULL, &m_result);
     if (m_result != CL_SUCCESS) {
@@ -370,8 +462,7 @@ bool COpenCL::CreateContext()
     return true;
 }
 
-long COpenCL::file_size(FILE* p_file)
-{
+long COpenCL::file_size(FILE* p_file) {
     // Get the size of the program.
     if (fseek(p_file, 0, SEEK_END) != 0) return 0;
     long program_size = ftell(p_file);
@@ -380,8 +471,7 @@ long COpenCL::file_size(FILE* p_file)
     return program_size;
 }
 
-bool COpenCL::load_file()
-{
+bool COpenCL::load_file() {
 
 #ifdef _DEBUG
     PrintCL("Loading [%s]\n",m_source_file.c_str());
@@ -391,28 +481,41 @@ bool COpenCL::load_file()
 
     m_isBinary = false;
 
-    if (!m_force_rebuild)
-    {
+    if (!m_force_rebuild) {
         //===========================
         // Try loading the Binary file
         //===========================
         FILE* p_file_bin = NULL;
         std::string tmp = m_source_file;
-        fopen_result = fopen_s(&p_file_bin, tmp.append(".cmp").c_str(), "rb");
+        bool        rebuild    = false;
+
+#ifdef _WIN32
+        // Check build configuration of the shader, has it been modified since last use
+        rebuild = cmp_recompile_shader(m_source_file);
+#endif
+
+        if (!rebuild) {
+#ifdef _WIN32
+            fopen_result = fopen_s(&p_file_bin, tmp.append(".cmp").c_str(), "rb");
+            if (fopen_result != 0)
+                rebuild = true;
+#else
+            p_file_bin = fopen(tmp.append(".cmp").c_str(), "rb");
+            if (p_file_bin)
+                rebuild = true;
+#endif
+        }
 
         // Found a .cmp file use it
-        if (fopen_result == 0)
-        {
+        if (!rebuild) {
             OpenCLBinary_Header BinFile_Header;
-            if (fread(&BinFile_Header, sizeof(OpenCLBinary_Header), 1, p_file_bin) != 1)
-            {
+            if (fread(&BinFile_Header, sizeof(OpenCLBinary_Header), 1, p_file_bin) != 1) {
                 fclose(p_file_bin);
                 PrintCL("Failed to read \"%s.cmp\" file header!\n", m_source_file.c_str());
                 return false;
             }
 
-            if (BinFile_Header.version != 1)
-            {
+            if (BinFile_Header.version != 1) {
                 fclose(p_file_bin);
                 PrintCL("File \"%s.cmp\" is not compatible with current application!\n", m_source_file.c_str());
                 return false;
@@ -424,8 +527,7 @@ bool COpenCL::load_file()
                 m_isBinary = true;
                 m_program_size = file_size(p_file_bin) - sizeof(OpenCLBinary_Header);
 
-                if (m_program_size == 0)
-                {
+                if (m_program_size == 0) {
                     fclose(p_file_bin);
                     PrintCL("Failed to read \"%s.cmp\" file size!\n", m_source_file.c_str());
                     return false;
@@ -438,8 +540,7 @@ bool COpenCL::load_file()
                 fseek(p_file_bin, sizeof(OpenCLBinary_Header), SEEK_SET);
 
                 // Read the program in to memory.
-                if (fread(p_program.buffer, m_program_size, 1, p_file_bin) != 1)
-                {
+                if (fread(p_program.buffer, m_program_size, 1, p_file_bin) != 1) {
                     fclose(p_file_bin);
                     PrintCL("Failed to read \"%s.cmp\" in to memory!\n", m_source_file.c_str());
                     return false;
@@ -451,17 +552,15 @@ bool COpenCL::load_file()
         }
     } // !m_force_rebuild
 
-      //===========================
-      // Try loading the source file
-      //===========================
+    //===========================
+    // Try loading the source file
+    //===========================
     FILE* p_file_src = NULL;
     fopen_result = fopen_s(&p_file_src, m_source_file.c_str(), "rb");
-    if (fopen_result == 0)
-    {
+    if (fopen_result == 0) {
         m_program_size = file_size(p_file_src);
 
-        if (m_program_size == 0)
-        {
+        if (m_program_size == 0) {
             fclose(p_file_src);
             PrintCL("Failed to read \"%s\" file size!\n", m_source_file.c_str());
             return false;
@@ -473,8 +572,7 @@ bool COpenCL::load_file()
 
         // Read the program in to memory.
         size_t read_size = fread(p_program.buffer, m_program_size, 1, p_file_src);
-        if (read_size != 1)
-        {
+        if (read_size != 1) {
             fclose(p_file_src);
             PrintCL("Failed to read \"%s\" in to memory!\n", m_source_file.c_str());
             return false;
@@ -491,8 +589,7 @@ bool COpenCL::load_file()
     return false;
 }
 
-bool COpenCL::Create_Program_File()
-{
+bool COpenCL::Create_Program_File() {
     //------------------------------
     // Load the Source or Binary file
     //------------------------------
@@ -500,8 +597,7 @@ bool COpenCL::Create_Program_File()
 
     cl_int      result;
 
-    if (!m_isBinary)
-    {
+    if (!m_isBinary) {
         // Create the program.
         m_program_encoder = clCreateProgramWithSource(m_context, 1, const_cast< char const** >(&p_program.buffer), &m_program_size, &result);
         if (result != CL_SUCCESS) {
@@ -516,8 +612,7 @@ bool COpenCL::Create_Program_File()
 
         // Build the program.
         result = clBuildProgram(m_program_encoder, 1, &m_device_id, m_compile_options, NULL, NULL);
-        if (result != CL_SUCCESS) 
-        {
+        if (result != CL_SUCCESS) {
             char message[LOG_BUFFER_SIZE];
             result = clGetProgramBuildInfo(m_program_encoder, m_device_id, CL_PROGRAM_BUILD_LOG, LOG_BUFFER_SIZE, message, NULL);
             if (result != CL_SUCCESS) message[0] = char(0);
@@ -545,8 +640,7 @@ bool COpenCL::Create_Program_File()
         fclose(p_file);
 
     } // not precompiled code
-    else
-    {
+    else {
         // Create the program.
         m_program_encoder = clCreateProgramWithBinary(m_context, 1, &m_device_id, &m_program_size, (const unsigned char **)&p_program.ubuffer, NULL, &result);
 
@@ -579,28 +673,23 @@ bool COpenCL::Create_Program_File()
     return true;
 }
 
-bool COpenCL::CreateProgramEncoder()
-{
+bool COpenCL::CreateProgramEncoder() {
 //    QUERY_PERFORMANCE("Create Program  ");
     // Create the program.
-    if (!Create_Program_File())
-    {
+    if (!Create_Program_File()) {
         return false;
     }
     return true;
 }
 
-bool COpenCL::CreateIOBuffers()
-{
+bool COpenCL::CreateIOBuffers() {
 #ifdef  ENABLE_SVM
     // AllocateBuffers()
-    // SVM 
-    if (m_svmSupport && is64Bit() && (m_kernel_options->size > 0))
-    {
+    // SVM
+    if (m_svmSupport && is64Bit() && (m_kernel_options->size > 0)) {
         // initialize any device/SVM memory here.
         m_svmData = clSVMAlloc(m_context, CL_MEM_READ_WRITE, m_kernel_options->size, NULL);
-        if (m_svmData == NULL)
-        {
+        if (m_svmData == NULL) {
             PrintCL("Failed to allocate the Encode buffer on the device!\n");
             return false;
         }
@@ -626,7 +715,7 @@ bool COpenCL::CreateIOBuffers()
         return false;
     }
 
-    // Allocate the destination buffer in device memory.    
+    // Allocate the destination buffer in device memory.
     m_device_destination_buffer = clCreateBuffer(m_context, CL_MEM_WRITE_ONLY, m_destination_size, NULL, &m_result);
     if (m_result != CL_SUCCESS) {
         PrintCL("Failed to allocate the destination buffer on the device!\n");
@@ -636,10 +725,9 @@ bool COpenCL::CreateIOBuffers()
     return true;
 }
 
-//#include "BCn_Common_Kernel.h" use this for debugging data to kernel when using BC15
+//#include "bcn_common_kernel.h" use this for debugging data to kernel when using BC15
 
-bool  COpenCL::RunKernel()
-{
+bool  COpenCL::RunKernel() {
 //    QUERY_PERFORMANCE("Run Kernel      ");
 
     // Get a handle to the kernel.
@@ -688,19 +776,17 @@ bool  COpenCL::RunKernel()
     }
 
 #ifdef ENABLE_SVM   // Don not enable unless CMP_GPUEncoder parameters are updated 
-    if (m_svmSupport)
-    {
-        if (m_svmData)
-        {
+    if (m_svmSupport) {
+        if (m_svmData) {
             /* reserve svm space for CPU update */
             m_result = clEnqueueSVMMap(m_command_queue,
-                CL_TRUE, //blocking call
-                CL_MAP_WRITE_INVALIDATE_REGION,
-                m_svmData,
-                m_kernel_options->size,
-                0,
-                NULL,
-                NULL);
+                                       CL_TRUE, //blocking call
+                                       CL_MAP_WRITE_INVALIDATE_REGION,
+                                       m_svmData,
+                                       m_kernel_options->size,
+                                       0,
+                                       NULL,
+                                       NULL);
 
             m_kernel_options->dataSVM = m_svmData;
 
@@ -712,10 +798,10 @@ bool  COpenCL::RunKernel()
             }
 
             m_result = clEnqueueSVMUnmap(m_command_queue,
-                m_svmData,
-                0,
-                NULL,
-                NULL);
+                                         m_svmData,
+                                         0,
+                                         NULL,
+                                         NULL);
 
             // Set appropriate arguments to the kernel
             m_result = clSetKernelArgSVMPointer(m_kernel, KERNEL_ARG_ENCODE, (void *)(m_svmData));
@@ -725,15 +811,13 @@ bool  COpenCL::RunKernel()
                 PrintOCLError(m_result);
                 return false;
             }
-        } // Encode ptr 
-        else
-        {
+        } // Encode ptr
+        else {
             PrintCL("Failed to set the SVM Encode kernel argument, invalid pointer!\n");
             PrintOCLError(m_result);
             return false;
         }
-    }
-    else
+    } else
 #endif
     {
         m_Encoder_buffer = clCreateBuffer(m_context, CL_MEM_READ_WRITE, m_kernel_options->size, NULL, &m_result);
@@ -766,22 +850,16 @@ bool  COpenCL::RunKernel()
     size_t global_work_size[] = { 8, 8 };
 
     // Check for smal images < 64 width x 64 height in pixels
-    if (m_width_in_blocks >= 8)
-    {
+    if (m_width_in_blocks >= 8) {
         global_work_size[0] = ((m_width_in_blocks + local_work_size[0] - 1) / local_work_size[0]) * local_work_size[0];
-    }
-    else
-    {
+    } else {
         local_work_size[0] = 1;
         global_work_size[0] = m_width_in_blocks;
     }
 
-    if (m_height_in_blocks >= 8)
-    {
+    if (m_height_in_blocks >= 8) {
         global_work_size[1] = ((m_height_in_blocks + local_work_size[1] - 1) / local_work_size[1]) * local_work_size[1];
-    }
-    else
-    {
+    } else {
         local_work_size[1] = 1;
         global_work_size[1] = m_height_in_blocks;
     }
@@ -795,18 +873,18 @@ bool  COpenCL::RunKernel()
 #endif
 
     m_result = clEnqueueNDRangeKernel(m_command_queue,
-        m_kernel,
-        2,
-        NULL,
-        global_work_size,
-        local_work_size,
-        0, NULL, 
+                                      m_kernel,
+                                      2,
+                                      NULL,
+                                      global_work_size,
+                                      local_work_size,
+                                      0, NULL,
 #ifdef USE_CPU_PERFORMANCE_COUNTERS
-        NULL
+                                      NULL
 #else
-       m_getPerfStats? &cl_perf_event:NULL
+                                      m_getPerfStats? &cl_perf_event:NULL
 #endif
-        );
+                                     );
 
     if (m_result != CL_SUCCESS) {
 
@@ -820,20 +898,19 @@ bool  COpenCL::RunKernel()
         m_result = clFinish(m_command_queue);
 
 #ifdef USE_CPU_PERFORMANCE_COUNTERS
-     cputimer.Stop(0);
-     m_computeShaderElapsedMS = cputimer.GetMS(0);
+    cputimer.Stop(0);
+    m_computeShaderElapsedMS = cputimer.GetMS(0);
 #endif
 
     // Check if performance event has been set and valid
     if (
-        m_getPerfStats && 
+        m_getPerfStats &&
 #ifdef USE_CPU_PERFORMANCE_COUNTERS
         (m_computeShaderElapsedMS > 0) &&
 #else
-        cl_perf_event && 
+        cl_perf_event &&
 #endif
-        (m_result == CL_SUCCESS))
-    {
+        (m_result == CL_SUCCESS)) {
 #ifdef USE_CPU_PERFORMANCE_COUNTERS
 #else
         // Get the event data
@@ -843,19 +920,18 @@ bool  COpenCL::RunKernel()
 
         m_result = clGetEventProfilingInfo(cl_perf_event, CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &start, NULL);
 
-        if (m_result == CL_SUCCESS) 
+        if (m_result == CL_SUCCESS)
             m_result = clGetEventProfilingInfo(cl_perf_event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &end, NULL);
-        
+
         // Get the number of nanoseconds per count
         cl_ulong resolution;
-        if (m_result == CL_SUCCESS) 
-               m_result = clGetDeviceInfo(m_device_id, CL_DEVICE_PROFILING_TIMER_RESOLUTION, sizeof(cl_ulong), &resolution, NULL);
+        if (m_result == CL_SUCCESS)
+            m_result = clGetDeviceInfo(m_device_id, CL_DEVICE_PROFILING_TIMER_RESOLUTION, sizeof(cl_ulong), &resolution, NULL);
 
         if (m_result == CL_SUCCESS)
             m_result = clReleaseEvent(cl_perf_event);
 
-        if (m_result != CL_SUCCESS)
-        {
+        if (m_result != CL_SUCCESS) {
             PrintCL("Failed clReleaseEvent!\n");
             PrintOCLError(m_result);
             return false;
@@ -864,29 +940,26 @@ bool  COpenCL::RunKernel()
         // counters are in nano second incriments 1e-9f Convert
         m_num_blocks    = m_height_in_blocks*m_width_in_blocks;
         if (m_num_blocks == 0) m_num_blocks = 1;
-        float nanoSeconds = end-start;
+        float nanoSeconds = (float)(end-start);
         // Convert nanosec to ms divide by 1e6f
         m_computeShaderElapsedMS = nanoSeconds/1e6f;
-         // time to process a single block (4x4) which is 16 texels
+        // time to process a single block (4x4) which is 16 texels
         m_computeShaderElapsedMS = m_computeShaderElapsedMS/(float)m_num_blocks;
 #endif
-        if (m_computeShaderElapsedMS > 0)
-        {
-             float ElapsedSeconds      = m_computeShaderElapsedMS/1E3f;
-             float ElapsedSecondsPerTx = ElapsedSeconds/16;
-             float TxPerSec            = 1/ElapsedSecondsPerTx;
-             // time to process a 1M texels in a second
-             m_CmpMTxPerSec            = TxPerSec/1E6f;
-        }
-        else
+        if (m_computeShaderElapsedMS > 0) {
+            float ElapsedSeconds      = m_computeShaderElapsedMS/1E3f;
+            float ElapsedSecondsPerTx = ElapsedSeconds/16;
+            float TxPerSec            = 1/ElapsedSecondsPerTx;
+            // time to process a 1M texels in a second
+            m_CmpMTxPerSec            = TxPerSec/1E6f;
+        } else
             m_CmpMTxPerSec = 0;
     }
 
     return true;
 }
 
-bool  COpenCL::GetResults()
-{
+bool  COpenCL::GetResults() {
 //    QUERY_PERFORMANCE("Get Results     ");
 
     // Copy the results from device to host memory.
@@ -901,48 +974,39 @@ bool  COpenCL::GetResults()
     return true;
 }
 
-float COpenCL::GetProcessElapsedTimeMS()
-{
+float COpenCL::GetProcessElapsedTimeMS() {
     return m_computeShaderElapsedMS;
 }
 
-float COpenCL::GetMTxPerSec()
-{
+float COpenCL::GetMTxPerSec() {
     return m_CmpMTxPerSec;
 }
 
-int   COpenCL::GetBlockSize() 
-{ 
+int   COpenCL::GetBlockSize() {
     return m_num_blocks;
 }
 
-int   COpenCL::GetMaxUCores() 
-{ 
+int   COpenCL::GetMaxUCores() {
     return m_maxUCores;
 }
 
-const char* COpenCL::GetDeviceName()
-{
+const char* COpenCL::GetDeviceName() {
     return m_deviceName.c_str();
 }
 
-const char* COpenCL::GetVersion()
-{
+const char* COpenCL::GetVersion() {
     return m_version.c_str();
 }
 
-CMP_ERROR COpenCL::Compress( KernelOptions *KernelOptions, MipSet  &srcTexture, MipSet  &destTexture,CMP_Feedback_Proc pFeedback = NULL)
-{
+CMP_ERROR COpenCL::Compress( KernelOptions *KernelOptions, MipSet  &srcTexture, MipSet  &destTexture,CMP_Feedback_Proc pFeedback = NULL) {
     bool newFormat = false;
-    if (m_codecFormat != destTexture.m_format)
-    {
+    if (m_codecFormat != destTexture.m_format) {
         m_codecFormat = destTexture.m_format;
         newFormat = true;
     }
 
-    if (m_codecFormat == CMP_FORMAT_Unknown)
-    {
-        // dont know how to progress this destination 
+    if (m_codecFormat == CMP_FORMAT_Unknown) {
+        // dont know how to progress this destination
         return (CMP_ERR_GENERIC);
     }
 
@@ -964,15 +1028,13 @@ CMP_ERROR COpenCL::Compress( KernelOptions *KernelOptions, MipSet  &srcTexture, 
 
     if (destTexture.m_nBlockWidth > 0)
         m_width_in_blocks = (cl_uint)srcTexture.dwWidth / destTexture.m_nBlockWidth;
-    else
-    {
+    else {
         return CMP_ERR_GENERIC;
     }
 
     if (destTexture.m_nBlockHeight > 0)
         m_height_in_blocks = (cl_uint)srcTexture.dwHeight / destTexture.m_nBlockHeight;
-    else
-    {
+    else {
         return CMP_ERR_GENERIC;
     }
 
@@ -987,31 +1049,27 @@ CMP_ERROR COpenCL::Compress( KernelOptions *KernelOptions, MipSet  &srcTexture, 
     bool ok = true;
 
     // check for first time use on host device
-    if (!m_initDeviceOk)
-    {
+    if (!m_initDeviceOk) {
         if (        GetPlatformID() == false)    ok = false;
         if (ok &&   (SearchForGPU() == false))   ok = false;
         if (ok && (GetDeviceInfo()  == false))   ok = false;
         if (ok &&  (CreateContext() == false))   ok = false;
         m_initDeviceOk = ok;
     }
-    if (m_programRun)
-    {
+    if (m_programRun) {
         CleanUpKernelAndIOBuffers();
         if (newFormat)
             CleanUpProgramEncoder();
         m_programRun = false;
     }
-    if (newFormat)
-    {
+    if (newFormat) {
         if (ok && (CreateProgramEncoder()   == false)) ok = false;
     }
     if (ok && (CreateIOBuffers() == false)) ok = false;
     if (ok && (RunKernel()       == false)) ok = false;
     if (ok && (GetResults()      == false)) ok = false;
 
-    if (ok) 
-    {
+    if (ok) {
         m_programRun = true;
         return CMP_OK;
     }

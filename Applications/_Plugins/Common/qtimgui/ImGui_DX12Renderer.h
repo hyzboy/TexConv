@@ -8,10 +8,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -22,13 +22,12 @@
 //
 #pragma once
 
-#include "CommandListRingDX12.h"
-#include "DynamicBufferRingDX12.h"
-#include "ResourceViewHeapsDX12.h"
-#include "UploadHeapDX12.h"
+#include "commandlistringdx12.h"
+#include "dynamicbufferringdx12.h"
+#include "resourceviewheapsdx12.h"
+#include "uploadheapdx12.h"
 
-#include "Error.h"
-#include "Defines.h"
+#include "defines.h"
 
 #include <imgui/imgui.h>
 
@@ -52,9 +51,8 @@ class QWheelEvent;
 class QKeyEvent;
 
 
-class QImGUI_WindowWrapper_DX12
-{
-public:
+class QImGUI_WindowWrapper_DX12 {
+  public:
     virtual ~QImGUI_WindowWrapper_DX12() {}
     virtual void installEventFilter(QObject *object) = 0;
     virtual QSize size() const = 0;
@@ -63,10 +61,9 @@ public:
     virtual QPoint mapFromGlobal(const QPoint &p) const = 0;
 };
 
-class ImGuiRenderer_DX12 : public QObject, QOpenGLExtraFunctions
-{
+class ImGuiRenderer_DX12 : public QObject, QOpenGLExtraFunctions {
     Q_OBJECT
-public:
+  public:
     ImGuiRenderer_DX12();
     ~ImGuiRenderer_DX12();
 
@@ -84,7 +81,7 @@ public:
     void newFrame();
     bool eventFilter(QObject *watched, QEvent *event);
 
-private:
+  private:
 
     void OnCreate(ID3D12Device* pDevice, UploadHeapDX12 *pUploadHeap, ResourceViewHeapsDX12 *pHeaps, DynamicBufferRingDX12 *pConstantBufferRing, UINT node, UINT nodemask);
 
@@ -102,7 +99,7 @@ private:
     int          g_AttribLocationPosition = 0, g_AttribLocationUV = 0, g_AttribLocationColor = 0;
     unsigned int g_VboHandle = 0, g_VaoHandle = 0, g_ElementsHandle = 0;
 
-    // DX12 
+    // DX12
     ID3D12Device              *m_pDevice;
     ResourceViewHeapsDX12     *m_pResourceViewHeaps;
     DynamicBufferRingDX12     *m_pConstBuf;

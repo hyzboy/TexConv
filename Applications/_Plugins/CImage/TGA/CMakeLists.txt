@@ -1,24 +1,27 @@
 cmake_minimum_required(VERSION 3.10)
 
-add_library(TGA STATIC "")
+add_library(Image_TGA STATIC "")
 
-target_sources(TGA
-               PRIVATE
-               ../../Common/TC_PluginAPI.h
-               ../../Common/TC_PluginInternal.h
-               ../../Common/TC_PluginInternal.cpp
-               ../../Common/UtilFuncs.h
-               ../../Common/UtilFuncs.cpp
-               ./TGA.cpp
-               ./TGA.h
-               )
+target_sources(Image_TGA
+    PRIVATE
+    ${PROJECT_SOURCE_DIR}/applications/_plugins/common/tc_pluginapi.h
+    ${PROJECT_SOURCE_DIR}/applications/_plugins/common/tc_plugininternal.h
+    ${PROJECT_SOURCE_DIR}/applications/_plugins/common/tc_plugininternal.cpp
+    ${PROJECT_SOURCE_DIR}/applications/_plugins/common/utilfuncs.h
+    ${PROJECT_SOURCE_DIR}/applications/_plugins/common/utilfuncs.cpp
+    ./tga.cpp
+    ./tga.h
+    )
 
-target_include_directories(TGA
-                           PRIVATE
-                           ../../../../CMP_CompressonatorLib
-                           ../../../../CMP_Framework/Common/half
-                           ../../Common/
-                           )
+target_include_directories(Image_TGA
+     PRIVATE
+     ${PROJECT_SOURCE_DIR}/cmp_compressonatorlib
+     ${PROJECT_SOURCE_DIR}/cmp_framework/common/half
+     ${PROJECT_SOURCE_DIR}/applications/_plugins/common
+     )
+
 if (UNIX)
-target_compile_definitions(TGA PRIVATE _LINUX)
+    target_compile_definitions(Image_TGA PRIVATE _LINUX)
 endif()
+
+set_target_properties(Image_TGA PROPERTIES FOLDER "Plugin_Static/ImageIO")

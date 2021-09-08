@@ -43,7 +43,7 @@ MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 extern "C" {
 #endif
 
-#if KTX_USE_GETPROC && defined(_WIN32)
+#if KTX_USE_GETPROC
   // Not defined in glew.h.
   typedef void (GL_APIENTRY* PFNGLTEXIMAGE1DPROC) (
                     GLenum target, GLint level, GLint internalformat,
@@ -65,7 +65,7 @@ extern PFNGLGETSTRINGIPROC pfGlGetStringi;
     PFNGLCOMPRESSEDTEXIMAGE1DPROC pfGlCompressedTexImage1D; \
     PFNGLCOMPRESSEDTEXIMAGE3DPROC pfGlCompressedTexImage3D; \
     PFNGLGENERATEMIPMAPPROC pfGlGenerateMipmap; \
-	PFNGLGETSTRINGIPROC pfGlGetStringi;
+    PFNGLGETSTRINGIPROC pfGlGetStringi;
 
 #define INITIALIZE_GL_FUNCPTRS \
     pfGlTexImage1D = glTexImage1D; \
@@ -73,7 +73,7 @@ extern PFNGLGETSTRINGIPROC pfGlGetStringi;
     pfGlCompressedTexImage1D = glCompressedTexImage1D; \
     pfGlCompressedTexImage3D = glCompressedTexImage3D; \
     pfGlGenerateMipmap = glGenerateMipmap; \
-	pfGlGetStringi = glGetStringi;
+    pfGlGetStringi = glGetStringi;
     
 #ifdef __cplusplus
 }

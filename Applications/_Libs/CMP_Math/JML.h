@@ -7,10 +7,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -24,17 +24,17 @@
 #ifndef _JML_H_
 #define _JML_H_
 
-#ifdef _LINUX
-    #define ALIGN16
+#ifdef __linux__
+#define ALIGN16
 #else
-    // helpful alias for 16-byte alignment
-    #define ALIGN16 __declspec(align(16))
+// helpful alias for 16-byte alignment
+#define ALIGN16 __declspec(align(16))
 #endif
 
-#include "JMLVec2.h"
-#include "JMLVec3.h"
-#include "JMLMatrix.h"
-#include "JMLFuncs.h"
+#include "jmlvec2.h"
+#include "jmlvec3.h"
+#include "jmlmatrix.h"
+#include "jmlfuncs.h"
 
 
 

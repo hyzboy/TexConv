@@ -25,7 +25,7 @@
 #ifndef _BC6H_DEFINITIONS_H_
 #define _BC6H_DEFINITIONS_H_
 
-#include "HDR_Encode.h"
+#include "hdr_encode.h"
 
 #include <cstdint>
 #include <cstdlib>
@@ -76,35 +76,30 @@ typedef std::uint32_t DWORD;
 #define BC6H_NREGIONS                   2                 // shapes for two regions
 
 typedef unsigned int uint;
-typedef enum _BC6H_COMPONENT
-{
+typedef enum _BC6H_COMPONENT {
     BC6H_COMP_RED   = 0,
     BC6H_COMP_GREEN = 1,
     BC6H_COMP_BLUE =  2,
     BC6H_COMP_ALPHA = 3
 } BC6H_COMPONENT;
 
-enum
-{
+enum {
     BC6_ONE = 0,
     BC6_TWO
 };
 
-enum
-{
+enum {
     C_RED = 0,
     C_GREEN,
     C_BLUE
 };
 
-enum
-{
+enum {
     UNSIGNED_F16 = 1,
     SIGNED_F16     = 2
 };
 
-enum EField
-{
+enum EField {
     NA, // N/A
     M,  // Mode
     D,  // Shape
@@ -122,31 +117,26 @@ enum EField
     BZ,
 };
 
-struct EndPointPair
-{
+struct EndPointPair {
     int A;
     int B;
 };
 
 
-struct BC6H_Vec3
-{
+struct BC6H_Vec3 {
     int x,y,z;
 };
 
-struct BC6H_Vec3f
-{
+struct BC6H_Vec3f {
     float x, y, z;
 };
 
-struct UShortVec3
-{
+struct UShortVec3 {
     unsigned short x,y,z;
 };
 
 
-struct ModePartitions
-{
+struct ModePartitions {
     int nbits;              // Number of bits
     int prec[3];            // precission of the Qunatized RGB endpoints
     int transformed;        // if 0, deltas are unsigned and no transform; otherwise, signed and transformed
@@ -156,8 +146,7 @@ struct ModePartitions
     int lowestPrec;         // Step size of each precesion incriment
 };
 
-static ModePartitions ModePartition[MAX_BC6H_MODES +1] =
-{
+static ModePartitions ModePartition[MAX_BC6H_MODES +1] = {
     0,    0,0,0,        0,    0,    0,    0,     0,   // Mode = Invaild
 
     // Two region Partition
@@ -193,32 +182,30 @@ static ModePartitions ModePartition[MAX_BC6H_MODES +1] =
 //
 // The Region2FixUps are for our index[subset = 2][16][3] locations
 // indexed by shape region 2
-static const int g_Region2FixUp[32] =
-{
-7 , 3 , 11, 7,
-3 , 11, 9 , 5,
-2 , 12, 7 , 3,
-11, 7 , 11, 3,
-7 , 1 , 0 , 1,
-0 , 1 , 0 , 7,
-0 , 1 , 1 , 0,
-4 , 4 , 1 , 0,
+static const int g_Region2FixUp[32] = {
+    7, 3, 11, 7,
+    3, 11, 9, 5,
+    2, 12, 7, 3,
+    11, 7, 11, 3,
+    7, 1, 0, 1,
+    0, 1, 0, 7,
+    0, 1, 1, 0,
+    4, 4, 1, 0,
 };
 
 // Indexed by all shape regions
 // Partition Set Fixups for region 1 note region 0 is always at 0
 // that means normally we use 3 bits to define an index value
 // if its at the fix up location then its one bit less
-static const int g_indexfixups[32] =
-{
-15,15,15,15,
-15,15,15,15,
-15,15,15,15,
-15,15,15,15,
-15, 2, 8, 2,
-2, 8, 8,15,
-2, 8, 2, 2,
-8, 8, 2, 2,
+static const int g_indexfixups[32] = {
+    15,15,15,15,
+    15,15,15,15,
+    15,15,15,15,
+    15,15,15,15,
+    15, 2, 8, 2,
+    2, 8, 8,15,
+    2, 8, 2, 2,
+    8, 8, 2, 2,
 };
 
 
@@ -245,14 +232,12 @@ Mode    Partition Indices    Partition    Color Endpoints                       
 14       63 bits                0 bits        60 bits (16.4, 16.4, 16.4)         5 bits (01111)        15
 ============================================================================================================*/
 
-struct END_Points
-{
+struct END_Points {
     int A[NCHANNELS];
     int B[NCHANNELS];
 };
 
-struct AMD_BC6H_Format
-{
+struct AMD_BC6H_Format {
     unsigned short region;             // one or two
     unsigned short m_mode;             // m
     int d_shape_index;                 // d
@@ -269,16 +254,15 @@ struct AMD_BC6H_Format
     int by;                            // endpt[1].A[2]
     int bz;                            // endpt[1].B[2]
 
-    union
-    {
+    union {
         std::uint8_t indices[4][4];            // Indices data after header block
         std::uint8_t indices16[16];
     };
 
     float         din[MAX_SUBSET_SIZE][MAX_DIMENSION_BIG];   // Original data input
     END_Points    EC[MAXENDPOINTS];    // compressed endpoints expressed as endpt[0].A[] and endpt[1].B[]
-    END_Points    E[MAXENDPOINTS];     // decompressed endpoints 
-    bool          issigned;            // Format is 16 bit signed floating point 
+    END_Points    E[MAXENDPOINTS];     // decompressed endpoints
+    bool          issigned;            // Format is 16 bit signed floating point
     bool          istransformed;       // region two: all modes = true except mode=10
     short         wBits;               // number of bits for the root endpoint
     short         tBits[NCHANNELS];    // number of bits used for the transformed endpoints

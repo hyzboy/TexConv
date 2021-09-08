@@ -9,10 +9,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -29,11 +29,10 @@
 #ifndef _CODEC_DXT1_H_INCLUDED_
 #define _CODEC_DXT1_H_INCLUDED_
 
-#include "Codec_DXTC.h"
+#include "codec_dxtc.h"
 
-class CCodec_DXT1 : public CCodec_DXTC  
-{
-public:
+class CCodec_DXT1 : public CCodec_DXTC {
+  public:
     CCodec_DXT1();
     virtual ~CCodec_DXT1();
 
@@ -50,7 +49,7 @@ public:
         CMP_BYTE nBlockWidth, CMP_BYTE nBlockHeight, CMP_BYTE nBlockDepth,
         CMP_DWORD dwWidth, CMP_DWORD dwHeight, CMP_DWORD dwPitch = 0, CMP_BYTE* pData = 0,CMP_DWORD dwDataSize = 0) const;
 
-protected:
+  protected:
     bool m_bDXT1UseAlpha;
     CMP_BYTE m_nAlphaThreshold;
 };

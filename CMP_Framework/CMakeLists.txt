@@ -1,91 +1,132 @@
 cmake_minimum_required(VERSION 3.10)
 
 add_library(CMP_Framework STATIC "")
-file(GLOB_RECURSE half
-     "Common/half/*.h"
-     "Common/half/*.cpp"
-     )
-file(GLOB_RECURSE DDS
-     "../Applications/_Plugins/CImage/DDS/*h"
-     "../Applications/_Plugins/CImage/DDS/*.cpp"
-     )
-file(GLOB_RECURSE HPC
-     "../Applications/_Plugins/CCMP_Encode/HPC/*h"
-     "../Applications/_Plugins/CCMP_Encode/HPC/*.cpp"
-     )
+
+
+if(CMP_HOST_WINDOWS)
+    target_compile_definitions(CMP_Framework PUBLIC
+        -DCMP_USE_XMMINTRIN
+        )
+endif()
+
+file(GLOB_RECURSE HALF_SRC
+        ${PROJECT_SOURCE_DIR}/cmp_framework/common/half/*.h
+        ${PROJECT_SOURCE_DIR}/cmp_framework/common/half/*.cpp
+        )
+file(GLOB_RECURSE DDS_SRC
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/cimage/dds/*.h
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/cimage/dds/*.cpp
+        )
+file(GLOB_RECURSE HPC_SRC
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/ccmp_encode/hpc/*.h
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/ccmp_encode/hpc/*.cpp
+        )
+file(GLOB_RECURSE CORE_SHADERS_SRC
+        ${PROJECT_SOURCE_DIR}/cmp_core/shaders/*.h
+        ${PROJECT_SOURCE_DIR}/cmp_core/shaders/*.cpp
+        )
+file(GLOB_RECURSE CORE_SRC
+        ${PROJECT_SOURCE_DIR}/cmp_core/source/*.h
+        ${PROJECT_SOURCE_DIR}/cmp_core/source/*.cpp
+        )
+file(GLOB_RECURSE CMP_FRAMEWORK_SRC
+        ${PROJECT_SOURCE_DIR}/cmp_framework/*.h
+        ${PROJECT_SOURCE_DIR}/cmp_framework/*.cpp
+        )
+file(GLOB_RECURSE CMP_FRAMEWORK_COMMON_SRC
+        ${PROJECT_SOURCE_DIR}/cmp_framework/common/*.h
+        ${PROJECT_SOURCE_DIR}/cmp_framework/common/*.cpp
+        )
 
 target_sources(CMP_Framework
-               PRIVATE
-               ../CMP_Core/shaders/BC1_Encode_kernel.h
-               ../CMP_Core/shaders/BC1_Encode_kernel.cpp
-               ../CMP_Core/shaders/BC2_Encode_kernel.h
-               ../CMP_Core/shaders/BC2_Encode_kernel.cpp
-               ../CMP_Core/shaders/BC3_Encode_kernel.h
-               ../CMP_Core/shaders/BC3_Encode_kernel.cpp
-               ../CMP_Core/shaders/BC4_Encode_kernel.h
-               ../CMP_Core/shaders/BC4_Encode_kernel.cpp
-               ../CMP_Core/shaders/BC5_Encode_kernel.h
-               ../CMP_Core/shaders/BC5_Encode_kernel.cpp
-               ../CMP_Core/shaders/BC6_Encode_kernel.h
-               ../CMP_Core/shaders/BC6_Encode_kernel.cpp
-               ../CMP_Core/shaders/BC7_Encode_Kernel.h
-               ../CMP_Core/shaders/BC7_Encode_Kernel.cpp
-               ../CMP_Core/shaders/BCn_Common_Kernel.h
-               ../CMP_Core/source/CMP_Core.h
-               ../Applications/_Libs/CMP_Math/cmp_math_common.h
-               ../Applications/_Libs/CMP_Math/cmp_math_common.cpp
-               ../Applications/_Libs/CMP_Math/cmp_math_cpuid.h
-               ../Applications/_Libs/CMP_Math/cmp_math_cpuid.cpp
-               ../Applications/_Libs/CMP_Math/kernel_math.cpp
-               ../Applications/_Plugins/Common/ATIFormats.cpp
-               ../Applications/_Plugins/Common/ATIFormats.h
-               ../Applications/_Plugins/Common/PluginBase.h
-               ../Applications/_Plugins/Common/PluginInterface.h
-               ../Applications/_Plugins/Common/PluginManager.h
-               ../Applications/_Plugins/Common/PluginManager.cpp
-               ../Applications/_Plugins/Common/query_timer.h
-               ../Applications/_Plugins/Common/query_timer.cpp
-               ../Applications/_Plugins/Common/stb_image.h
-               ../Applications/_Plugins/Common/TC_PluginAPI.h
-               ../Applications/_Plugins/Common/TC_PluginInternal.h
-               ../Applications/_Plugins/Common/TC_PluginInternal.cpp
-               ../Applications/_Plugins/Common/UtilFuncs.h
-               ../Applications/_Plugins/Common/UtilFuncs.cpp
-               ../Applications/_Plugins/CCMP_SDK/BC1/BC1.h
-               ../Applications/_Plugins/CCMP_SDK/BC1/BC1.cpp
-               ../Applications/_Plugins/CCMP_SDK/BC2/BC2.h
-               ../Applications/_Plugins/CCMP_SDK/BC2/BC2.cpp
-               ../Applications/_Plugins/CCMP_SDK/BC3/BC3.h
-               ../Applications/_Plugins/CCMP_SDK/BC3/BC3.cpp
-               ../Applications/_Plugins/CCMP_SDK/BC4/BC4.h
-               ../Applications/_Plugins/CCMP_SDK/BC4/BC4.cpp
-               ../Applications/_Plugins/CCMP_SDK/BC5/BC5.h
-               ../Applications/_Plugins/CCMP_SDK/BC5/BC5.cpp
-               ../Applications/_Plugins/CCMP_SDK/BC6/BC6H.h
-               ../Applications/_Plugins/CCMP_SDK/BC6/BC6H.cpp
-               ../Applications/_Plugins/CCMP_SDK/BC7/BC7.h
-               ../Applications/_Plugins/CCMP_SDK/BC7/BC7.cpp
-               Common/CMP_BoxFilter.cpp
-               Common/CMP_BoxFilter.h
-               Common/CMP_MIPS.cpp
-               Common/CMP_MIPS.h
-               Compute_Base.cpp
-               Compute_Base.h
-               ${half}
-               ${DDS}
-               ${HPC}
-               )
-target_include_directories(CMP_Framework
-                           PRIVATE
-                           ../CMP_Core/source
-                           ../CMP_Core/shaders
-                           ../CMP_CompressonatorLib
-                           Common/half/
-                           ../Applications/_Plugins/Common/
-                           ../Applications/_Libs/CMP_Math/
-                           ../Applications/_Libs/GPU_Decode
-                           ./
-                          )
-if (UNIX)
-target_compile_definitions(CMP_Framework PRIVATE _LINUX)
+        PRIVATE
+        ${HALF_SRC}
+        ${DDS_SRC}
+        ${HPC_SRC}
+        ${CORE_SHADERS_SRC}
+        ${CORE_SRC}
+        ${CMP_FRAMEWORK_SRC}
+        ${CMP_FRAMEWORK_COMMON_SRC}
+        
+        # CMP_Math
+        ${PROJECT_SOURCE_DIR}/applications/_libs/cmp_math/cmp_math_common.h
+        ${PROJECT_SOURCE_DIR}/applications/_libs/cmp_math/cmp_math_common.cpp
+        ${PROJECT_SOURCE_DIR}/applications/_libs/cmp_math/cmp_math_cpuid.h
+        ${PROJECT_SOURCE_DIR}/applications/_libs/cmp_math/cmp_math_cpuid.cpp
+        
+        # CMP_COMMON
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/common/atiformats.h
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/common/atiformats.cpp
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/common/pluginbase.h
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/common/plugininterface.h
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/common/pluginmanager.h
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/common/pluginmanager.cpp
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/common/query_timer.h
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/common/query_timer.cpp
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/common/stb_image.h
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/common/gltf/stb_image_write.h
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/common/tc_pluginapi.h
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/common/tc_plugininternal.h
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/common/tc_plugininternal.cpp
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/common/utilfuncs.h
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/common/utilfuncs.cpp
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/common/cmp_fileio.h 
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/common/cmp_fileio.cpp
+
+        # CMP_SDK
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/ccmp_sdk/bcn.cpp
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/ccmp_sdk/bcn.h
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/ccmp_sdk/bc1/bc1.h
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/ccmp_sdk/bc1/bc1.cpp
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/ccmp_sdk/bc2/bc2.h
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/ccmp_sdk/bc2/bc2.cpp
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/ccmp_sdk/bc3/bc3.h
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/ccmp_sdk/bc3/bc3.cpp
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/ccmp_sdk/bc4/bc4.h
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/ccmp_sdk/bc4/bc4.cpp
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/ccmp_sdk/bc5/bc5.h
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/ccmp_sdk/bc5/bc5.cpp
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/ccmp_sdk/bc6/bc6h.h
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/ccmp_sdk/bc6/bc6h.cpp
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/ccmp_sdk/bc7/bc7.h
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/ccmp_sdk/bc7/bc7.cpp
+        )
+
+
+if (OPTION_CMP_GTC)
+target_sources(CMP_Framework
+        PRIVATE
+        # Extra 
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/ccmp_sdk/gtc/gtc.h
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/ccmp_sdk/gtc/gtc.cpp
+        )
 endif()
+
+if (OPTION_CMP_APC)
+target_sources(CMP_Framework
+        PRIVATE
+        # Extra 
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/ccmp_sdk/apc/apc.h
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/ccmp_sdk/apc/apc.cpp
+        )
+endif()
+
+target_include_directories(CMP_Framework
+        PRIVATE
+        ./
+        ${PROJECT_SOURCE_DIR}/cmp_framework/common/half
+        ${PROJECT_SOURCE_DIR}/cmp_core/source
+        ${PROJECT_SOURCE_DIR}/cmp_core/shaders
+        ${PROJECT_SOURCE_DIR}/cmp_compressonatorlib
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/ccmp_sdk
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/common
+        ${PROJECT_SOURCE_DIR}/applications/_plugins/common/gltf
+        ${PROJECT_SOURCE_DIR}/applications/_libs/cmp_math
+        ${PROJECT_SOURCE_DIR}/applications/_libs/gpu_decode
+        )
+
+if (UNIX)
+    target_compile_definitions(CMP_Framework PRIVATE _LINUX)
+endif()
+
+set_target_properties(CMP_Framework PROPERTIES FOLDER "Libs")

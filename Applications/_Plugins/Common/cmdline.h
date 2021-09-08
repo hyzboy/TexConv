@@ -1,5 +1,5 @@
 //=====================================================================
-// Copyright 2020 (c), Advanced Micro Devices, Inc. All rights reserved.
+// Copyright 2021 (c), Advanced Micro Devices, Inc. All rights reserved.
 //=====================================================================
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -28,32 +28,23 @@
 #include <tchar.h>
 #endif
 
+#include <compressonator.h>
+#include <common.h>
+#include <gpu_decode.h>
+
 #include <string>
-
-//#ifdef USE_BOOST
-#include <boost/filesystem.hpp>
-#include <boost/lexical_cast.hpp>
-//#endif
-#include "Compressonator.h"
-#include "Common.h"
-#include "GPU_Decode.h"
-#include "CMP_FileIO.h"
-
 
 #define LOG_PROCESS_RESULTS_FILE_TXT "process_results.txt"
 #define LOG_PROCESS_RESULTS_FILE_CSV "process_results.csv"
 
-class CCmdLineParamaters
-{
-   public:
+class CCmdLineParamaters {
+  public:
     // Set defaults
-    CCmdLineParamaters()
-    {
+    CCmdLineParamaters() {
         SetDefault();
     };
 
-    void SetDefault()
-    {
+    void SetDefault() {
         FileFilter           = "";
         SourceFile           = "";
         DestFile             = "";
@@ -105,7 +96,7 @@ class CCmdLineParamaters
         CompressOptions.bVertexFetch    = CMP_MESH_OPTVFETCH_DEFAULT;
 #endif
 
-        CompressOptions.fquality       = AMD_CODEC_QUALITY_DEFAULT;  // This default value is also ref by code in SDK Compress.cpp
+        CompressOptions.fquality       = 0.001f;
         CompressOptions.fInputDefog    = AMD_CODEC_DEFOG_DEFAULT;
         CompressOptions.fInputExposure = AMD_CODEC_EXPOSURE_DEFAULT;
         CompressOptions.fInputKneeLow  = AMD_CODEC_KNEELOW_DEFAULT;
@@ -120,10 +111,11 @@ class CCmdLineParamaters
         LogProcessResultsFile.assign(LOG_PROCESS_RESULTS_FILE_TXT);
     }
 
-   public:
+  public:
     std::vector<std::string> SourceFileList;   //
     std::string         SourceFile;            //
     std::string         DestFile;              //
+    std::string         SourceDir;             //
     std::string         DestDir;               //
     std::string         DiffFile;              // Diff image file name
     std::string         DecompressFile;        //
@@ -144,7 +136,7 @@ class CCmdLineParamaters
     bool                analysis;              //  run analysis
     bool                diffImage;             //  generate diff image
     bool                logresults;            //  appended performance and analysis data to a processed file on each run
-    bool                logresultsToFile;      //  write perfromance data to file if logresults is set, default is true 
+    bool                logresultsToFile;      //  write perfromance data to file if logresults is set, default is true
     bool                logcsvformat;           //  write perfromance data to file if logresults is set as csv format
     bool imageprops;        //  print image properties (i.e. image name, path, file size, image size, image width, height, miplevel and format)
     bool showperformance;   //
@@ -159,7 +151,7 @@ class CCmdLineParamaters
     int  BlockWidth;        // Width (xdim) in pixels of the Compression Block that is to be processed default for ASTC is 4
     int  BlockHeight;       // Height (ydim)in pixels of the Compression Block that is to be processed default for ASTC is 4
     int  BlockDepth;        // Depth  (zdim)in pixels of the Compression Block that is to be processed default for ASTC is 1
-    double compress_fDuration; 
+    double compress_fDuration;
     double decompress_fDuration;
     int compress_nIterations;
     int decompress_nIterations;
@@ -177,7 +169,6 @@ extern void               PrintInfo(const char* Format, ...);
 extern bool               ParseParams(int argc, CMP_CHAR* argv[]);
 extern int                ProcessCMDLine(CMP_Feedback_Proc pFeedbackProc, MipSet* userMips);
 extern CCmdLineParamaters g_CmdPrams;
-extern int                GetNumberOfCores(wchar_t* envp[]);
 extern bool               SouceAndDestCompatible(CCmdLineParamaters g_CmdPrams);
 extern void               ProcessResults(CCmdLineParamaters &prams, CMP_ANALYSIS_DATA &analysisData);
 extern void               LogToResults(CCmdLineParamaters &prams, char *str);
