@@ -96,7 +96,7 @@ bool TextureFileCreater::WriteFileHeader(const OSString &old_filename,const uint
     if(pixel_format->format>ColorFormat::COMPRESS)
     {
         dos->WriteUint8(0);
-        dos->WriteUint16(uint(pixel_format->format)-uint(ColorFormat::COMPRESS));
+        dos->WriteUint16(uint(pixel_format->format)-uint(ColorFormat::BC1RGB));
     }
     else
     {
