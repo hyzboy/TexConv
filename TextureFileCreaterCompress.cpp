@@ -19,6 +19,7 @@ class TextureFileCreaterCompress:public TextureFileCreater
     CMP_TextureDataType tdt;
     CMP_FORMAT source_fmt;
     CMP_FORMAT target_fmt;
+    std::string target_fmt_name;
 
 public:
 
@@ -60,8 +61,10 @@ public:
         const int fmt_index=size_t(pixel_format->format)-size_t(ColorFormat::BC1RGB);
 
         target_fmt=fmt_list[fmt_index];
+
+        target_fmt_name=fmt_name_list[fmt_index];
         
-        std::cout<<"Compress Image to "<<fmt_name_list[fmt_index]<<" Format."<<std::endl;
+        std::cout<<"Compress Image to "<<target_fmt_name.c_str()<<" Format."<<std::endl;
 
         if(type==IL_UNSIGNED_BYTE   ){cf=CF_8bit;    pixel_bytes=1;}else
         if(type==IL_UNSIGNED_SHORT  ){cf=CF_16bit;   pixel_bytes=2;}else
@@ -223,7 +226,7 @@ public:
         kernel_options.getPerfStats =false;
         kernel_options.getDeviceInfo=false;
 
-        std::cout<<"Compress Image To: "<<image->width()<<"x"<<image->height();
+        std::cout<<"Compress Image To: "<<image->width()<<"x"<<image->height()<<" "<<target_fmt_name.c_str()<<" format";
     }
 
     static bool CMP_API CMP_Feedback_Proc(CMP_FLOAT fProgress, CMP_DWORD_PTR pUser1, CMP_DWORD_PTR pUser2)

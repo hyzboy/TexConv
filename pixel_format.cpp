@@ -22,6 +22,7 @@ namespace hgl
 
     constexpr PixelFormat pf_list[]=
     {
+        {ColorFormat::RGBA4,    "RGBA4",    4,{'R','G','B','A'},{ 4, 4, 4, 4}, 16,ColorDataType::UNORM},
         {ColorFormat::BGRA4,    "BGRA4",    4,{'B','G','R','A'},{ 4, 4, 4, 4}, 16,ColorDataType::UNORM},
         {ColorFormat::RGB565,   "RGB565",   3,{'R','G','B', 0 },{ 5, 6, 5, 0}, 16,ColorDataType::UNORM},
         {ColorFormat::A1RGB5,   "A1RGB5",   4,{'A','R','G','B'},{ 1, 5, 5, 5}, 16,ColorDataType::UNORM},
@@ -31,10 +32,15 @@ namespace hgl
         {ColorFormat::RGBA8SN,  "RGBA8S",   4,{'R','G','B','A'},{ 8, 8, 8, 8}, 32,ColorDataType::SNORM},
         {ColorFormat::RGBA8U,   "RGBA8U",   4,{'R','G','B','A'},{ 8, 8, 8, 8}, 32,ColorDataType::UINT},
         {ColorFormat::RGBA8I,   "RGBA8I",   4,{'R','G','B','A'},{ 8, 8, 8, 8}, 32,ColorDataType::SINT},
+        {ColorFormat::ABGR8,    "ABGR8",    4,{'A','B','G','R'},{ 8, 8, 8, 8}, 32,ColorDataType::UNORM},
         {ColorFormat::A2BGR10,  "A2BGR10",  4,{'A','B','G','R'},{ 2,10,10,10}, 32,ColorDataType::UNORM},
         {ColorFormat::R16,      "R16",      1,{'R', 0 , 0 , 0 },{16, 0, 0, 0}, 16,ColorDataType::UNORM},
+        {ColorFormat::R16U,     "R16U",     1,{'R', 0 , 0 , 0 },{16, 0, 0, 0}, 16,ColorDataType::UINT},
+        {ColorFormat::R16I,     "R16I",     1,{'R', 0 , 0 , 0 },{16, 0, 0, 0}, 16,ColorDataType::SINT},
         {ColorFormat::R16F,     "R16F",     1,{'R', 0 , 0 , 0 },{16, 0, 0, 0}, 16,ColorDataType::SFLOAT},
         {ColorFormat::RG16,     "RG16",     2,{'R','G', 0 , 0 },{16,16, 0, 0}, 32,ColorDataType::UNORM},
+        {ColorFormat::RG16U,    "RG16U",    2,{'R','G', 0 , 0 },{16,16, 0, 0}, 32,ColorDataType::UINT},
+        {ColorFormat::RG16I,    "RG16I",    2,{'R','G', 0 , 0 },{16,16, 0, 0}, 32,ColorDataType::SINT},
         {ColorFormat::RG16F,    "RG16F",    2,{'R','G', 0 , 0 },{16,16, 0, 0}, 32,ColorDataType::SFLOAT},
         {ColorFormat::RGBA16,   "RGBA16",   4,{'R','G','B','A'},{16,16,16,16}, 64,ColorDataType::UNORM},
         {ColorFormat::RGBA16SN, "RGBA16S",  4,{'R','G','B','A'},{16,16,16,16}, 64,ColorDataType::SNORM},

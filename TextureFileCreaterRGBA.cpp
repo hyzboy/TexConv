@@ -14,6 +14,8 @@ public:
     {
         if(pixel_format->format==ColorFormat::RGBA8
          ||pixel_format->format==ColorFormat::RGBA16
+         ||pixel_format->format==ColorFormat::RGBA16U
+         ||pixel_format->format==ColorFormat::RGBA16I
          ||pixel_format->format==ColorFormat::RGBA16F
          ||pixel_format->format==ColorFormat::RGBA32U
          ||pixel_format->format==ColorFormat::RGBA32I
@@ -22,7 +24,8 @@ public:
             if(!ToILType(type,pixel_format->bits[0],pixel_format->type))
                 return(nullptr);
         }
-        else if(pixel_format->format==ColorFormat::BGRA4)
+        else if(pixel_format->format==ColorFormat::RGBA4
+              ||pixel_format->format==ColorFormat::BGRA4)
         {
             type=IL_UNSIGNED_BYTE;
         }
@@ -43,6 +46,20 @@ public:
         return image->ConvertToRGBA(type);
     }
 
+    void RGBA8toBGRA4(uint16 *target,uint8 *src,uint size)
+    {
+        for(uint i=0;i<size;i++)
+        {
+            *target=((src[2]<<8)&0xF000)
+                   |((src[1]<<4)&0xF00)
+                   |((src[0]   )&0xF0)
+                   | (src[3]>>4);
+
+            ++target;
+            src+=4;
+        }
+    }
+
     void RGBA8toRGBA4(uint16 *target,uint8 *src,uint size)
     {
         for(uint i=0;i<size;i++)
@@ -56,7 +73,7 @@ public:
             src+=4;
         }
     }
-    
+   
     void RGBA8toA1RGB5(uint16 *target,uint8 *src,uint size)
     {
         for(uint i=0;i<size;i++)
@@ -94,7 +111,12 @@ public:
         std::cout<<"Convert Image To: "<<image->width()<<"x"<<image->height()<<" "<<total_bytes<<" bytes."<<std::endl;
 
         if(pixel_format->format==ColorFormat::RGBA8
+         ||pixel_format->format==ColorFormat::RGBA8SN
+         ||pixel_format->format==ColorFormat::RGBA8U
+         ||pixel_format->format==ColorFormat::RGBA8I
          ||pixel_format->format==ColorFormat::RGBA16
+         ||pixel_format->format==ColorFormat::RGBA16U
+         ||pixel_format->format==ColorFormat::RGBA16I
          ||pixel_format->format==ColorFormat::RGBA16F
          ||pixel_format->format==ColorFormat::RGBA32U
          ||pixel_format->format==ColorFormat::RGBA32I
@@ -104,15 +126,33 @@ public:
 
             return TextureFileCreater::Write(origin_rgba,total_bytes);
         }
+        else if(pixel_format->format==ColorFormat::ABGR8)
+        {
+            uint32 *origin_rgba=(uint32 *)(image->GetRGBA(type));
+
+            EndianSwap<uint32>(origin_rgba,image->pixel_total());
+
+            return TextureFileCreater::Write(origin_rgba,total_bytes);            
+        }
         else if(pixel_format->format==ColorFormat::BGRA4)
         {
             void *origin_rgba=image->GetRGBA(IL_UNSIGNED_BYTE);
 
             AutoDeleteArray<uint16> bgra4(image->pixel_total());
 
-            RGBA8toRGBA4(bgra4,(uint8 *)origin_rgba,image->pixel_total());
+            RGBA8toBGRA4(bgra4,(uint8 *)origin_rgba,image->pixel_total());
 
             return TextureFileCreater::Write(bgra4,total_bytes);
+        }
+        else if(pixel_format->format==ColorFormat::RGBA4)
+        {
+            void *origin_rgba=image->GetRGBA(IL_UNSIGNED_BYTE);
+
+            AutoDeleteArray<uint16> rgba4(image->pixel_total());
+
+            RGBA8toRGBA4(rgba4,(uint8 *)origin_rgba,image->pixel_total());
+
+            return TextureFileCreater::Write(rgba4,total_bytes);
         }
         else if(pixel_format->format==ColorFormat::A1RGB5)
         {

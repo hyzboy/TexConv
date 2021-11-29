@@ -8,6 +8,7 @@ enum class ColorFormat
 {
     NONE=0,
 
+    RGBA4,
     BGRA4,
     RGB565,
     A1RGB5,
@@ -17,10 +18,15 @@ enum class ColorFormat
     RGBA8SN,
     RGBA8U,
     RGBA8I,
+    ABGR8,
     A2BGR10,
     R16,
+    R16U,
+    R16I,
     R16F,
     RG16,
+    RG16U,
+    RG16I,
     RG16F,
     RGBA16,
     RGBA16SN,

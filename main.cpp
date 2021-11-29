@@ -4,6 +4,7 @@
 #include<hgl/type/DataType.h>
 #include<hgl/type/StrChar.h>
 #include<hgl/Time.h>
+#include<hgl/filesystem/FileSystem.h>
 #include<hgl/filesystem/EnumFile.h>
 #include<hgl/log/LogInfo.h>
 #include"pixel_format.h"
@@ -88,12 +89,12 @@ public:
 
 int os_main(int argc,os_char **argv)
 {
-    std::cout<<"Image to Texture Convert tools 1.1"<<std::endl<<std::endl;
+    std::cout<<"Image to Texture Convert tools 1.2"<<std::endl<<std::endl;
 
     if(argc<=1)
     {
         std::cout<< "Command format:\n"
-                    "\tTexConv [/R:][/RG:][/RGB:][/RGBA:] [/s] [/mip] <pathname>\n"
+                    "\tTexConv [/R:][/RG:][/RGB:][/RGBA:] [/s] [/mip] <pathname or filename>\n"
                     "\n"
                     "Params:\n"
                     "\t/s : proc sub-directory\n"
@@ -116,22 +117,29 @@ int os_main(int argc,os_char **argv)
     CMP_RegisterHostPlugins();
     CMP_InitializeBCLibrary();
 
-    double start_time=GetMicroTime();
-    double end_time;
+    if(filesystem::FileCanRead(argv[argc-1]))
+    {
+        ConvertImage(argv[argc-1],pixel_fmt,gen_mipmaps);
+    }
+    else
+    {
+        double start_time=GetMicroTime();
+        double end_time;
 
-    EnumFileConfig efc(argv[argc-1]);
+        EnumFileConfig efc(argv[argc-1]);
 
-    efc.proc_file   =true;
-    efc.sub_folder  =sub_folder;
+        efc.proc_file   =true;
+        efc.sub_folder  =sub_folder;
 
-    EnumConvertImage eci;
+        EnumConvertImage eci;
 
-    eci.Enum(&efc);
+        eci.Enum(&efc);
 
-    end_time=GetTime();
+        end_time=GetTime();
 
-    LOG_INFO(OS_TEXT("总计转换图片")+OSString::valueOf(eci.GetConvertCount())
-            +OS_TEXT("张，总计耗时")+OSString::valueOf(end_time-start_time)+OS_TEXT("秒"));
+        LOG_INFO(OS_TEXT("Total converted ")+OSString::valueOf(eci.GetConvertCount())
+                +OS_TEXT("textures for ")+OSString::valueOf(end_time-start_time)+OS_TEXT(" seconds."));
+    }
             
     CMP_ShutdownBCLibrary();
 	ilShutDown();

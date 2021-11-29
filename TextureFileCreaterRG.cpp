@@ -1,5 +1,6 @@
 ﻿#include"TextureFileCreater.h"
 #include"ILImage.h"
+#include<iostream>
 
 class TextureFileCreaterRG:public TextureFileCreater
 {
