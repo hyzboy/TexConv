@@ -135,10 +135,14 @@ int os_main(int argc,os_char **argv)
 
         eci.Enum(&efc);
 
-        end_time=GetTime();
+        end_time=GetMicroTime();
+
+        const double time_gap=(end_time-start_time)/1000000;
+
+        const OSString time_gap_str=OSString::valueOf(time_gap);
 
         LOG_INFO(OS_TEXT("Total converted ")+OSString::valueOf(eci.GetConvertCount())
-                +OS_TEXT("textures for ")+OSString::valueOf(end_time-start_time)+OS_TEXT(" seconds."));
+                +OS_TEXT(" textures for ")+time_gap_str.c_str()+OS_TEXT(" seconds."));
     }
             
     CMP_ShutdownBCLibrary();
