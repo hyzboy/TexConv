@@ -46,16 +46,18 @@ SET(TEXTURE_FILE_CREATER_SOURCE TextureFileCreater.h
                                 TextureFileCreaterRGBA.cpp
                                 TextureFileCreaterCompress.cpp)
 
-set(SOURCE_FILE main.cpp
-                ConvertImage.cpp)
-
 SOURCE_GROUP("Image File" FILES ${ILIMAGE_SOURCE})
 SOURCE_GROUP("Pixel Format" FILES ${PIXEL_FORMAT_SOURCE})
 SOURCE_GROUP("Texture File Creater" FILES ${TEXTURE_FILE_CREATER_SOURCE})
 
-add_executable(TexConv ${SOURCE_FILE} ${ILIMAGE_SOURCE} ${PIXEL_FORMAT_SOURCE} ${TEXTURE_FILE_CREATER_SOURCE})
+SET(TEX_CONV_SOURCE ${ILIMAGE_SOURCE} ${PIXEL_FORMAT_SOURCE} ${TEXTURE_FILE_CREATER_SOURCE})
+SET(TEX_CONV_LIBRARY CMCore CMPlatform CMUtil DevIL ILU CMP_Compressonator CMP_Framework CMP_Core)
 
-target_link_libraries(TexConv PRIVATE CMCore CMPlatform CMUtil DevIL ILU CMP_Compressonator CMP_Framework CMP_Core)
+add_executable(TexConv ${TEX_CONV_SOURCE} main.cpp ConvertImage.cpp)
+target_link_libraries(TexConv PRIVATE ${TEX_CONV_LIBRARY})
+
+add_executable(CubeMapConv ${TEX_CONV_SOURCE} CubeMapConvert.cpp)
+target_link_libraries(CubeMapConv PRIVATE ${TEX_CONV_LIBRARY})
 
 IF(CM_BUILD_GUI_TOOLS)
     set(IDENTIFIER "com.hyzgame.texconv")
@@ -74,3 +76,13 @@ target_link_libraries(ComboTexture PRIVATE CMCore CMPlatform CMUtil DevIL ILU Ma
 
 add_executable(DFGen DistanceFieldGenerater.cpp ILImage.h ILImageSupport.cpp)
 target_link_libraries(DFGen PRIVATE CMCore CMPlatform CMUtil DevIL ILU MathGeoLib)
+
+
+macro(texture_tool_project project_name)
+    set_property(TARGET ${project_name} PROPERTY FOLDER "CM/Tools/Texture")
+endmacro()
+
+texture_tool_project(TexConv)
+texture_tool_project(CubeMapConv)
+texture_tool_project(ComboTexture)
+texture_tool_project(DFGen)
