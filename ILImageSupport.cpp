@@ -163,7 +163,7 @@ bool ILImage::Resize(uint nw,uint nh)
     if(nw==il_width&&nh==il_height)return(true);
     if(nw==0||nh==0)return(false);
 
-    iluImageParameter(ILU_FILTER,ILU_SCALE_LANCZOS3);
+    iluImageParameter(ILU_FILTER,ILU_LINEAR);
 
     if(!iluScale(nw,nh,il_depth))
         return(false);
@@ -174,21 +174,6 @@ bool ILImage::Resize(uint nw,uint nh)
     return(true);
 }
 
-bool ILImage::GenMipmaps()
-{
-    return iluBuildMipmaps();
-}
-
-bool ILImage::ActiveMipmap(ILuint mip)
-{
-    return ilActiveMipmap(mip);
-}
-
-int ILImage::GetMipLevel()
-{
-    return ilGetInteger(IL_NUM_MIPMAPS);
-}
-
 bool ILImage::Convert(ILuint format,ILuint type)
 {
     if(il_format==format
@@ -197,8 +182,9 @@ bool ILImage::Convert(ILuint format,ILuint type)
     if(!ilConvertImage(format,type))
         return(false);
     
-    il_format=format;
-    il_type=type;
+    il_format   =format;
+    il_type     =type;
+    il_bit		=ilGetInteger(IL_IMAGE_BITS_PER_PIXEL);
     return(true);
 }
 
@@ -228,6 +214,58 @@ bool ILImage::LoadFile(const OSString &filename)
 
     return(true);    
 }
+
+const PixelDataType GetPixelDataType(ILuint type)
+{
+    if(type==IL_UNSIGNED_BYTE   )return PixelDataType::U8; else
+    if(type==IL_UNSIGNED_SHORT  )return PixelDataType::U16;else
+    if(type==IL_UNSIGNED_INT    )return PixelDataType::U32;else
+    if(type==IL_FLOAT           )return PixelDataType::F32;else
+    if(type==IL_DOUBLE          )return PixelDataType::F64;else
+        return(PixelDataType::Unknow);
+}
+
+template<typename T> void MixRG(T *tar,T *src,T *alpha,const uint count)
+{
+}
+
+//Image2D *ILImage::CreateImage2D()
+//{
+//    const PixelDataType pdt=GetPixelDataType(il_type);
+//    void *src=nullptr;
+//    const uint pixel_count=il_width*il_height;
+//
+//    if(channel_count==1)
+//    {
+//        if(il_format==IL_ALPHA      )src=ilGetAlpha(il_type);else
+//        if(il_format==IL_LUMINANCE  )src=ilGetData();else
+//            return(nullptr);
+//    }
+//    else
+//    if(channel_count==2)
+//    {
+//        src=GetRG(il_type);
+//    }
+//    else
+//    if(channel_count==3)
+//    {
+//        src=GetRGB(il_type);
+//    }
+//    else
+//    if(channel_count==4)
+//    {
+//        src=GetRGBA(il_type);
+//    }
+//    
+//    const uint pixel_byte=(il_bit>>3);
+//    const uint total_bytes=pixel_count*pixel_byte;
+//
+//    void *img_data=new uint8[total_bytes];
+//
+//    memcpy(img_data,src,total_bytes);
+//
+//    return(new Image2D(il_width,il_height,channel_count,pdt,img_data));
+//}
 
 void *ILImage::ToRGB(ILuint type)
 {

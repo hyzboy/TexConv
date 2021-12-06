@@ -74,24 +74,51 @@ TextureFileCreater::~TextureFileCreater()
     SAFE_CLEAR(dos);
 }
 
-bool TextureFileCreater::WriteFileHeader(const OSString &old_filename,const uint mip_level)
+const char texture_file_type_name[uint(TextureFileType::RANGE_SIZE)][16]=
+{
+    "Tex1D",
+    "Tex2D",
+    "Tex3D",
+    "TexCubemap",
+    "Tex1DArray",
+    "Tex2DArray",
+    "TexCubemapArray"
+};
+
+bool TextureFileCreater::WriteFileHeader(const OSString &old_filename,const TextureFileType &type,const uint mip_level)
 {
     OSString pn,fn;
 
     SplitFilename<os_char>(pn,fn,old_filename);
 
-    filename=ReplaceExtName<os_char>(old_filename,OS_TEXT(".Tex2D"));
+    if(!RangeCheck<TextureFileType>(type))
+    {
+        LOG_ERROR(OS_TEXT("TextureFileCreater::WriteFileHeader(")+old_filename+OS_TEXT(") texture type error that it's ")+OSString::valueOf(int(type)));
+        return(false);
+    }
+
+    AnsiString file_type_name=texture_file_type_name[uint(type)];
+    OSString file_ext_name=OS_TEXT(".")+ToOSString(file_type_name);
+
+    filename=ReplaceExtName<os_char>(old_filename,file_ext_name);
 
     if(!fos.CreateTrunc(filename))
         return(false);
 
     dos=new io::LEDataOutputStream(&fos);
 
-    dos->Write("Tex2D\x1A",6);
+    dos->Write(file_type_name.c_str(),file_type_name.Length());
+    dos->WriteUint8(0x1A);
     dos->WriteUint8(3);                                 //版本
     dos->WriteUint8(mip_level);                         //mipmaps级数
     dos->WriteUint32(image->width());
+
+    if(type!=TextureFileType::Tex1D
+     ||type!=TextureFileType::Tex1DArray)
     dos->WriteUint32(image->height());
+
+    if(type==TextureFileType::Tex3D)
+    dos->WriteUint32(image->depth());
     
     if(pixel_format->format>ColorFormat::COMPRESS)
     {

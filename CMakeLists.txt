@@ -34,6 +34,8 @@ SOURCE_GROUP("Intel Texture Compression" FILES ${INTEL_TC_SOURCE})
 
 SET(ILIMAGE_SOURCE  ILImage.h
                     ILImageSupport.cpp)
+#                    Image2D.h
+#                    Image2D.cpp)
 
 SET(PIXEL_FORMAT_SOURCE pixel_format.cpp
                         pixel_format.h)
@@ -86,3 +88,4 @@ texture_tool_project(TexConv)
 texture_tool_project(CubeMapConv)
 texture_tool_project(ComboTexture)
 texture_tool_project(DFGen)
+#texture_tool_project(IMTest)

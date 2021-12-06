@@ -5,12 +5,16 @@ using namespace hgl;
 
 enum class PixelDataType
 {
+    Unknow=0,
+
     U8,
     U16,
     U32,
     F32,
     F64
 };
+
+const uint GetStride(const enum class PixelDataType);
 
 class Image2D
 {
@@ -26,7 +30,9 @@ public:
 
     const uint GetWidth()const{return width;}
     const uint GetHeight()const{return height;}
+    const uint GetPixelsTotal()const{return width*height;}
     const uint GetChannels()const{return channels;}
+
     const PixelDataType GetType()const{return type;}
     void *GetData()const{return data;}
 
@@ -37,14 +43,7 @@ public:
         width=height=channels=0;
     }
 
-    Image2D(const uint w,const uint h,const uint c,const PixelDataType &pdt,void *ptr)
-    {
-        width=w;
-        height=h;
-        channels=c;
-        type=pdt;
-        data=ptr;
-    }
+    Image2D(const uint w,const uint h,const uint c,const PixelDataType &pdt,void *ptr);
 
     ~Image2D()
     {
@@ -52,4 +51,6 @@ public:
     }
 
     Image2D *CreateHalfImage();
+
+    void TypeConvert(const PixelDataType &);
 };//class Image2D

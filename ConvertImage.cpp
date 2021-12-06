@@ -1,6 +1,7 @@
 #include<hgl/log/LogInfo.h>
 #include<IL/ilu.h>
 #include"ILImage.h"
+#include"Image2D.h"
 #include"TextureFileCreater.h"
 
 TextureFileCreater *CreateTextureFileCreaterR(const PixelFormat *,ILImage *);
@@ -37,17 +38,21 @@ bool ConvertImage(const OSString &filename,const PixelFormat **pf,const bool mip
     TextureFileCreater *tex_file_creater;
     const PixelFormat *fmt=pf[channels-1];
 
+    Image2D *origin_img=nullptr;
+
     if(fmt->format<ColorFormat::COMPRESS)
         tex_file_creater=CreateTFC[channels-1](fmt,&image);
     else
         tex_file_creater=CreateTextureFileCreaterCompress(fmt,&image);
 
-    if(!tex_file_creater->WriteFileHeader(filename,miplevel))
+    if(!tex_file_creater->WriteFileHeader(filename,TextureFileType::Tex2D,miplevel))
     {
         tex_file_creater->Delete();
         LOG_ERROR(OS_TEXT("Write file header failed."));
         return(false);
     }
+
+//    origin_img=tex_file_creater->CreateImage2D();
 
     tex_file_creater->InitFormat();
 

@@ -9,6 +9,19 @@ using namespace hgl;
 
 bool ToILType(ILuint &type,const uint8 bits,const ColorDataType cdt);
 
+enum class TextureFileType
+{
+    Tex1D=0,
+    Tex2D,
+    Tex3D,
+    TexCubemap,
+    Tex1DArray,
+    Tex2DArray,
+    TexCubemapArray,
+
+    ENUM_CLASS_RANGE(Tex1D,TexCubemapArray)
+};//
+
 class TextureFileCreater
 {
 protected:
@@ -31,7 +44,7 @@ public:
     TextureFileCreater(const PixelFormat *pf,ILImage *);
     virtual ~TextureFileCreater();
 
-    virtual bool WriteFileHeader(const OSString &,const uint);
+    virtual bool WriteFileHeader(const OSString &,const TextureFileType &,const uint);
     
     virtual bool InitFormat()=0;
     virtual uint32 Write()=0;

@@ -111,7 +111,7 @@ int os_main(int argc,os_char **argv)
     
     ParseParamColorKey(cp);
     ParseParamFormat(cp);								            //检测推荐格式
-   
+
     ilInit();
     
     CMP_RegisterHostPlugins();

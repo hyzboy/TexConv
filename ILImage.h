@@ -1,6 +1,7 @@
 #pragma once
 #include<IL/il.h>
 #include<hgl/type/String.h>
+#include"Image2D.h"
 
 using namespace hgl;
 
@@ -46,11 +47,9 @@ public:
     void Bind();
     void Copy(ILImage *);
 
-    bool Resize(uint,uint);
+//    Image2D *CreateImage2D();
 
-    bool GenMipmaps();
-     int GetMipLevel();
-    bool ActiveMipmap(ILuint mip);
+    bool Resize(uint,uint);
 
     void *ToRGB(ILuint type=IL_UNSIGNED_BYTE);
     void *ToGray(ILuint type=IL_UNSIGNED_BYTE);
