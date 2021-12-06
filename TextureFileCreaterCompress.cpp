@@ -216,7 +216,7 @@ public:
     void InitOption()
     {
         hgl_zero(kernel_options);
-            
+
         kernel_options.height       =image->height();
         kernel_options.width        =image->width();
         kernel_options.fquality     =1.0f;        

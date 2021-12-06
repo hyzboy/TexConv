@@ -1,6 +1,7 @@
 #include<iostream>
 #include<hgl/util/cmd/CmdParse.h>
 #include<hgl/filesystem/FileSystem.h>
+#include<hgl/type/StringList.h>
 #include"ILImage.h"
 #include"TextureFileCreater.h"
 #include"ImageConvertConfig.h"
@@ -11,76 +12,98 @@ using namespace hgl;
 using namespace hgl::filesystem;
 using namespace hgl::util;
 
-bool ConvertImage(const OSString &filename,const ImageConvertConfig *cfg)
+bool ConvertCubemap(const OSString &filename,const OSStringList &file_list,const ImageConvertConfig *cfg)
 {
-    ILImage image;
+    ILImage image[6];
 
-    if(!image.LoadFile(filename))
-        return(false);
+    uint width,height,channels,bits;
+
+    for(int i=0;i<6;i++)
+    {
+        if(!image[i].LoadFile(file_list[i]))
+            return(false);
+
+        if(i==0)
+        {
+            width=image[0].width();
+            height=image[0].height();
+            channels=image[0].channels();
+            bits=image[0].bit();
+        }
+        else
+        {
+            if(width!=image[i].width()
+             ||height!=image[i].height()
+             ||channels!=image[i].channels()
+             ||bits!=image[i].bit())
+            {
+                LOG_ERROR(OS_TEXT("image formats can't batch"));
+                return(false);
+            }
+        }
+    }
  
     int miplevel=1;
 
     if(cfg->gen_mipmaps)
-        miplevel=hgl::GetMipLevel(image.width(),image.height());
+        miplevel=hgl::GetMipLevel(width,height);
     
-    const uint channels=image.channels();
-
-    if(channels<0||channels>4)
+    if(channels<=0||channels>4)
     {
         LOG_ERROR(OS_TEXT("image format don't support "));
         return(false);
     }
 
-    TextureFileCreater *tex_file_creater;
     const PixelFormat *fmt=cfg->pixel_fmt[channels-1];
 
-    Image2D *origin_img=nullptr;
-
-    if(fmt->format<ColorFormat::COMPRESS)
-        tex_file_creater=CreateTFC[channels-1](fmt,&image);
-    else
-        tex_file_creater=CreateTextureFileCreaterCompress(fmt,&image);
-
-    if(!tex_file_creater->WriteFileHeader(filename,TextureFileType::TexCubemap,miplevel))
-    {
-        tex_file_creater->Delete();
-        LOG_ERROR(OS_TEXT("Write file header failed."));
-        return(false);
-    }
-
-    tex_file_creater->InitFormat();
-
-    uint width=image.width();
-    uint height=image.height();
     uint total=0;
     uint bytes=0;
 
-    for(int i=0;i<miplevel;i++)
+    for(int face=0;face<6;face++)
     {
-        bytes=tex_file_creater->Write();
+        TextureFileCreater *tex_file_creater;
 
-        if(bytes<=0)
+        if(fmt->format<ColorFormat::COMPRESS)
+            tex_file_creater=CreateTFC[channels-1](fmt,&image[face]);
+        else
+            tex_file_creater=CreateTextureFileCreaterCompress(fmt,&image[face]);
+
+        if(!tex_file_creater->WriteFileHeader(filename,TextureFileType::TexCubemap,miplevel))
         {
             tex_file_creater->Delete();
+            LOG_ERROR(OS_TEXT("Write file header failed."));
             return(false);
         }
 
-        total+=bytes;
+        tex_file_creater->InitFormat();
 
-        if(i<miplevel)
+        for(int i=0;i<miplevel;i++)
         {
-            if(width>1)width>>=1;
-            if(height>1)height>>=1;
+            bytes=tex_file_creater->Write();
 
-            image.Resize(width,height);
+            if(bytes<=0)
+            {
+                tex_file_creater->Delete();
+                return(false);
+            }
+
+            total+=bytes;
+
+            if(i<miplevel)
+            {
+                if(width>1)width>>=1;
+                if(height>1)height>>=1;
+
+                image[face].Resize(width,height);
+            }
         }
+
+        tex_file_creater->Close();
+
+        delete tex_file_creater;
     }
 
     LOG_INFO(OS_TEXT("pixel total length: ")+OSString::valueOf(total)+OS_TEXT(" bytes."));
-
-    tex_file_creater->Close();
-
-    delete tex_file_creater;
     return(true);
 }
 
@@ -92,10 +115,10 @@ int os_main(int argc,os_char **argv)
 {
     std::cout<<"Cubemap to Texture Convert tools 1.2"<<std::endl<<std::endl;
 
-    if(argc<=1)
+    if(argc<=7)
     {
         std::cout<< "Command format:\n"
-                    "\tCubemapConv [/R:][/RG:][/RGB:][/RGBA:] [/mip] <filename>\n\n";
+                    "\tCubemapConv [/R:][/RG:][/RGB:][/RGBA:] [/mip] <output texture filename> <neg x>,<neg y>,<neg z>,<pos x>,<pos y>,<pos z>\n\n";
 
         PrintFormatList();
         return 0;
@@ -115,9 +138,22 @@ int os_main(int argc,os_char **argv)
     CMP_RegisterHostPlugins();
     CMP_InitializeBCLibrary();
 
-    if(filesystem::FileCanRead(argv[argc-1]))
+    OSString out_filename=argv[argc-8];
+    OSStringList file_list;
+
+    for(int i=argc-7;i<argc-1;i++)
     {
-        ConvertImage(argv[argc-1],&icc);
+        if(filesystem::FileCanRead(argv[i]))
+            file_list.Add(argv[i]);
+    }
+
+    if(file_list.GetCount()==6)
+    {
+        os_out<<OS_TEXT("output: ")<<out_filename.c_str()<<std::endl;
+        for(int i=0;i<6;i++)
+            os_out<<OS_TEXT("source ")<<OSString::valueOf(i).c_str()<<OS_TEXT(": ")<<file_list[i].c_str()<<std::endl;
+
+        ConvertCubemap(out_filename,file_list,&icc);
     }
             
     CMP_ShutdownBCLibrary();

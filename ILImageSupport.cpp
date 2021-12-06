@@ -194,12 +194,15 @@ bool ILImage::LoadFile(const OSString &filename)
 
     if(!filesystem::FileExist(filename))
     {
-        LOG_INFO(OS_TEXT("Can't find filename: ")+filename);
+        LOG_ERROR(OS_TEXT("Can't find filename: ")+filename);
         return(false);
     }
 
     if(!ilLoadImage(filename.c_str()))
+    {
+        LOG_ERROR(OS_TEXT("can't Load image: ")+filename);
         return(false);
+    }
 
     LOG_INFO(OS_TEXT("\nFile: ")+filename);
 

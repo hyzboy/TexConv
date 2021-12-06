@@ -19,7 +19,7 @@ bool ConvertImage(const OSString &filename,const ImageConvertConfig *cfg)
     
     const uint channels=image.channels();
 
-    if(channels<0||channels>4)
+    if(channels<=0||channels>4)
     {
         LOG_ERROR(OS_TEXT("image format don't support "));
         return(false);
