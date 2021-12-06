@@ -1,21 +1,11 @@
 #include<hgl/log/LogInfo.h>
 #include<IL/ilu.h>
 #include"ILImage.h"
-#include"Image2D.h"
+//#include"Image2D.h"
 #include"TextureFileCreater.h"
+#include"ImageConvertConfig.h"
 
-TextureFileCreater *CreateTextureFileCreaterR(const PixelFormat *,ILImage *);
-TextureFileCreater *CreateTextureFileCreaterRG(const PixelFormat *,ILImage *);
-TextureFileCreater *CreateTextureFileCreaterRGB(const PixelFormat *,ILImage *);
-TextureFileCreater *CreateTextureFileCreaterRGBA(const PixelFormat *,ILImage *);
-
-TextureFileCreater *CreateTextureFileCreaterCompress(const PixelFormat *,ILImage *);
-
-using CTFC_FUNC=TextureFileCreater *(*)(const PixelFormat *,ILImage *);
-
-static CTFC_FUNC CreateTFC[4]={CreateTextureFileCreaterR,CreateTextureFileCreaterRG,CreateTextureFileCreaterRGB,CreateTextureFileCreaterRGBA};
-
-bool ConvertImage(const OSString &filename,const PixelFormat **pf,const bool mipmaps)
+bool ConvertImage(const OSString &filename,const ImageConvertConfig *cfg)
 {
     ILImage image;
 
@@ -24,7 +14,7 @@ bool ConvertImage(const OSString &filename,const PixelFormat **pf,const bool mip
  
     int miplevel=1;
 
-    if(mipmaps)
+    if(cfg->gen_mipmaps)
         miplevel=hgl::GetMipLevel(image.width(),image.height());
     
     const uint channels=image.channels();
@@ -36,7 +26,7 @@ bool ConvertImage(const OSString &filename,const PixelFormat **pf,const bool mip
     }
 
     TextureFileCreater *tex_file_creater;
-    const PixelFormat *fmt=pf[channels-1];
+    const PixelFormat *fmt=cfg->pixel_fmt[channels-1];
 
     Image2D *origin_img=nullptr;
 

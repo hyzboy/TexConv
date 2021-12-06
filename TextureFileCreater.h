@@ -52,3 +52,15 @@ public:
     virtual void Close();
     virtual void Delete();
 };//class TextureFileCreater
+
+TextureFileCreater *CreateTextureFileCreaterR(const PixelFormat *,ILImage *);
+TextureFileCreater *CreateTextureFileCreaterRG(const PixelFormat *,ILImage *);
+TextureFileCreater *CreateTextureFileCreaterRGB(const PixelFormat *,ILImage *);
+TextureFileCreater *CreateTextureFileCreaterRGBA(const PixelFormat *,ILImage *);
+
+TextureFileCreater *CreateTextureFileCreaterCompress(const PixelFormat *,ILImage *);
+
+using CTFC_FUNC=TextureFileCreater *(*)(const PixelFormat *,ILImage *);
+
+static CTFC_FUNC CreateTFC[4]={CreateTextureFileCreaterR,CreateTextureFileCreaterRG,CreateTextureFileCreaterRGB,CreateTextureFileCreaterRGBA};
+

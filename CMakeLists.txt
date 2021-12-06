@@ -38,7 +38,8 @@ SET(ILIMAGE_SOURCE  ILImage.h
 #                    Image2D.cpp)
 
 SET(PIXEL_FORMAT_SOURCE pixel_format.cpp
-                        pixel_format.h)
+                        pixel_format.h
+                        ImageConvertConfig.h)
 
 SET(TEXTURE_FILE_CREATER_SOURCE TextureFileCreater.h
                                 TextureFileCreater.cpp
@@ -48,11 +49,14 @@ SET(TEXTURE_FILE_CREATER_SOURCE TextureFileCreater.h
                                 TextureFileCreaterRGBA.cpp
                                 TextureFileCreaterCompress.cpp)
 
+SET(PARAM_PARSE_SOURCE ParamParse.h ParamParse.cpp)
+
 SOURCE_GROUP("Image File" FILES ${ILIMAGE_SOURCE})
 SOURCE_GROUP("Pixel Format" FILES ${PIXEL_FORMAT_SOURCE})
 SOURCE_GROUP("Texture File Creater" FILES ${TEXTURE_FILE_CREATER_SOURCE})
+SOURCE_GROUP("CMD Param parse" FILES ${PARAM_PARSE_SOURCE})
 
-SET(TEX_CONV_SOURCE ${ILIMAGE_SOURCE} ${PIXEL_FORMAT_SOURCE} ${TEXTURE_FILE_CREATER_SOURCE})
+SET(TEX_CONV_SOURCE ${ILIMAGE_SOURCE} ${PIXEL_FORMAT_SOURCE} ${TEXTURE_FILE_CREATER_SOURCE} ${PARAM_PARSE_SOURCE})
 SET(TEX_CONV_LIBRARY CMCore CMPlatform CMUtil DevIL ILU CMP_Compressonator CMP_Framework CMP_Core)
 
 add_executable(TexConv ${TEX_CONV_SOURCE} main.cpp ConvertImage.cpp)
