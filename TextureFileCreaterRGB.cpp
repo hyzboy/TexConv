@@ -12,8 +12,10 @@ public:
 
 public:
 
-    bool InitFormat() override
+    bool InitFormat(ILImage* img) override
     {
+        image = img;
+
         if(pixel_format->format==ColorFormat::RGB32U
          ||pixel_format->format==ColorFormat::RGB32I
          ||pixel_format->format==ColorFormat::RGB32F)
@@ -114,7 +116,7 @@ public:
     }
 };//class TextureFileCreaterRGB:public TextureFileCreater
 
-TextureFileCreater *CreateTextureFileCreaterRGB(const PixelFormat *pf,ILImage *image)
+TextureFileCreater *CreateTextureFileCreaterRGB(const PixelFormat *pf)
 {
-    return(new TextureFileCreaterRGB(pf,image));
+    return(new TextureFileCreaterRGB(pf));
 }

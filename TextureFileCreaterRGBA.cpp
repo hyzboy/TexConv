@@ -9,9 +9,11 @@ class TextureFileCreaterRGBA:public TextureFileCreater
 public:
 
     using TextureFileCreater::TextureFileCreater;
-    
-    bool InitFormat() override
+
+    bool InitFormat(ILImage* img) override
     {
+        image = img;
+
         if(pixel_format->format==ColorFormat::RGBA8
          ||pixel_format->format==ColorFormat::RGBA16
          ||pixel_format->format==ColorFormat::RGBA16U
@@ -182,7 +184,7 @@ public:
     }
 };//class TextureFileCreaterRGB:public TextureFileCreater
 
-TextureFileCreater *CreateTextureFileCreaterRGBA(const PixelFormat *pf,ILImage *image)
+TextureFileCreater *CreateTextureFileCreaterRGBA(const PixelFormat *pf)
 {
-    return(new TextureFileCreaterRGBA(pf,image));
+    return(new TextureFileCreaterRGBA(pf));
 }

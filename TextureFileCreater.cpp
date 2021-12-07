@@ -61,12 +61,12 @@ bool ToILType(ILuint &type,const uint8 bits,const ColorDataType cdt)
     return(type);
 }
 
-TextureFileCreater::TextureFileCreater(const PixelFormat *pf,ILImage *img)
+TextureFileCreater::TextureFileCreater(const PixelFormat *pf)
 {
     pixel_format=pf;
-    image=img;
 
     dos=nullptr;
+    image=nullptr;
 }
 
 TextureFileCreater::~TextureFileCreater()
@@ -85,7 +85,7 @@ const char texture_file_type_name[uint(TextureFileType::RANGE_SIZE)][16]=
     "TexCubemapArray"
 };
 
-bool TextureFileCreater::WriteFileHeader(const OSString &old_filename,const TextureFileType &type,const uint mip_level)
+bool TextureFileCreater::CreateTexFile(const OSString& old_filename, const TextureFileType& type)
 {
     OSString pn,fn;
 
@@ -110,30 +110,43 @@ bool TextureFileCreater::WriteFileHeader(const OSString &old_filename,const Text
     dos->Write(file_type_name.c_str(),file_type_name.Length());
     dos->WriteUint8(0x1A);
     dos->WriteUint8(3);                                 //版本
-    dos->WriteUint8(mip_level);                         //mipmaps级数
-    dos->WriteUint32(image->width());
 
-    if(type!=TextureFileType::Tex1D
-     ||type!=TextureFileType::Tex1DArray)
-    dos->WriteUint32(image->height());
+	return(true);
+}
 
-    if(type==TextureFileType::Tex3D)
-    dos->WriteUint32(image->depth());
-    
-    if(pixel_format->format>ColorFormat::COMPRESS)
+bool TextureFileCreater::WriteSize1D(const uint mip_level,const uint length)
+{
+    if(!dos->WriteUint8(mip_level))return(false);                         //mipmaps级数
+    if(!dos->WriteUint32(length))return(false);
+
+    return(true);
+}
+
+bool TextureFileCreater::WriteSize2D(const uint mip_level, const uint width,const uint height)
+{
+    if(!dos->WriteUint8(mip_level))return(false);                         //mipmaps级数
+    if(!dos->WriteUint32(width))return(false);
+    if(!dos->WriteUint32(height))return(false);
+
+    return(true);
+}
+
+bool TextureFileCreater::WritePixelFormat()
+{
+    if (pixel_format->format > ColorFormat::COMPRESS)
     {
-        dos->WriteUint8(0);
-        dos->WriteUint16(uint(pixel_format->format)-uint(ColorFormat::BC1RGB));
+        if(!dos->WriteUint8(0))return(false);
+        if(!dos->WriteUint16(uint(pixel_format->format)-uint(ColorFormat::BC1RGB)))return(false);
     }
     else
     {
-        dos->WriteUint8(pixel_format->channels);                     //颜色通道数
-        dos->WriteUint8((uint8 *)pixel_format->color,4);             //颜色标记
-        dos->WriteUint8(pixel_format->bits,4);                       //颜色位数
-        dos->WriteUint8((uint8)pixel_format->type);                  //数据类型
+        if(!dos->WriteUint8(pixel_format->channels))return(false);						//颜色通道数
+        if(!dos->WriteUint8((uint8*)pixel_format->color, 4))return(false);				//颜色标记
+        if(!dos->WriteUint8(pixel_format->bits, 4))return(false);						//颜色位数
+        if(!dos->WriteUint8((uint8)pixel_format->type))return(false);					//数据类型
     }
 
-    return(true);
+	return(true);
 }
 
 uint32 TextureFileCreater::Write(void *data,const uint total_bytes)
@@ -165,4 +178,32 @@ void TextureFileCreater::Delete()
     Close();
 
     filesystem::FileDelete(filename);
+}
+
+TextureFileCreater *CreateTextureFileCreaterR(const PixelFormat *);
+TextureFileCreater *CreateTextureFileCreaterRG(const PixelFormat *);
+TextureFileCreater *CreateTextureFileCreaterRGB(const PixelFormat *);
+TextureFileCreater *CreateTextureFileCreaterRGBA(const PixelFormat *);
+
+TextureFileCreater *CreateTextureFileCreaterCompress(const PixelFormat *);
+
+TextureFileCreater *CreateTFC(const PixelFormat *fmt,const int channels)
+{
+    if(!fmt)return(nullptr);
+    if(channels<1||channels>4)return(nullptr);
+
+    using CTFC_FUNC=TextureFileCreater *(*)(const PixelFormat *);
+
+    static CTFC_FUNC CreateTFC[4]=
+    {
+        CreateTextureFileCreaterR,
+        CreateTextureFileCreaterRG,
+        CreateTextureFileCreaterRGB,
+        CreateTextureFileCreaterRGBA
+    };
+
+    if(fmt->format<ColorFormat::COMPRESS)
+        return CreateTFC[channels-1](fmt);
+    else
+        return CreateTextureFileCreaterCompress(fmt);
 }

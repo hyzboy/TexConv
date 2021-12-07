@@ -26,9 +26,8 @@ class TextureFileCreater
 {
 protected:
 
-    const PixelFormat *pixel_format;
-
     ILImage *image;
+    const PixelFormat *pixel_format;
 
 protected:
 
@@ -41,26 +40,19 @@ protected:
 
 public:
 
-    TextureFileCreater(const PixelFormat *pf,ILImage *);
+    TextureFileCreater(const PixelFormat *pf);
     virtual ~TextureFileCreater();
 
-    virtual bool WriteFileHeader(const OSString &,const TextureFileType &,const uint);
+	virtual bool CreateTexFile(const OSString &, const TextureFileType &);
+    virtual bool WriteSize1D(const uint miplevel,const uint length);
+    virtual bool WriteSize2D(const uint miplevel, const uint width,const uint height);
+    virtual bool WritePixelFormat();
     
-    virtual bool InitFormat()=0;
+    virtual bool InitFormat(ILImage *)=0;
     virtual uint32 Write()=0;
 
     virtual void Close();
     virtual void Delete();
 };//class TextureFileCreater
 
-TextureFileCreater *CreateTextureFileCreaterR(const PixelFormat *,ILImage *);
-TextureFileCreater *CreateTextureFileCreaterRG(const PixelFormat *,ILImage *);
-TextureFileCreater *CreateTextureFileCreaterRGB(const PixelFormat *,ILImage *);
-TextureFileCreater *CreateTextureFileCreaterRGBA(const PixelFormat *,ILImage *);
-
-TextureFileCreater *CreateTextureFileCreaterCompress(const PixelFormat *,ILImage *);
-
-using CTFC_FUNC=TextureFileCreater *(*)(const PixelFormat *,ILImage *);
-
-static CTFC_FUNC CreateTFC[4]={CreateTextureFileCreaterR,CreateTextureFileCreaterRG,CreateTextureFileCreaterRGB,CreateTextureFileCreaterRGBA};
-
+TextureFileCreater *CreateTFC(const PixelFormat *,const int channels);

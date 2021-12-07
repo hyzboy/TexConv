@@ -25,29 +25,36 @@ bool ConvertImage(const OSString &filename,const ImageConvertConfig *cfg)
         return(false);
     }
 
-    TextureFileCreater *tex_file_creater;
     const PixelFormat *fmt=cfg->pixel_fmt[channels-1];
+    uint width = image.width();
+    uint height = image.height();
 
-    Image2D *origin_img=nullptr;
+    AutoDelete<TextureFileCreater> tex_file_creater=CreateTFC(fmt,channels);
 
-    if(fmt->format<ColorFormat::COMPRESS)
-        tex_file_creater=CreateTFC[channels-1](fmt,&image);
-    else
-        tex_file_creater=CreateTextureFileCreaterCompress(fmt,&image);
-
-    if(!tex_file_creater->WriteFileHeader(filename,TextureFileType::Tex2D,miplevel))
+    if(!tex_file_creater->CreateTexFile(filename,TextureFileType::Tex2D))
     {
-        tex_file_creater->Delete();
-        LOG_ERROR(OS_TEXT("Write file header failed."));
+        LOG_ERROR(OS_TEXT("Create Texture failed."));
         return(false);
     }
 
-//    origin_img=tex_file_creater->CreateImage2D();
+    if(!tex_file_creater->WriteSize2D(miplevel,width,height))
+    {
+        LOG_ERROR(OS_TEXT("Write size failed."));
+        return(false);
+    }
 
-    tex_file_creater->InitFormat();
+    if(!tex_file_creater->WritePixelFormat())
+    {
+        LOG_ERROR(OS_TEXT("Write format failed."));
+        return(false);
+    }
 
-    uint width=image.width();
-    uint height=image.height();
+    if(!tex_file_creater->InitFormat(&image))
+    {
+        LOG_ERROR(OS_TEXT("Init texture format failed."));
+        return(false);
+    }
+
     uint total=0;
     uint bytes=0;
 
@@ -63,7 +70,7 @@ bool ConvertImage(const OSString &filename,const ImageConvertConfig *cfg)
 
         total+=bytes;
 
-        if(i<miplevel)
+        if(miplevel>1&&i<miplevel)
         {
             if(width>1)width>>=1;
             if(height>1)height>>=1;
@@ -76,7 +83,6 @@ bool ConvertImage(const OSString &filename,const ImageConvertConfig *cfg)
 
     tex_file_creater->Close();
 
-    delete tex_file_creater;
     return(true);
 }
 

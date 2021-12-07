@@ -2,6 +2,7 @@
 #include<hgl/util/cmd/CmdParse.h>
 #include<hgl/filesystem/FileSystem.h>
 #include<hgl/type/StringList.h>
+#include<hgl/log/LogInfo.h>
 #include"ILImage.h"
 #include"TextureFileCreater.h"
 #include"ImageConvertConfig.h"
@@ -59,23 +60,37 @@ bool ConvertCubemap(const OSString &filename,const OSStringList &file_list,const
     uint total=0;
     uint bytes=0;
 
+    AutoDelete<TextureFileCreater> tex_file_creater=CreateTFC(fmt,channels);
+
+    if (!tex_file_creater->CreateTexFile(filename, TextureFileType::TexCubemap))
+    {
+        LOG_ERROR(OS_TEXT("Create Texture failed."));
+        return(false);
+    }
+
+    if (!tex_file_creater->WriteSize2D(miplevel, width, height))
+    {
+        LOG_ERROR(OS_TEXT("Write size failed."));
+        return(false);
+    }
+
+    if (!tex_file_creater->WritePixelFormat())
+    {
+        LOG_ERROR(OS_TEXT("Write format failed."));
+        return(false);
+    }
+
     for(int face=0;face<6;face++)
     {
-        TextureFileCreater *tex_file_creater;
+        image[face].Bind();
+        width=image[face].width();
+        height=image[face].height();
 
-        if(fmt->format<ColorFormat::COMPRESS)
-            tex_file_creater=CreateTFC[channels-1](fmt,&image[face]);
-        else
-            tex_file_creater=CreateTextureFileCreaterCompress(fmt,&image[face]);
-
-        if(!tex_file_creater->WriteFileHeader(filename,TextureFileType::TexCubemap,miplevel))
+        if (!tex_file_creater->InitFormat(&image[face]))
         {
-            tex_file_creater->Delete();
-            LOG_ERROR(OS_TEXT("Write file header failed."));
+            LOG_ERROR(OS_TEXT("Init texture format failed."));
             return(false);
         }
-
-        tex_file_creater->InitFormat();
 
         for(int i=0;i<miplevel;i++)
         {
@@ -89,7 +104,7 @@ bool ConvertCubemap(const OSString &filename,const OSStringList &file_list,const
 
             total+=bytes;
 
-            if(i<miplevel)
+            if(miplevel>1&&i<miplevel)
             {
                 if(width>1)width>>=1;
                 if(height>1)height>>=1;
@@ -97,12 +112,10 @@ bool ConvertCubemap(const OSString &filename,const OSStringList &file_list,const
                 image[face].Resize(width,height);
             }
         }
-
-        tex_file_creater->Close();
-
-        delete tex_file_creater;
     }
-
+    
+    tex_file_creater->Close();
+        
     LOG_INFO(OS_TEXT("pixel total length: ")+OSString::valueOf(total)+OS_TEXT(" bytes."));
     return(true);
 }
@@ -118,7 +131,7 @@ int os_main(int argc,os_char **argv)
     if(argc<=7)
     {
         std::cout<< "Command format:\n"
-                    "\tCubemapConv [/R:][/RG:][/RGB:][/RGBA:] [/mip] <output texture filename> <neg x>,<neg y>,<neg z>,<pos x>,<pos y>,<pos z>\n\n";
+                    "\tCubemapConv [/R:][/RG:][/RGB:][/RGBA:] [/mip] <output texture filename> <pos x>,<neg x>,<pos y>,<neg y>,<pos z>,<neg z>\n\n";
 
         PrintFormatList();
         return 0;
@@ -138,20 +151,36 @@ int os_main(int argc,os_char **argv)
     CMP_RegisterHostPlugins();
     CMP_InitializeBCLibrary();
 
-    OSString out_filename=argv[argc-8];
+    OSString out_filename=argv[argc-7];
     OSStringList file_list;
 
-    for(int i=argc-7;i<argc-1;i++)
+    for(int i=argc-6;i<argc;i++)
     {
         if(filesystem::FileCanRead(argv[i]))
             file_list.Add(argv[i]);
+        else
+        {
+            LOG_ERROR(OS_TEXT("Can't check file ")+OSString(argv[i]));
+            return(false);
+        }
     }
 
     if(file_list.GetCount()==6)
     {
-        os_out<<OS_TEXT("output: ")<<out_filename.c_str()<<std::endl;
+        constexpr os_char face_name[6][3]=
+        {
+            OS_TEXT("+X"),
+            OS_TEXT("-X"),
+            OS_TEXT("+Y"),
+            OS_TEXT("-Y"),
+            OS_TEXT("+Z"),
+            OS_TEXT("-Z")
+        };
+
         for(int i=0;i<6;i++)
-            os_out<<OS_TEXT("source ")<<OSString::valueOf(i).c_str()<<OS_TEXT(": ")<<file_list[i].c_str()<<std::endl;
+            os_out<<OS_TEXT("    ")<<face_name[i]<<OS_TEXT(": ")<<file_list[i].c_str()<<std::endl;
+
+        os_out<<OS_TEXT("output: ")<<out_filename.c_str()<<std::endl;
 
         ConvertCubemap(out_filename,file_list,&icc);
     }

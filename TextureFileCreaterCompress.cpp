@@ -27,8 +27,10 @@ public:
 
 public:
 
-    bool InitFormat() override
+    bool InitFormat(ILImage* img) override
     {
+        image = img;
+
         channels=image->channels();
         type=image->type();
         
@@ -255,7 +257,7 @@ public:
     }
 };//class TextureFileCreaterCompress:public TextureFileCreater
 
-TextureFileCreater *CreateTextureFileCreaterCompress(const PixelFormat *pf,ILImage *image)
+TextureFileCreater *CreateTextureFileCreaterCompress(const PixelFormat *pf)
 {
-    return(new TextureFileCreaterCompress(pf,image));
+    return(new TextureFileCreaterCompress(pf));
 }

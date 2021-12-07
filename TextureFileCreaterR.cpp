@@ -12,8 +12,10 @@ public:
 
 public:
 
-    bool InitFormat() override
+    bool InitFormat(ILImage *img) override
     {
+        image=img;
+
         if(!ToILType(type,pixel_format->bits[0],pixel_format->type))
             return(false);
 
@@ -36,7 +38,7 @@ public:
     }
 };//class TextureFileCreaterR:public TextureFileCreater
 
-TextureFileCreater *CreateTextureFileCreaterR(const PixelFormat *pf,ILImage *image)
+TextureFileCreater *CreateTextureFileCreaterR(const PixelFormat *pf)
 {
-    return(new TextureFileCreaterR(pf,image));
+    return(new TextureFileCreaterR(pf));
 }
