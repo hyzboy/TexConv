@@ -123,12 +123,12 @@ bool TextureFileCreater::WriteSize2DArray(const uint32 width,const uint32 height
 
 bool TextureFileCreater::WritePixelFormat(const uint mip_level)
 {
+    constexpr uint8 spaces[7]={0,0,0,0,0,0,0};
+
     if (pixel_format->format > ColorFormat::COMPRESS)
     {
         if(!dos->WriteUint8(0))return(false);
         if(!dos->WriteUint16(uint(pixel_format->format)-uint(ColorFormat::BC1RGB)))return(false);
-
-        constexpr uint8 spaces[7]={0,0,0,0,0,0,0};
 
         if(dos->WriteUint8(spaces,7)!=7)return(false);
     }
@@ -142,6 +142,10 @@ bool TextureFileCreater::WritePixelFormat(const uint mip_level)
 
     if(!dos->WriteUint8(mip_level))return(false);                                       //mipmaps级数
 
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    if(dos->WriteUint8(spaces,7)!=7)return(false);                                      //补齐TextureFileHeader头40字节问题
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 	return(true);
 }
 
@@ -152,7 +156,7 @@ uint32 TextureFileCreater::Write(void *data,const uint total_bytes)
     if(dos->Write(data,total_bytes)!=total_bytes)
         return(0);
 
-    if(total_bytes<8)    
+    if(total_bytes<8)
     {
         if(dos->Write(&space,8-total_bytes)!=8-total_bytes)
             return(0);
