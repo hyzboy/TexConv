@@ -80,20 +80,20 @@ bool ConvertCubemap(const OSString &filename,const OSStringList &file_list,const
         return(false);
     }
 
-    for(uint face=0;face<6;face++)
+    for(int i=0;i<miplevel;i++)
     {
-        image[face].Bind();
-        width=image[face].width();
-        height=image[face].height();
-
-        if (!tex_file_creater->InitFormat(&image[face]))
+        for(uint face=0;face<6;face++)
         {
-            LOG_ERROR(OS_TEXT("Init texture format failed."));
-            return(false);
-        }
+            image[face].Bind();
+            width=image[face].width();
+            height=image[face].height();
 
-        for(int i=0;i<miplevel;i++)
-        {
+            if (!tex_file_creater->InitFormat(&image[face]))
+            {
+                LOG_ERROR(OS_TEXT("Init texture format failed."));
+                return(false);
+            }
+
             bytes=tex_file_creater->Write();
 
             if(bytes<=0)
@@ -103,14 +103,18 @@ bool ConvertCubemap(const OSString &filename,const OSStringList &file_list,const
             }
 
             total+=bytes;
+        }
 
-            if(miplevel>1&&i<miplevel)
-            {
-                if(width>1)width>>=1;
-                if(height>1)height>>=1;
+        if(miplevel>1&&i<miplevel)
+        {
+            if(width>1)width>>=1;
+            if(height>1)height>>=1;
+        }
 
-                image[face].Resize(width,height);
-            }
+        for(uint face=0;face<6;face++)
+        {
+            image[face].Bind();
+            image[face].Resize(width,height);
         }
     }
     

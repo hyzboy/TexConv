@@ -66,7 +66,7 @@ public:
 
         target_fmt_name=fmt_name_list[fmt_index];
         
-        std::cout<<"Compress Image to "<<target_fmt_name.c_str()<<" Format."<<std::endl;
+//        std::cout<<"Compress Image to "<<target_fmt_name.c_str()<<" Format."<<std::endl;
 
         if(type==IL_UNSIGNED_BYTE   ){cf=CF_8bit;    pixel_bytes=1;}else
         if(type==IL_UNSIGNED_SHORT  ){cf=CF_16bit;   pixel_bytes=2;}else
