@@ -1,47 +1,7 @@
 ﻿#include"TextureFileCreater.h"
 #include<hgl/filesystem/FileSystem.h>
 
-namespace
-{
-    /**
-    * 截取完整路径中的路径名和文件名
-    * @param pathname 拆分后的路径名
-    * @param filename 拆分后的文件名
-    * @param fullname 拆分前的完整路径文件名
-    */
-    template<typename T>
-    inline bool SplitFilename(String<T> &pathname,String<T> &filename,const String<T> &fullname)
-    {
-        if(fullname.Length()<=1)
-            return false;
-
-        const T spear_char[] = { '/','\\' };
-
-        const int pos=fullname.FindRightChars(spear_char);
-
-        if(pos==-1)
-            return(false);
-
-        pathname.Strcpy(fullname,pos);
-        filename.Strcpy(fullname.c_str()+pos+1);
-
-        return(true);
-    }
-
-    template<typename T>
-    inline String<T> ReplaceExtName(const String<T> &old_name,const String<T> &new_extname,const T split_char='.')
-    {
-        if(old_name.Length()<=1)
-            return(String<T>::charOf(split_char)+new_extname);
-
-        const int pos=old_name.FindRightChar(split_char);
-
-        if(pos!=-1)
-            return old_name.SubString(0,pos)+new_extname;
-        else
-            return old_name+String<T>::charOf(split_char)+new_extname;
-    }
-}//namespace
+using namespace hgl::filesystem;
 
 bool ToILType(ILuint &type,const uint8 bits,const ColorDataType cdt)
 {
@@ -74,69 +34,103 @@ TextureFileCreater::~TextureFileCreater()
     SAFE_CLEAR(dos);
 }
 
-const char texture_file_type_name[uint(TextureFileType::RANGE_SIZE)][16]=
+constexpr os_char TEXTURE_FILE_EXT_NAME[][20]=            //顺序必须等同VkImageViewType
 {
-    "Tex1D",
-    "Tex2D",
-    "Tex3D",
-    "TexCubemap",
-    "Tex1DArray",
-    "Tex2DArray",
-    "TexCubemapArray"
+    OS_TEXT(".Tex1D"),
+    OS_TEXT(".Tex2D"),
+    OS_TEXT(".Tex3D"),
+    OS_TEXT(".TexCube"),
+    OS_TEXT(".Tex1DArray"),
+    OS_TEXT(".Tex2DArray"),
+    OS_TEXT(".TexCubeArray")
 };
 
-bool TextureFileCreater::CreateTexFile(const OSString& old_filename, const TextureFileType& type)
+constexpr char TEXTURE_FILE_HEADER[]="Texture\x1A";
+constexpr uint TEXTURE_FILE_HEADER_LENGTH=sizeof(TEXTURE_FILE_HEADER)-1;
+
+bool TextureFileCreater::CreateTexFile(const OSString &old_filename, const VkImageViewType &type)
 {
     OSString pn,fn;
 
     SplitFilename<os_char>(pn,fn,old_filename);
 
-    if(!RangeCheck<TextureFileType>(type))
+    if(type<VK_IMAGE_VIEW_TYPE_1D
+     ||type>VK_IMAGE_VIEW_TYPE_CUBE_ARRAY)
     {
         LOG_ERROR(OS_TEXT("TextureFileCreater::WriteFileHeader(")+old_filename+OS_TEXT(") texture type error that it's ")+OSString::valueOf(int(type)));
         return(false);
     }
 
-    AnsiString file_type_name=texture_file_type_name[uint(type)];
-    OSString file_ext_name=OS_TEXT(".")+ToOSString(file_type_name);
-
-    filename=ReplaceExtName<os_char>(old_filename,file_ext_name);
+    filename=ReplaceExtName<os_char>(old_filename,TEXTURE_FILE_EXT_NAME[type]);
 
     if(!fos.CreateTrunc(filename))
         return(false);
 
     dos=new io::LEDataOutputStream(&fos);
 
-    dos->Write(file_type_name.c_str(),file_type_name.Length());
-    dos->WriteUint8(0x1A);
-    dos->WriteUint8(3);                                 //版本
+    dos->Write(TEXTURE_FILE_HEADER,TEXTURE_FILE_HEADER_LENGTH);
+    dos->WriteUint8(0);                                 //版本
+    dos->WriteUint8(type);                              //类型
 
 	return(true);
 }
 
-bool TextureFileCreater::WriteSize1D(const uint mip_level,const uint length)
+bool TextureFileCreater::WriteSize1D(const uint32 length)
 {
-    if(!dos->WriteUint8(mip_level))return(false);                         //mipmaps级数
     if(!dos->WriteUint32(length))return(false);
+
+    if(!dos->WriteUint64(0))return(false);
 
     return(true);
 }
 
-bool TextureFileCreater::WriteSize2D(const uint mip_level, const uint width,const uint height)
+bool TextureFileCreater::WriteSize2D(const uint32 width,const uint32 height)
 {
-    if(!dos->WriteUint8(mip_level))return(false);                         //mipmaps级数
     if(!dos->WriteUint32(width))return(false);
     if(!dos->WriteUint32(height))return(false);
 
+    if(!dos->WriteUint32(0))return(false);
+
     return(true);
 }
 
-bool TextureFileCreater::WritePixelFormat()
+bool TextureFileCreater::WriteSize3D(const uint32 width,const uint32 height,const uint32 depth)
+{
+    if(!dos->WriteUint32(width))return(false);
+    if(!dos->WriteUint32(height))return(false);
+    if(!dos->WriteUint32(depth))return(false);
+
+    return(true);
+}
+
+bool TextureFileCreater::WriteSize1DArray(const uint32 length,const uint32 layers)
+{
+    if(!dos->WriteUint32(length))return(false);
+    if(!dos->WriteUint32(0))return(false);
+    if(!dos->WriteUint32(layers))return(false);
+
+    return(true);
+}
+
+bool TextureFileCreater::WriteSize2DArray(const uint32 width,const uint32 height,const uint32 layers)
+{
+    if(!dos->WriteUint32(width))return(false);
+    if(!dos->WriteUint32(height))return(false);
+    if(!dos->WriteUint32(layers))return(false);
+
+    return(true);
+}
+
+bool TextureFileCreater::WritePixelFormat(const uint mip_level)
 {
     if (pixel_format->format > ColorFormat::COMPRESS)
     {
         if(!dos->WriteUint8(0))return(false);
         if(!dos->WriteUint16(uint(pixel_format->format)-uint(ColorFormat::BC1RGB)))return(false);
+
+        constexpr uint8 spaces[7]={0,0,0,0,0,0,0};
+
+        if(dos->WriteUint8(spaces,7)!=7)return(false);
     }
     else
     {
@@ -145,6 +139,8 @@ bool TextureFileCreater::WritePixelFormat()
         if(!dos->WriteUint8(pixel_format->bits, 4))return(false);						//颜色位数
         if(!dos->WriteUint8((uint8)pixel_format->type))return(false);					//数据类型
     }
+
+    if(!dos->WriteUint8(mip_level))return(false);                                       //mipmaps级数
 
 	return(true);
 }

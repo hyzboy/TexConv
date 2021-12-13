@@ -62,25 +62,25 @@ bool ConvertCubemap(const OSString &filename,const OSStringList &file_list,const
 
     AutoDelete<TextureFileCreater> tex_file_creater=CreateTFC(fmt,channels);
 
-    if (!tex_file_creater->CreateTexFile(filename, TextureFileType::TexCubemap))
+    if (!tex_file_creater->CreateTexFile(filename, VK_IMAGE_VIEW_TYPE_CUBE))
     {
         LOG_ERROR(OS_TEXT("Create Texture failed."));
         return(false);
     }
 
-    if (!tex_file_creater->WriteSize2D(miplevel, width, height))
+    if (!tex_file_creater->WriteSize2D(width, height))
     {
         LOG_ERROR(OS_TEXT("Write size failed."));
         return(false);
     }
 
-    if (!tex_file_creater->WritePixelFormat())
+    if (!tex_file_creater->WritePixelFormat(miplevel))
     {
         LOG_ERROR(OS_TEXT("Write format failed."));
         return(false);
     }
 
-    for(int face=0;face<6;face++)
+    for(uint face=0;face<6;face++)
     {
         image[face].Bind();
         width=image[face].width();
@@ -126,7 +126,7 @@ bool ConvertImage(const OSString &filename,const ImageConvertConfig *cfg);
 
 int os_main(int argc,os_char **argv)
 {
-    std::cout<<"Cubemap to Texture Convert tools 1.2"<<std::endl<<std::endl;
+    std::cout<<"Cubemap to Texture Convert tools 1.3"<<std::endl<<std::endl;
 
     if(argc<=7)
     {

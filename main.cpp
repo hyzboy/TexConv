@@ -29,7 +29,8 @@ protected:
 
     void ProcFile(EnumFileConfig *efc,FileInfo &fi) override
     {
-        ConvertImage(fi.fullname,cfg);
+        if(ConvertImage(fi.fullname,cfg))
+            ++convert_count;
     }
 
 public:
@@ -44,7 +45,7 @@ public:
 
 int os_main(int argc,os_char **argv)
 {
-    std::cout<<"Image to Texture Convert tools 1.2"<<std::endl<<std::endl;
+    std::cout<<"Image to Texture Convert tools 1.3"<<std::endl<<std::endl;
 
     if(argc<=1)
     {

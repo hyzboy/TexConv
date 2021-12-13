@@ -1,7 +1,6 @@
 #include<hgl/log/LogInfo.h>
 #include<IL/ilu.h>
 #include"ILImage.h"
-//#include"Image2D.h"
 #include"TextureFileCreater.h"
 #include"ImageConvertConfig.h"
 
@@ -31,19 +30,19 @@ bool ConvertImage(const OSString &filename,const ImageConvertConfig *cfg)
 
     AutoDelete<TextureFileCreater> tex_file_creater=CreateTFC(fmt,channels);
 
-    if(!tex_file_creater->CreateTexFile(filename,TextureFileType::Tex2D))
+    if(!tex_file_creater->CreateTexFile(filename,VK_IMAGE_VIEW_TYPE_2D))
     {
         LOG_ERROR(OS_TEXT("Create Texture failed."));
         return(false);
     }
 
-    if(!tex_file_creater->WriteSize2D(miplevel,width,height))
+    if(!tex_file_creater->WriteSize2D(width,height))
     {
         LOG_ERROR(OS_TEXT("Write size failed."));
         return(false);
     }
 
-    if(!tex_file_creater->WritePixelFormat())
+    if(!tex_file_creater->WritePixelFormat(miplevel))
     {
         LOG_ERROR(OS_TEXT("Write format failed."));
         return(false);
