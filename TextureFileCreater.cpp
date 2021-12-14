@@ -45,7 +45,7 @@ constexpr os_char TEXTURE_FILE_EXT_NAME[][20]=            //顺序必须等同Vk
     OS_TEXT(".TexCubeArray")
 };
 
-constexpr char TEXTURE_FILE_HEADER[]="Texture\x1A";
+constexpr char TEXTURE_FILE_HEADER[]="Texture";
 constexpr uint TEXTURE_FILE_HEADER_LENGTH=sizeof(TEXTURE_FILE_HEADER)-1;
 
 bool TextureFileCreater::CreateTexFile(const OSString &old_filename, const VkImageViewType &type)
@@ -141,10 +141,6 @@ bool TextureFileCreater::WritePixelFormat(const uint mip_level)
     }
 
     if(!dos->WriteUint8(mip_level))return(false);                                       //mipmaps级数
-
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    if(dos->WriteUint8(spaces,7)!=7)return(false);                                      //补齐TextureFileHeader头40字节问题
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	return(true);
 }
