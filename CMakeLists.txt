@@ -5,8 +5,8 @@ project(TexConv)
 add_definitions(-DUNICODE -D_UNICODE)
 
 if(WIN32)
-    include_directories("DevIL Windows SDK/include")
-    link_directories("DevIL Windows SDK/lib/x64/unicode/Release")
+    find_package(DevIL)
+    SET(HGL_DEVIL_LIB   DevIL ILU)
 endif(WIN32)
 
 include_directories(CMP_CompressonatorLib)
@@ -57,7 +57,7 @@ SOURCE_GROUP("Texture File Creater" FILES ${TEXTURE_FILE_CREATER_SOURCE})
 SOURCE_GROUP("CMD Param parse" FILES ${PARAM_PARSE_SOURCE})
 
 SET(TEX_CONV_SOURCE ${ILIMAGE_SOURCE} ${PIXEL_FORMAT_SOURCE} ${TEXTURE_FILE_CREATER_SOURCE} ${PARAM_PARSE_SOURCE})
-SET(TEX_CONV_LIBRARY CMCore CMPlatform CMUtil DevIL ILU CMP_Compressonator CMP_Framework CMP_Core)
+SET(TEX_CONV_LIBRARY CMCore CMPlatform CMUtil CMP_Compressonator CMP_Framework CMP_Core ${HGL_DEVIL_LIB})
 
 add_executable(TexConv ${TEX_CONV_SOURCE} main.cpp ConvertImage.cpp)
 target_link_libraries(TexConv PRIVATE ${TEX_CONV_LIBRARY})
@@ -72,16 +72,16 @@ IF(CM_BUILD_GUI_TOOLS)
 ENDIF(CM_BUILD_GUI_TOOLS)
 
 add_executable(ComboTexture ComboTexture.cpp ${ILIMAGE_SOURCE})
-target_link_libraries(ComboTexture PRIVATE CMCore CMPlatform CMUtil DevIL ILU MathGeoLib)
+target_link_libraries(ComboTexture PRIVATE CMCore CMPlatform CMUtil ${HGL_DEVIL_LIB})
 
 #add_executable(YUVTest YUVTest.cpp YUV.cpp SpheremapNormal.cpp ${ILIMAGE_SOURCE})
-#target_link_libraries(YUVTest PRIVATE CMCore CMPlatform CMUtil DevIL ILU MathGeoLib)
+#target_link_libraries(YUVTest PRIVATE CMCore CMPlatform CMUtil ${HGL_DEVIL_LIB})
 
 #add_executable(NormalTest NormalTest.cpp SpheremapNormal.cpp ${ILIMAGE_SOURCE})
-#target_link_libraries(NormalTest PRIVATE CMCore CMPlatform CMUtil DevIL ILU MathGeoLib)
+#target_link_libraries(NormalTest PRIVATE CMCore CMPlatform CMUtil ${HGL_DEVIL_LIB})
 
 add_executable(DFGen DistanceFieldGenerater.cpp ILImage.h ILImageSupport.cpp)
-target_link_libraries(DFGen PRIVATE CMCore CMPlatform CMUtil DevIL ILU MathGeoLib)
+target_link_libraries(DFGen PRIVATE CMCore CMPlatform CMUtil ${HGL_DEVIL_LIB})
 
 
 macro(texture_tool_project project_name)
