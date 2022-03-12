@@ -19,20 +19,6 @@ namespace hgl
 {
     constexpr double TWO_SQRT=1.414213562373095;        //2的开方，unreal用的这个
 
-    template<typename T>
-    const T clamp(const T &in,const T min_v,const T max_v)
-    {
-        if(in<min_v)return min_v;
-        if(in>max_v)return max_v;
-
-        return in;
-    }
-
-    const double clamp(const double &in)
-    {
-        return clamp<double>(in,0.0f,1.0f);
-    }
-
     constexpr double clamp_u=0.436*255.0;
     constexpr double clamp_v=0.615*255.0;
         
@@ -94,7 +80,7 @@ namespace hgl
     {
         const OSString out_filename=OSString(filename)+OS_TEXT("_")+flag+OS_TEXT(".png");
 
-        AutoDeleteArray<uint8> pixels=new uint8[w*h*4];
+        AutoDeleteArray<uint8> pixels(w*h*4);
 
         MixRGBA<uint8>(pixels,rgb,a,w*h);
 
@@ -111,7 +97,7 @@ namespace hgl
     {
         const OSString out_filename=OSString(filename)+OS_TEXT("_")+flag+OS_TEXT(".png");
 
-        AutoDeleteArray<uint8> pixels=new uint8[w*h*4];
+        AutoDeleteArray<uint8> pixels(w*h*4);
 
         MixRGBA<uint8>(pixels,r,g,b,a,w*h);
 
@@ -128,7 +114,7 @@ namespace hgl
     {
         const OSString out_filename=OSString(filename)+OS_TEXT("_")+flag+OS_TEXT(".png");
 
-        AutoDeleteArray<uint8> pixels=new uint8[w*h*3];
+        AutoDeleteArray<uint8> pixels(w*h*3);
 
         MixRGB<uint8>(pixels,r,g,b,w*h);
 
@@ -221,9 +207,9 @@ int os_main(int argc,os_char **argv)
 
         const uint pixel_total=w*h;
 
-        AutoDeleteArray<uint8> y=new uint8[pixel_total];
-        AutoDeleteArray<uint8> u=new uint8[pixel_total];
-        AutoDeleteArray<uint8> v=new uint8[pixel_total];
+        AutoDeleteArray<uint8> y(pixel_total);
+        AutoDeleteArray<uint8> u(pixel_total);
+        AutoDeleteArray<uint8> v(pixel_total);
 
         RGB2YUV(y,u,v,(uint8 *)color.GetRGB(IL_UNSIGNED_BYTE),pixel_total,gamma);
 
@@ -271,9 +257,9 @@ int os_main(int argc,os_char **argv)
 
         for(uint i=0;i<4;i++)
         {
-            y[i]=new uint8[pixel_total];
-            u[i]=new uint8[pixel_total];
-            v[i]=new uint8[pixel_total];
+            y[i].alloc(pixel_total);
+            u[i].alloc(pixel_total);
+            v[i].alloc(pixel_total);
 
             RGB2YUV(y[i],u[i],v[i],(uint8 *)rgb[i].GetRGB(IL_UNSIGNED_BYTE),pixel_total,gamma);
         }
@@ -325,9 +311,9 @@ int os_main(int argc,os_char **argv)
 
         for(uint i=0;i<2;i++)
         {
-            y[i]=new uint8[pixel_total];
-            u[i]=new uint8[pixel_total];
-            v[i]=new uint8[pixel_total];
+            y[i].alloc(pixel_total);
+            u[i].alloc(pixel_total);
+            v[i].alloc(pixel_total);
 
             RGB2YUV(y[i],u[i],v[i],(uint8 *)color[i].GetRGB(IL_UNSIGNED_BYTE),pixel_total,gamma);
         }
