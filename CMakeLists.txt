@@ -65,6 +65,9 @@ target_link_libraries(TexConv PRIVATE ${TEX_CONV_LIBRARY})
 add_executable(CubeMapConv ${TEX_CONV_SOURCE} CubeMapConvert.cpp)
 target_link_libraries(CubeMapConv PRIVATE ${TEX_CONV_LIBRARY})
 
+add_executable(HDR2PNG HDR2PNG.cpp ${ILIMAGE_SOURCE})
+target_link_libraries(HDR2PNG PRIVATE CMCore CMPlatform CMUtil ${HGL_DEVIL_LIB})
+
 IF(CM_BUILD_GUI_TOOLS)
     set(IDENTIFIER "com.hyzgame.texconv")
 
@@ -93,3 +96,4 @@ texture_tool_project(CubeMapConv)
 texture_tool_project(ComboTexture)
 texture_tool_project(DFGen)
 #texture_tool_project(IMTest)
+texture_tool_project(HDR2PNG)
