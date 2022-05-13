@@ -1,33 +1,11 @@
 #include<iostream>
 #include"ILImage.h"
-#include<hgl/type/Color.h>
+#include<hgl/type/ColorSpace.h>
 #include<hgl/filesystem/Filename.h>
 
 using namespace hgl;
 using namespace hgl::filesystem;
 
-constexpr double SRGB_GAMMA         =1.0f/2.2f;
-constexpr double SRGB_INVERSE_GAMMA =2.2f;
-constexpr double SRGB_ALPHA         =0.055f;
-
-template<typename T>
-inline constexpr T sRGB2Linear(const T &in)
-{
-    if(in<=0.4045)
-        return (double)in/12.92;
-    else
-        return pow((double(in)+SRGB_ALPHA)/(1.0f+SRGB_ALPHA),2.4f);
-}
-
-template<typename T>
-inline constexpr T Linear2sRGB(const T &in)
-{
-    if(in<=0.0031308f)
-        return double(in)*12.92f;
-    else
-        return (1.0f+SRGB_ALPHA)*pow(double(in),1.0f/2.4f)-SRGB_ALPHA;
-}
-        
 int convert(const OSString &filename)
 {
     ILImage hdr;
