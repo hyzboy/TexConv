@@ -200,7 +200,10 @@ bool ILImage::LoadFile(const OSString &filename)
 
     if(!ilLoadImage(filename.c_str()))
     {
-        LOG_ERROR(OS_TEXT("can't Load image: ")+filename);
+        ILenum il_err_code=ilGetError();
+        
+        LOG_ERROR(OS_TEXT("can't Load image file: ")+filename+OS_TEXT("Error: ")+OSString::valueOf(il_err_code));
+
         return(false);
     }
 
