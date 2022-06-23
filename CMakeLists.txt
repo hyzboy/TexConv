@@ -6,7 +6,10 @@ add_definitions(-DUNICODE -D_UNICODE)
 
 if(WIN32)
     find_package(DevIL)
-    SET(HGL_DEVIL_LIB   DevIL ILU)
+
+    include_directories(${IL_INCLUDE_DIR})
+
+    SET(HGL_DEVIL_LIB   ${IL_LIBRARIES} ${ILU_LIBRARIES})
 endif(WIN32)
 
 include_directories(CMP_CompressonatorLib)

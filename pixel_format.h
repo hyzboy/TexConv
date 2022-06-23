@@ -1,8 +1,10 @@
 ﻿#pragma once
 
 #include<hgl/type/DataType.h>
+#include<hgl/graph/VKFormat.h>
 
 using namespace hgl;
+using namespace hgl::graph;
 
 enum class ColorFormat
 {
@@ -62,40 +64,23 @@ enum class ColorFormat
     END
 };//enum class ColorFormat
 
-enum class ColorDataType
-{
-    NONE=0,
-
-    UNORM,
-    SNORM,
-    USCALE,
-    SSCALE,
-    UINT,
-    SINT,
-    UFLOAT,
-    SFLOAT,
-    SRGB,
-
-    END
-};//enum class ColorDataType
-
 struct ColorDataFormat
 {
-    char            color;      //颜色成份 R/G/B/A/D等
-    ColorDataType   type;       //UNORM/SNORM等
-    uint8           bits;       //位数
+    char                color;      //颜色成份 R/G/B/A/D等
+    VulkanNumberType    type;       //UNORM/SNORM等
+    uint8               bits;       //位数
 };//
 
 struct PixelFormat
 {
-    ColorFormat     format;
-    char            name[32];
+    ColorFormat         format;
+    char                name[32];
 
-    uint8           channels;   //颜色通道数
-    char            color[4];
-    uint8           bits[4];
-    uint            total_bits; //每象素总位数
-    ColorDataType   type;
+    uint8               channels;   //颜色通道数
+    char                color[4];
+    uint8               bits[4];
+    uint                total_bits; //每象素总位数
+    VulkanNumberType    type;
 };//struct PixelFormat
 
 const PixelFormat *GetPixelFormat(ColorFormat);                                                     ///<根据获取获取象素格式类型

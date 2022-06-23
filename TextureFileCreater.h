@@ -8,7 +8,7 @@
 
 using namespace hgl;
 
-bool ToILType(ILuint &type,const uint8 bits,const ColorDataType cdt);
+bool ToILType(ILuint &type,const uint8 bits,const hgl::graph::VulkanNumberType cdt);
 
 class TextureFileCreater
 {
