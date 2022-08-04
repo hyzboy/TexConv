@@ -102,7 +102,7 @@ int os_main(int argc,os_char **argv)
         LOG_INFO(OS_TEXT("Total converted ")+OSString::valueOf(eci.GetConvertCount())
                 +OS_TEXT(" textures for ")+time_gap_str.c_str()+OS_TEXT(" seconds."));
     }
-            
+
     CMP_ShutdownBCLibrary();
 	ilShutDown();
     return 0;

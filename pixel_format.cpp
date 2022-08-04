@@ -6,7 +6,7 @@
 namespace hgl
 {
     using namespace graph;
-    constexpr char *ColorDataName[]=
+    constexpr char *VulkanNumberTypeName[]=
     {
         "NONE",
         
@@ -61,7 +61,7 @@ namespace hgl
         {ColorFormat::RGBA32I,  "RGBA32I",  4,{'R','G','B','A'},{32,32,32,32},128,VulkanNumberType::SINT},
         {ColorFormat::RGBA32F,  "RGBA32F",  4,{'R','G','B','A'},{32,32,32,32},128,VulkanNumberType::SFLOAT},
         {ColorFormat::B10GR11UF,"B10GR11UF",3,{'B','G','R', 0 },{10,11,11, 0}, 32,VulkanNumberType::UFLOAT},
-        
+
         {ColorFormat::COMPRESS, "COMPRESS", 0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},  0,VulkanNumberType::NONE},
 
         {ColorFormat::BC1RGB,   "BC1RGB",   0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},  4,VulkanNumberType::NONE},
@@ -85,7 +85,7 @@ void PrintFormatList()
     for(uint i=0;i<PixelFormatCount;i++)
     {
         if(pf->format<ColorFormat::COMPRESS)
-            std::cout<<int(pf->channels)<<": "<<std::setw(10)<<pf->name<<" "<<std::setw(3)<<pf->total_bits<<" bits "<<ColorDataName[(uint)(pf->type)]<<std::endl;
+            std::cout<<int(pf->channels)<<": "<<std::setw(10)<<pf->name<<" "<<std::setw(3)<<pf->total_bits<<" bits "<<VulkanNumberTypeName[(uint)(pf->type)]<<std::endl;
         else
         if(pf->format>ColorFormat::COMPRESS)
             std::cout<<std::setw(13)<<pf->name<<" Compress Format"<<std::endl;
