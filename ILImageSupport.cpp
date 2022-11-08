@@ -9,6 +9,58 @@ using namespace hgl;
 
 namespace
 {
+    struct DevILError
+    {
+        uint code;
+        const os_char *name;
+    };
+    
+    constexpr const DevILError devil_error_text[]=
+    {
+    #define DEVIL_ERROR_TEXT(name)  {IL_##name,OS_TEXT(#name)},
+
+        DEVIL_ERROR_TEXT(NO_ERROR)
+        DEVIL_ERROR_TEXT(INVALID_ENUM)
+        DEVIL_ERROR_TEXT(OUT_OF_MEMORY)
+        DEVIL_ERROR_TEXT(FORMAT_NOT_SUPPORTED)
+        DEVIL_ERROR_TEXT(INTERNAL_ERROR)
+        DEVIL_ERROR_TEXT(INVALID_VALUE)
+        DEVIL_ERROR_TEXT(ILLEGAL_OPERATION)
+        DEVIL_ERROR_TEXT(ILLEGAL_FILE_VALUE)
+        DEVIL_ERROR_TEXT(INVALID_FILE_HEADER)
+        DEVIL_ERROR_TEXT(INVALID_PARAM)
+        DEVIL_ERROR_TEXT(COULD_NOT_OPEN_FILE)
+        DEVIL_ERROR_TEXT(INVALID_EXTENSION)
+        DEVIL_ERROR_TEXT(FILE_ALREADY_EXISTS)
+        DEVIL_ERROR_TEXT(OUT_FORMAT_SAME)
+        DEVIL_ERROR_TEXT(STACK_OVERFLOW)
+        DEVIL_ERROR_TEXT(STACK_UNDERFLOW)
+        DEVIL_ERROR_TEXT(INVALID_CONVERSION)
+        DEVIL_ERROR_TEXT(BAD_DIMENSIONS)
+        DEVIL_ERROR_TEXT(FILE_READ_ERROR)
+        DEVIL_ERROR_TEXT(FILE_WRITE_ERROR)
+
+        DEVIL_ERROR_TEXT(LIB_GIF_ERROR)
+        DEVIL_ERROR_TEXT(LIB_JPEG_ERROR)
+        DEVIL_ERROR_TEXT(LIB_PNG_ERROR)
+        DEVIL_ERROR_TEXT(LIB_TIFF_ERROR)
+        DEVIL_ERROR_TEXT(LIB_MNG_ERROR)
+        DEVIL_ERROR_TEXT(LIB_JP2_ERROR)
+        DEVIL_ERROR_TEXT(LIB_EXR_ERROR)
+        DEVIL_ERROR_TEXT(UNKNOWN_ERROR)
+
+    #undef DEVIL_ERROR_TEXT
+    };
+
+    const os_char *GetDevILErrorString(const uint code)
+    {
+        for(const DevILError err:devil_error_text)
+            if(err.code==code)
+                return err.name;
+
+        return nullptr;
+    }    
+
     const OSString GetILFormatName(const ILuint format)
     {
         #define IL_FMT2NAME(name)    if(format==IL_##name)return OS_TEXT(#name);
@@ -201,8 +253,10 @@ bool ILImage::LoadFile(const OSString &filename)
     if(!ilLoadImage(filename.c_str()))
     {
         ILenum il_err_code=ilGetError();
+
+        const os_char *err_text=GetDevILErrorString(il_err_code);        
         
-        LOG_ERROR(OS_TEXT("can't Load image file: ")+filename+OS_TEXT("Error: ")+OSString::valueOf(il_err_code));
+        LOG_ERROR(OS_TEXT("can't Load image file <")+filename+OS_TEXT("> Error: ")+(err_text?err_text:OSString::valueOf(il_err_code)));
 
         return(false);
     }
