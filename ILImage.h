@@ -62,6 +62,8 @@ public:
 
     void *GetLum(ILuint type){return GetData(IL_LUMINANCE,type);}
 
+    void *GetAlpha(ILuint type);
+
     bool ConvertToR(ILuint type){return (il_format==IL_LUMINANCE?Convert(IL_LUMINANCE,type):Convert(IL_ALPHA,type));}
     bool ConvertToRG(ILuint type){return Convert(IL_LUMINANCE_ALPHA,type);}
     bool ConvertToRGB(ILuint type){return Convert(IL_RGB,type);}

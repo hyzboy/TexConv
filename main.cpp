@@ -60,6 +60,8 @@ int os_main(int argc,os_char **argv)
         return 0;
     }
 
+    logger::InitLogger(OS_TEXT("TexConv"));
+
     CmdParse cp(argc,argv);
 
     ImageConvertConfig icc;

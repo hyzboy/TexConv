@@ -343,6 +343,11 @@ void *ILImage::ToGray(ILuint type)
     return ilGetData();
 }
 
+void *ILImage::GetAlpha(ILuint type)
+{
+    return ilGetAlpha(type);
+}
+
 void *ILImage::GetR(ILuint type)
 {
     if(il_format==IL_ALPHA)return ilGetAlpha(type);

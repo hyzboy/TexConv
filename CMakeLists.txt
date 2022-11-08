@@ -5,11 +5,18 @@ project(TexConv)
 add_definitions(-DUNICODE -D_UNICODE)
 
 if(WIN32)
-    find_package(DevIL)
 
-    include_directories(${IL_INCLUDE_DIR})
+    include_directories("${CMAKE_CURRENT_SOURCE_DIR}/DevIL Windows SDK/include")
 
-    SET(HGL_DEVIL_LIB   ${IL_LIBRARIES} ${ILU_LIBRARIES})
+    IF(HGL_BITS EQUAL 32)
+        SET(DEVIL_LIBRARY_PATH "${CMAKE_CURRENT_SOURCE_DIR}/DevIL Windows SDK/lib/x86/unicode/Release")
+    else()
+        SET(DEVIL_LIBRARY_PATH "${CMAKE_CURRENT_SOURCE_DIR}/DevIL Windows SDK/lib/x64/unicode/Release")
+    endif()
+
+    SET(HGL_DEVIL_LIB   ${DEVIL_LIBRARY_PATH}/DevIL.lib
+                        ${DEVIL_LIBRARY_PATH}/ILU.lib
+                        ${DEVIL_LIBRARY_PATH}/ILUT.lib)
 endif(WIN32)
 
 include_directories(CMP_CompressonatorLib)
@@ -88,7 +95,6 @@ target_link_libraries(ComboTexture PRIVATE CMCore CMPlatform CMUtil ${HGL_DEVIL_
 
 add_executable(DFGen DistanceFieldGenerater.cpp ILImage.h ILImageSupport.cpp)
 target_link_libraries(DFGen PRIVATE CMCore CMPlatform CMUtil ${HGL_DEVIL_LIB})
-
 
 macro(texture_tool_project project_name)
     set_property(TARGET ${project_name} PROPERTY FOLDER "CM/Tools/Texture")
