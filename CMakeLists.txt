@@ -81,7 +81,7 @@ target_link_libraries(HDR2PNG PRIVATE CMCore CMPlatform CMUtil ${HGL_DEVIL_LIB})
 IF(CM_BUILD_GUI_TOOLS)
     set(IDENTIFIER "com.hyzgame.texconv")
 
-    target_link_libraries(TexConv PRIVATE Qt5::Core Qt5::Gui Qt5::Widgets)
+    target_link_libraries(TexConv PRIVATE Qt${CM_QT_MAJOR_VERSION}::Core Qt${CM_QT_MAJOR_VERSION}::Gui Qt${CM_QT_MAJOR_VERSION}::Widgets)
 ENDIF(CM_BUILD_GUI_TOOLS)
 
 add_executable(ComboTexture ComboTexture.cpp ${ILIMAGE_SOURCE})
