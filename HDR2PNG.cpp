@@ -1,6 +1,6 @@
 #include<iostream>
 #include"ILImage.h"
-#include<hgl/type/ColorSpace.h>
+#include<hgl/color/Gamma.h>
 #include<hgl/filesystem/Filename.h>
 
 using namespace hgl;
