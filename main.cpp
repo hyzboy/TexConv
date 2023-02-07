@@ -45,7 +45,7 @@ public:
 
 int os_main(int argc,os_char **argv)
 {
-    std::cout<<"Image to Texture Convert tools 1.3"<<std::endl<<std::endl;
+    std::cout<<"Image to Texture Convert tools 1.3a"<<std::endl<<std::endl;
 
     if(argc<=1)
     {
@@ -59,6 +59,8 @@ int os_main(int argc,os_char **argv)
         PrintFormatList();
         return 0;
     }
+
+    logger::InitLogger(OS_TEXT("TexConv"));
 
     CmdParse cp(argc,argv);
 
@@ -102,7 +104,7 @@ int os_main(int argc,os_char **argv)
         LOG_INFO(OS_TEXT("Total converted ")+OSString::valueOf(eci.GetConvertCount())
                 +OS_TEXT(" textures for ")+time_gap_str.c_str()+OS_TEXT(" seconds."));
     }
-            
+
     CMP_ShutdownBCLibrary();
 	ilShutDown();
     return 0;

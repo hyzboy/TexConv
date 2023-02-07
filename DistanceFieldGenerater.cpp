@@ -125,29 +125,45 @@ namespace df
 
 int os_main(int argc,os_char **argv)
 {
-    std::cout<<"Distance Field Generater v1.0"<<std::endl<<std::endl;
+    os_out<<OS_TEXT("Distance Field Generater v1.1")<<std::endl;
+    os_out<<std::endl;
 
     if(argc<2)
     {
-        std::cout<<"example: DFGen 1.png"<<std::endl<<std::endl;
+        os_out<<OS_TEXT("example: DFGen 1.png [alpha]")<<std::endl<<std::endl;
         return 0;
     }
+
+    logger::InitLogger(OS_TEXT("DFGen"));    
 
     ilInit();
 
     ILImage img;
+    bool use_alpha=false;
 
     if(!img.LoadFile(argv[1]))
     {
-        std::cerr<<"open file failed."<<std::endl;
+        os_err<<OS_TEXT("open file <")<<argv[1]<<OS_TEXT("> failed.")<<std::endl;
         return -1;
     }
 
     if(img.channels()==1)
     {
     }
+    else
+    if(img.channels()==4)
+    {
+        if(argc==3)
+        {
+            if(argv[2][0]=='a'
+             ||argv[2][0]=='A')
+                use_alpha=true;
+        }
+    }
 
-    const uint8 *op=(const uint8 *)img.ToGray();
+    os_out <<(use_alpha?OS_TEXT("use alpha data."):OS_TEXT("use luminance data."))<<std::endl;
+
+    const uint8 *op=(const uint8 *)(use_alpha?img.GetAlpha(IL_UNSIGNED_BYTE):img.ToGray());
 
     AutoDelete<df::Grid> grid1=new df::Grid(img.width(),img.height());
     AutoDelete<df::Grid> grid2=new df::Grid(img.width(),img.height());

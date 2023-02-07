@@ -5,16 +5,17 @@
 
 namespace hgl
 {
-    constexpr char *ColorDataName[]=
+    using namespace graph;
+    constexpr char *VulkanNumberTypeName[]=
     {
         "NONE",
-
+        
+        "UINT",
+        "SINT",
         "UNORM",
         "SNORM",
         "USCALED",
         "SSCALED",
-        "UINT",
-        "SINT",
         "UFLOAT",
         "SFLOAT",
         "sRGB"
@@ -22,56 +23,56 @@ namespace hgl
 
     constexpr PixelFormat pf_list[]=
     {
-        {ColorFormat::RGBA4,    "RGBA4",    4,{'R','G','B','A'},{ 4, 4, 4, 4}, 16,ColorDataType::UNORM},
-        {ColorFormat::BGRA4,    "BGRA4",    4,{'B','G','R','A'},{ 4, 4, 4, 4}, 16,ColorDataType::UNORM},
-        {ColorFormat::RGB565,   "RGB565",   3,{'R','G','B', 0 },{ 5, 6, 5, 0}, 16,ColorDataType::UNORM},
-        {ColorFormat::A1RGB5,   "A1RGB5",   4,{'A','R','G','B'},{ 1, 5, 5, 5}, 16,ColorDataType::UNORM},
-        {ColorFormat::R8,       "R8",       1,{'R', 0 , 0 , 0 },{ 8, 0, 0, 0},  8,ColorDataType::UNORM},
-        {ColorFormat::RG8,      "RG8",      2,{'R','G', 0 , 0 },{ 8, 8, 0, 0}, 16,ColorDataType::UNORM},
-        {ColorFormat::RGBA8,    "RGBA8",    4,{'R','G','B','A'},{ 8, 8, 8, 8}, 32,ColorDataType::UNORM},
-        {ColorFormat::RGBA8SN,  "RGBA8S",   4,{'R','G','B','A'},{ 8, 8, 8, 8}, 32,ColorDataType::SNORM},
-        {ColorFormat::RGBA8U,   "RGBA8U",   4,{'R','G','B','A'},{ 8, 8, 8, 8}, 32,ColorDataType::UINT},
-        {ColorFormat::RGBA8I,   "RGBA8I",   4,{'R','G','B','A'},{ 8, 8, 8, 8}, 32,ColorDataType::SINT},
-        {ColorFormat::ABGR8,    "ABGR8",    4,{'A','B','G','R'},{ 8, 8, 8, 8}, 32,ColorDataType::UNORM},
-        {ColorFormat::A2BGR10,  "A2BGR10",  4,{'A','B','G','R'},{ 2,10,10,10}, 32,ColorDataType::UNORM},
-        {ColorFormat::R16,      "R16",      1,{'R', 0 , 0 , 0 },{16, 0, 0, 0}, 16,ColorDataType::UNORM},
-        {ColorFormat::R16U,     "R16U",     1,{'R', 0 , 0 , 0 },{16, 0, 0, 0}, 16,ColorDataType::UINT},
-        {ColorFormat::R16I,     "R16I",     1,{'R', 0 , 0 , 0 },{16, 0, 0, 0}, 16,ColorDataType::SINT},
-        {ColorFormat::R16F,     "R16F",     1,{'R', 0 , 0 , 0 },{16, 0, 0, 0}, 16,ColorDataType::SFLOAT},
-        {ColorFormat::RG16,     "RG16",     2,{'R','G', 0 , 0 },{16,16, 0, 0}, 32,ColorDataType::UNORM},
-        {ColorFormat::RG16U,    "RG16U",    2,{'R','G', 0 , 0 },{16,16, 0, 0}, 32,ColorDataType::UINT},
-        {ColorFormat::RG16I,    "RG16I",    2,{'R','G', 0 , 0 },{16,16, 0, 0}, 32,ColorDataType::SINT},
-        {ColorFormat::RG16F,    "RG16F",    2,{'R','G', 0 , 0 },{16,16, 0, 0}, 32,ColorDataType::SFLOAT},
-        {ColorFormat::RGBA16,   "RGBA16",   4,{'R','G','B','A'},{16,16,16,16}, 64,ColorDataType::UNORM},
-        {ColorFormat::RGBA16SN, "RGBA16S",  4,{'R','G','B','A'},{16,16,16,16}, 64,ColorDataType::SNORM},
-        {ColorFormat::RGBA16U,  "RGBA16U",  4,{'R','G','B','A'},{16,16,16,16}, 64,ColorDataType::UINT},
-        {ColorFormat::RGBA16I,  "RGBA16I",  4,{'R','G','B','A'},{16,16,16,16}, 64,ColorDataType::SINT},
-        {ColorFormat::RGBA16F,  "RGBA16F",  4,{'R','G','B','A'},{16,16,16,16}, 64,ColorDataType::SFLOAT},
-        {ColorFormat::R32U,     "R32U",     1,{'R', 0 , 0 , 0 },{32, 0, 0, 0}, 32,ColorDataType::UINT},
-        {ColorFormat::R32I,     "R32I",     1,{'R', 0 , 0 , 0 },{32, 0, 0, 0}, 32,ColorDataType::SINT},
-        {ColorFormat::R32F,     "R32F",     1,{'R', 0 , 0 , 0 },{32, 0, 0, 0}, 32,ColorDataType::SFLOAT},
-        {ColorFormat::RG32U,    "RG32U",    2,{'R','G', 0 , 0 },{32,32, 0, 0}, 64,ColorDataType::UINT},
-        {ColorFormat::RG32I,    "RG32I",    2,{'R','G', 0 , 0 },{32,32, 0, 0}, 64,ColorDataType::SINT},
-        {ColorFormat::RG32F,    "RG32F",    2,{'R','G', 0 , 0 },{32,32, 0, 0}, 64,ColorDataType::SFLOAT},
-        {ColorFormat::RGB32U,   "RGB32U",   3,{'R','G','B', 0 },{32,32,32, 0}, 96,ColorDataType::UINT},
-        {ColorFormat::RGB32I,   "RGB32I",   3,{'R','G','B', 0 },{32,32,32, 0}, 96,ColorDataType::SINT},
-        {ColorFormat::RGB32F,   "RGB32F",   3,{'R','G','B', 0 },{32,32,32, 0}, 96,ColorDataType::SFLOAT},
-        {ColorFormat::RGBA32U,  "RGBA32U",  4,{'R','G','B','A'},{32,32,32,32},128,ColorDataType::UINT},
-        {ColorFormat::RGBA32I,  "RGBA32I",  4,{'R','G','B','A'},{32,32,32,32},128,ColorDataType::SINT},
-        {ColorFormat::RGBA32F,  "RGBA32F",  4,{'R','G','B','A'},{32,32,32,32},128,ColorDataType::SFLOAT},
-        {ColorFormat::B10GR11UF,"B10GR11UF",3,{'B','G','R', 0 },{10,11,11, 0}, 32,ColorDataType::UFLOAT},
-        
-        {ColorFormat::COMPRESS, "COMPRESS", 0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},  0,ColorDataType::NONE},
+        {ColorFormat::RGBA4,    "RGBA4",    4,{'R','G','B','A'},{ 4, 4, 4, 4}, 16,VulkanNumberType::UNORM},
+        {ColorFormat::BGRA4,    "BGRA4",    4,{'B','G','R','A'},{ 4, 4, 4, 4}, 16,VulkanNumberType::UNORM},
+        {ColorFormat::RGB565,   "RGB565",   3,{'R','G','B', 0 },{ 5, 6, 5, 0}, 16,VulkanNumberType::UNORM},
+        {ColorFormat::A1RGB5,   "A1RGB5",   4,{'A','R','G','B'},{ 1, 5, 5, 5}, 16,VulkanNumberType::UNORM},
+        {ColorFormat::R8,       "R8",       1,{'R', 0 , 0 , 0 },{ 8, 0, 0, 0},  8,VulkanNumberType::UNORM},
+        {ColorFormat::RG8,      "RG8",      2,{'R','G', 0 , 0 },{ 8, 8, 0, 0}, 16,VulkanNumberType::UNORM},
+        {ColorFormat::RGBA8,    "RGBA8",    4,{'R','G','B','A'},{ 8, 8, 8, 8}, 32,VulkanNumberType::UNORM},
+        {ColorFormat::RGBA8SN,  "RGBA8S",   4,{'R','G','B','A'},{ 8, 8, 8, 8}, 32,VulkanNumberType::SNORM},
+        {ColorFormat::RGBA8U,   "RGBA8U",   4,{'R','G','B','A'},{ 8, 8, 8, 8}, 32,VulkanNumberType::UINT},
+        {ColorFormat::RGBA8I,   "RGBA8I",   4,{'R','G','B','A'},{ 8, 8, 8, 8}, 32,VulkanNumberType::SINT},
+        {ColorFormat::ABGR8,    "ABGR8",    4,{'A','B','G','R'},{ 8, 8, 8, 8}, 32,VulkanNumberType::UNORM},
+        {ColorFormat::A2BGR10,  "A2BGR10",  4,{'A','B','G','R'},{ 2,10,10,10}, 32,VulkanNumberType::UNORM},
+        {ColorFormat::R16,      "R16",      1,{'R', 0 , 0 , 0 },{16, 0, 0, 0}, 16,VulkanNumberType::UNORM},
+        {ColorFormat::R16U,     "R16U",     1,{'R', 0 , 0 , 0 },{16, 0, 0, 0}, 16,VulkanNumberType::UINT},
+        {ColorFormat::R16I,     "R16I",     1,{'R', 0 , 0 , 0 },{16, 0, 0, 0}, 16,VulkanNumberType::SINT},
+        {ColorFormat::R16F,     "R16F",     1,{'R', 0 , 0 , 0 },{16, 0, 0, 0}, 16,VulkanNumberType::SFLOAT},
+        {ColorFormat::RG16,     "RG16",     2,{'R','G', 0 , 0 },{16,16, 0, 0}, 32,VulkanNumberType::UNORM},
+        {ColorFormat::RG16U,    "RG16U",    2,{'R','G', 0 , 0 },{16,16, 0, 0}, 32,VulkanNumberType::UINT},
+        {ColorFormat::RG16I,    "RG16I",    2,{'R','G', 0 , 0 },{16,16, 0, 0}, 32,VulkanNumberType::SINT},
+        {ColorFormat::RG16F,    "RG16F",    2,{'R','G', 0 , 0 },{16,16, 0, 0}, 32,VulkanNumberType::SFLOAT},
+        {ColorFormat::RGBA16,   "RGBA16",   4,{'R','G','B','A'},{16,16,16,16}, 64,VulkanNumberType::UNORM},
+        {ColorFormat::RGBA16SN, "RGBA16S",  4,{'R','G','B','A'},{16,16,16,16}, 64,VulkanNumberType::SNORM},
+        {ColorFormat::RGBA16U,  "RGBA16U",  4,{'R','G','B','A'},{16,16,16,16}, 64,VulkanNumberType::UINT},
+        {ColorFormat::RGBA16I,  "RGBA16I",  4,{'R','G','B','A'},{16,16,16,16}, 64,VulkanNumberType::SINT},
+        {ColorFormat::RGBA16F,  "RGBA16F",  4,{'R','G','B','A'},{16,16,16,16}, 64,VulkanNumberType::SFLOAT},
+        {ColorFormat::R32U,     "R32U",     1,{'R', 0 , 0 , 0 },{32, 0, 0, 0}, 32,VulkanNumberType::UINT},
+        {ColorFormat::R32I,     "R32I",     1,{'R', 0 , 0 , 0 },{32, 0, 0, 0}, 32,VulkanNumberType::SINT},
+        {ColorFormat::R32F,     "R32F",     1,{'R', 0 , 0 , 0 },{32, 0, 0, 0}, 32,VulkanNumberType::SFLOAT},
+        {ColorFormat::RG32U,    "RG32U",    2,{'R','G', 0 , 0 },{32,32, 0, 0}, 64,VulkanNumberType::UINT},
+        {ColorFormat::RG32I,    "RG32I",    2,{'R','G', 0 , 0 },{32,32, 0, 0}, 64,VulkanNumberType::SINT},
+        {ColorFormat::RG32F,    "RG32F",    2,{'R','G', 0 , 0 },{32,32, 0, 0}, 64,VulkanNumberType::SFLOAT},
+        {ColorFormat::RGB32U,   "RGB32U",   3,{'R','G','B', 0 },{32,32,32, 0}, 96,VulkanNumberType::UINT},
+        {ColorFormat::RGB32I,   "RGB32I",   3,{'R','G','B', 0 },{32,32,32, 0}, 96,VulkanNumberType::SINT},
+        {ColorFormat::RGB32F,   "RGB32F",   3,{'R','G','B', 0 },{32,32,32, 0}, 96,VulkanNumberType::SFLOAT},
+        {ColorFormat::RGBA32U,  "RGBA32U",  4,{'R','G','B','A'},{32,32,32,32},128,VulkanNumberType::UINT},
+        {ColorFormat::RGBA32I,  "RGBA32I",  4,{'R','G','B','A'},{32,32,32,32},128,VulkanNumberType::SINT},
+        {ColorFormat::RGBA32F,  "RGBA32F",  4,{'R','G','B','A'},{32,32,32,32},128,VulkanNumberType::SFLOAT},
+        {ColorFormat::B10GR11UF,"B10GR11UF",3,{'B','G','R', 0 },{10,11,11, 0}, 32,VulkanNumberType::UFLOAT},
 
-        {ColorFormat::BC1RGB,   "BC1RGB",   0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},  4,ColorDataType::NONE},
-        {ColorFormat::BC1RGBA,  "BC1RGBA",  0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},  4,ColorDataType::NONE},
-        {ColorFormat::BC2,      "BC2",      0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},  8,ColorDataType::NONE},
-        {ColorFormat::BC3,      "BC3",      0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},  8,ColorDataType::NONE},
-        {ColorFormat::BC4,      "BC4",      0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},  4,ColorDataType::NONE},
-        {ColorFormat::BC5,      "BC5",      0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},  8,ColorDataType::NONE},
-        {ColorFormat::BC6H,     "BC6H",     0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},  8,ColorDataType::NONE},
-        {ColorFormat::BC6H_SF,  "BC6H_SF",  0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},  8,ColorDataType::NONE},
-        {ColorFormat::BC7,      "BC7",      0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},  8,ColorDataType::NONE}
+        {ColorFormat::COMPRESS, "COMPRESS", 0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},  0,VulkanNumberType::NONE},
+
+        {ColorFormat::BC1RGB,   "BC1RGB",   0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},  4,VulkanNumberType::NONE},
+        {ColorFormat::BC1RGBA,  "BC1RGBA",  0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},  4,VulkanNumberType::NONE},
+        {ColorFormat::BC2,      "BC2",      0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},  8,VulkanNumberType::NONE},
+        {ColorFormat::BC3,      "BC3",      0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},  8,VulkanNumberType::NONE},
+        {ColorFormat::BC4,      "BC4",      0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},  4,VulkanNumberType::NONE},
+        {ColorFormat::BC5,      "BC5",      0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},  8,VulkanNumberType::NONE},
+        {ColorFormat::BC6H,     "BC6H",     0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},  8,VulkanNumberType::NONE},
+        {ColorFormat::BC6H_SF,  "BC6H_SF",  0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},  8,VulkanNumberType::NONE},
+        {ColorFormat::BC7,      "BC7",      0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},  8,VulkanNumberType::NONE}
     };
 
     constexpr uint PixelFormatCount=sizeof(pf_list)/sizeof(PixelFormat);
@@ -84,7 +85,7 @@ void PrintFormatList()
     for(uint i=0;i<PixelFormatCount;i++)
     {
         if(pf->format<ColorFormat::COMPRESS)
-            std::cout<<int(pf->channels)<<": "<<std::setw(10)<<pf->name<<" "<<std::setw(3)<<pf->total_bits<<" bits "<<ColorDataName[(uint)(pf->type)]<<std::endl;
+            std::cout<<int(pf->channels)<<": "<<std::setw(10)<<pf->name<<" "<<std::setw(3)<<pf->total_bits<<" bits "<<VulkanNumberTypeName[(uint)(pf->type)]<<std::endl;
         else
         if(pf->format>ColorFormat::COMPRESS)
             std::cout<<std::setw(13)<<pf->name<<" Compress Format"<<std::endl;

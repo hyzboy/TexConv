@@ -3,14 +3,14 @@
 
 using namespace hgl::filesystem;
 
-bool ToILType(ILuint &type,const uint8 bits,const ColorDataType cdt)
+bool ToILType(ILuint &type,const uint8 bits,const VulkanNumberType cdt)
 {
-    constexpr ILuint target_type[3][(uint)ColorDataType::END-1]=
+    constexpr ILuint target_type[3][(uint)VulkanNumberType::END-1]=
     {
-                //UNORM             SNORM       UINT                SINT,       USCALE,SSCALE,  UFLOAT      SFLOAT
-        /*  8 */{IL_UNSIGNED_BYTE,  IL_BYTE,    IL_UNSIGNED_BYTE,   IL_BYTE,    0,0,            0,          0},
-        /* 16 */{IL_UNSIGNED_SHORT, IL_SHORT,   IL_UNSIGNED_SHORT,  IL_SHORT,   0,0,            IL_HALF,    IL_HALF},
-        /* 32 */{IL_UNSIGNED_INT,   IL_INT,     IL_UNSIGNED_INT,    IL_INT,     0,0,            IL_FLOAT,   IL_FLOAT}
+               //UINT                SINT,       UNORM              SNORM       USCALE,SSCALE,  UFLOAT      SFLOAT
+        /*  8 */{IL_UNSIGNED_BYTE,   IL_BYTE,    IL_UNSIGNED_BYTE,  IL_BYTE,    0,0,            0,          0},
+        /* 16 */{IL_UNSIGNED_SHORT,  IL_SHORT,   IL_UNSIGNED_SHORT, IL_SHORT,   0,0,            IL_HALF,    IL_HALF},
+        /* 32 */{IL_UNSIGNED_INT,    IL_INT,     IL_UNSIGNED_INT,   IL_INT,     0,0,            IL_FLOAT,   IL_FLOAT}
     };
 
     if(bits<=8  )type=target_type[0][(uint)cdt-1];else

@@ -5,8 +5,18 @@ project(TexConv)
 add_definitions(-DUNICODE -D_UNICODE)
 
 if(WIN32)
-    find_package(DevIL)
-    SET(HGL_DEVIL_LIB   DevIL ILU)
+
+    include_directories("${CMAKE_CURRENT_SOURCE_DIR}/DevIL Windows SDK/include")
+
+    IF(HGL_BITS EQUAL 32)
+        SET(DEVIL_LIBRARY_PATH "${CMAKE_CURRENT_SOURCE_DIR}/DevIL Windows SDK/lib/x86/unicode/Release")
+    else()
+        SET(DEVIL_LIBRARY_PATH "${CMAKE_CURRENT_SOURCE_DIR}/DevIL Windows SDK/lib/x64/unicode/Release")
+    endif()
+
+    SET(HGL_DEVIL_LIB   ${DEVIL_LIBRARY_PATH}/DevIL.lib
+                        ${DEVIL_LIBRARY_PATH}/ILU.lib
+                        ${DEVIL_LIBRARY_PATH}/ILUT.lib)
 endif(WIN32)
 
 include_directories(CMP_CompressonatorLib)
@@ -65,10 +75,13 @@ target_link_libraries(TexConv PRIVATE ${TEX_CONV_LIBRARY})
 add_executable(CubeMapConv ${TEX_CONV_SOURCE} CubeMapConvert.cpp)
 target_link_libraries(CubeMapConv PRIVATE ${TEX_CONV_LIBRARY})
 
+add_executable(HDR2PNG HDR2PNG.cpp ${ILIMAGE_SOURCE})
+target_link_libraries(HDR2PNG PRIVATE CMCore CMPlatform CMUtil ${HGL_DEVIL_LIB})
+
 IF(CM_BUILD_GUI_TOOLS)
     set(IDENTIFIER "com.hyzgame.texconv")
 
-    target_link_libraries(TexConv PRIVATE Qt5::Core Qt5::Gui Qt5::Widgets)
+    target_link_libraries(TexConv PRIVATE Qt${CM_QT_MAJOR_VERSION}::Core Qt${CM_QT_MAJOR_VERSION}::Gui Qt${CM_QT_MAJOR_VERSION}::Widgets)
 ENDIF(CM_BUILD_GUI_TOOLS)
 
 add_executable(ComboTexture ComboTexture.cpp ${ILIMAGE_SOURCE})
@@ -83,7 +96,6 @@ target_link_libraries(ComboTexture PRIVATE CMCore CMPlatform CMUtil ${HGL_DEVIL_
 add_executable(DFGen DistanceFieldGenerater.cpp ILImage.h ILImageSupport.cpp)
 target_link_libraries(DFGen PRIVATE CMCore CMPlatform CMUtil ${HGL_DEVIL_LIB})
 
-
 macro(texture_tool_project project_name)
     set_property(TARGET ${project_name} PROPERTY FOLDER "CM/Tools/Texture")
 endmacro()
@@ -93,3 +105,4 @@ texture_tool_project(CubeMapConv)
 texture_tool_project(ComboTexture)
 texture_tool_project(DFGen)
 #texture_tool_project(IMTest)
+texture_tool_project(HDR2PNG)
