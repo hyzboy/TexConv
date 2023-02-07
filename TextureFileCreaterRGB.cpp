@@ -1,6 +1,7 @@
 #include"TextureFileCreater.h"
 #include"ILImage.h"
 #include<hgl/log/LogInfo.h>
+#include<hgl/color/ColorFormat.h>
 
 class TextureFileCreaterRGB:public TextureFileCreater
 {
@@ -38,38 +39,6 @@ public:
         }
 
         return image->ConvertToRGB(type);
-    }
-
-    void RGB8toRGB565(uint16 *target,uint8 *src,uint size)
-    {
-        for(uint i=0;i<size;i++)
-        {
-            *target=((src[0]<<8)&0xF800)
-                   |((src[1]<<3)&0x7E0)
-                   | (src[2]>>3);
-
-            ++target;
-            src+=3;
-        }
-    }
-
-    // Bit depth    Sign bit present    Exponent bits   Mantissa bits
-    //  32              Yes                 8               23
-    //  16              Yes                 5               10
-    //  11              No                  5               6
-    //  10              No                  5               5
-
-    void RGB16FtoB10GR11UF(uint32 *target,uint16 *src,uint size)
-    {
-        for(uint i=0;i<size;i++)
-        {
-            *target=((src[2]&0x7FE0)<<17)
-                   |((src[1]&0x7FF0)<<7)
-                   | (src[0]&0x7FF0)>>4;
-
-            ++target;
-            src+=3;
-        }
     }
 
 public:

@@ -1,6 +1,7 @@
 #include"TextureFileCreater.h"
 #include"ILImage.h"
 #include<hgl/log/LogInfo.h>
+#include<hgl/color/ColorFormat.h>
 
 class TextureFileCreaterRGBA:public TextureFileCreater
 {
@@ -46,62 +47,6 @@ public:
         }
 
         return image->ConvertToRGBA(type);
-    }
-
-    void RGBA8toBGRA4(uint16 *target,uint8 *src,uint size)
-    {
-        for(uint i=0;i<size;i++)
-        {
-            *target=((src[2]<<8)&0xF000)
-                   |((src[1]<<4)&0xF00)
-                   |((src[0]   )&0xF0)
-                   | (src[3]>>4);
-
-            ++target;
-            src+=4;
-        }
-    }
-
-    void RGBA8toRGBA4(uint16 *target,uint8 *src,uint size)
-    {
-        for(uint i=0;i<size;i++)
-        {
-            *target=((src[0]<<8)&0xF000)
-                   |((src[1]<<4)&0xF00)
-                   |((src[2]   )&0xF0)
-                   | (src[3]>>4);
-
-            ++target;
-            src+=4;
-        }
-    }
-   
-    void RGBA8toA1RGB5(uint16 *target,uint8 *src,uint size)
-    {
-        for(uint i=0;i<size;i++)
-        {
-            *target=((src[3]<<8)&0x8000)
-                   |((src[0]<<7)&0x7C00)
-                   |((src[1]<<2)&0x3E0)
-                   | (src[2]>>3);
-
-            ++target;
-            src+=4;
-        }
-    }
-
-    void RGBA16toA2BGR10(uint32 *target,uint16 *src,uint size)
-    {
-        for(uint i=0;i<size;i++)
-        {
-            *target=((src[3]<<16)&0xC0000000)
-                   |((src[2]<<14)&0x3FF00000)
-                   |((src[1]<< 4)&0xFFC00)
-                   | (src[0]>> 6);
-
-            ++target;
-            src+=4;
-        }
     }
 
 public:
