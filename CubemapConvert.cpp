@@ -120,7 +120,7 @@ bool ConvertCubemap(const OSString &filename,const OSStringList &file_list,const
     
     tex_file_creater->Close();
         
-    LOG_INFO(OS_TEXT("pixel total length: ")+OSString::valueOf(total)+OS_TEXT(" bytes."));
+    LOG_INFO(OS_TEXT("pixel total length: ")+OSString::numberOf(total)+OS_TEXT(" bytes."));
     return(true);
 }
 

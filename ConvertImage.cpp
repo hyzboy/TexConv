@@ -78,7 +78,7 @@ bool ConvertImage(const OSString &filename,const ImageConvertConfig *cfg)
         }
     }
 
-    LOG_INFO(OS_TEXT("pixel total length: ")+OSString::valueOf(total)+OS_TEXT(" bytes."));
+    LOG_INFO(OS_TEXT("pixel total length: ")+OSString::numberOf(total)+OS_TEXT(" bytes."));
 
     tex_file_creater->Close();
 

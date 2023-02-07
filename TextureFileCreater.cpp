@@ -5,7 +5,7 @@ using namespace hgl::filesystem;
 
 bool ToILType(ILuint &type,const uint8 bits,const VulkanNumberType cdt)
 {
-    constexpr ILuint target_type[3][(uint)VulkanNumberType::END-1]=
+    constexpr ILuint target_type[3][(uint)VulkanNumberType::END_RANGE-1]=
     {
                //UINT                SINT,       UNORM              SNORM       USCALE,SSCALE,  UFLOAT      SFLOAT
         /*  8 */{IL_UNSIGNED_BYTE,   IL_BYTE,    IL_UNSIGNED_BYTE,  IL_BYTE,    0,0,            0,          0},
@@ -57,7 +57,7 @@ bool TextureFileCreater::CreateTexFile(const OSString &old_filename, const VkIma
     if(type<VK_IMAGE_VIEW_TYPE_1D
      ||type>VK_IMAGE_VIEW_TYPE_CUBE_ARRAY)
     {
-        LOG_ERROR(OS_TEXT("TextureFileCreater::WriteFileHeader(")+old_filename+OS_TEXT(") texture type error that it's ")+OSString::valueOf(int(type)));
+        LOG_ERROR(OS_TEXT("TextureFileCreater::WriteFileHeader(")+old_filename+OS_TEXT(") texture type error that it's ")+OSString::numberOf(int(type)));
         return(false);
     }
 

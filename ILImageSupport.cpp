@@ -256,7 +256,7 @@ bool ILImage::LoadFile(const OSString &filename)
 
         const os_char *err_text=GetDevILErrorString(il_err_code);        
         
-        LOG_ERROR(OS_TEXT("can't Load image file <")+filename+OS_TEXT("> Error: ")+(err_text?err_text:OSString::valueOf(il_err_code)));
+        LOG_ERROR(OS_TEXT("can't Load image file <")+filename+OS_TEXT("> Error: ")+(err_text?err_text:OSString::numberOf(il_err_code)));
 
         return(false);
     }
@@ -265,10 +265,10 @@ bool ILImage::LoadFile(const OSString &filename)
 
     Refresh();
 
-    LOG_INFO(OS_TEXT("\t width: ")+OSString::valueOf(il_width));
-    LOG_INFO(OS_TEXT("\theight: ")+OSString::valueOf(il_height));
-    LOG_INFO(OS_TEXT("\t depth: ")+OSString::valueOf(il_depth));
-    LOG_INFO(OS_TEXT("\t   bit: ")+OSString::valueOf(il_bit));
+    LOG_INFO(OS_TEXT("\t width: ")+OSString::numberOf(il_width));
+    LOG_INFO(OS_TEXT("\theight: ")+OSString::numberOf(il_height));
+    LOG_INFO(OS_TEXT("\t depth: ")+OSString::numberOf(il_depth));
+    LOG_INFO(OS_TEXT("\t   bit: ")+OSString::numberOf(il_bit));
     LOG_INFO(OS_TEXT("\tformat: ")+GetILFormatName(il_format));
     LOG_INFO(OS_TEXT("\t  type: ")+GetILTypeName(il_type));
 
