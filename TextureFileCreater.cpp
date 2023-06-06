@@ -3,9 +3,9 @@
 
 using namespace hgl::filesystem;
 
-bool ToILType(ILuint &type,const uint8 bits,const VulkanNumberType cdt)
+bool ToILType(ILuint &type,const uint8 bits,const VulkanBaseType cdt)
 {
-    constexpr ILuint target_type[3][(uint)VulkanNumberType::END_RANGE-1]=
+    constexpr ILuint target_type[3][(uint)VulkanBaseType::END_RANGE-1]=
     {
                //UINT                SINT,       UNORM              SNORM       USCALE,SSCALE,  UFLOAT      SFLOAT
         /*  8 */{IL_UNSIGNED_BYTE,   IL_BYTE,    IL_UNSIGNED_BYTE,  IL_BYTE,    0,0,            0,          0},
