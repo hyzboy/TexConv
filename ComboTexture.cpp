@@ -4,7 +4,6 @@
 #include<hgl/type/DataType.h>
 #include<hgl/util/cmd/CmdParse.h>
 #include<hgl/type/Smart.h>
-#include<hgl/graph/ColorSpace.h>
 
 using namespace hgl;
 using namespace hgl::util;
