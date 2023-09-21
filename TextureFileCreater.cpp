@@ -1,5 +1,6 @@
 ﻿#include"TextureFileCreater.h"
 #include<hgl/filesystem/FileSystem.h>
+#include<hgl/log/LogInfo.h>
 
 using namespace hgl::filesystem;
 
