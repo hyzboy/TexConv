@@ -26,23 +26,27 @@
 
 #include "compute_base.h"
 #include "plugininterface.h"
+#include "cmp_plugininterface.h"
 #include "texture.h"
 #include "cmp_core.h"
+#include "atiformats.h"
 #include "bcn_common_kernel.h"
 
 #ifndef _WIN32
 #include <unistd.h> /* For open(), creat() */
 #endif
 
+#define STB_IMAGE_STATIC
 #ifndef STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
 #endif
 #include "stb_image.h"
 
+#define STB_IMAGE_WRITE_STATIC
 #ifndef STB_IMAGE_WRITE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #endif
-#include "gltf/stb_image_write.h"
+#include "stb_image_write.h"
 
 #include <string>
 #include <mutex>
@@ -80,6 +84,9 @@ extern void* make_Plugin_GTC();
 #ifdef USE_APC
 extern void* make_Plugin_APC();
 #endif
+#ifdef USE_LOSSLESS_COMPRESSION
+extern void* make_Codec_Plugin_BRLG();
+#endif
 
 void CMP_RegisterHostPlugins() {
     if (HostPluginsRegistered == FALSE) {
@@ -102,6 +109,9 @@ void CMP_RegisterHostPlugins() {
 #endif
 #ifdef USE_APC
         g_pluginManager.registerStaticPlugin("ENCODER", "APC", (void*)make_Plugin_APC);
+#endif
+#ifdef USE_LOSSLESS_COMPRESSION
+        g_pluginManager.registerStaticPlugin("ENCODER", "BRLG", (void*)make_Codec_Plugin_BRLG);
 #endif
         g_pluginManager.getPluginList(".", TRUE);
         HostPluginsRegistered = TRUE;
@@ -363,48 +373,29 @@ CMP_ERROR CMP_API CMP_SetComputeOptions(ComputeOptions* options) {
 CodecType GetCodecType2(CMP_FORMAT format) {
     switch (format) {
     case CMP_FORMAT_ARGB_2101010:
-        return CT_None;
     case CMP_FORMAT_RGBA_8888:
-        return CT_None;
     case CMP_FORMAT_BGRA_8888:
-        return CT_None;
     case CMP_FORMAT_ARGB_8888:
-        return CT_None;
     case CMP_FORMAT_RGBA_8888_S:
-        return CT_None;
     case CMP_FORMAT_BGR_888:
-        return CT_None;
     case CMP_FORMAT_RGB_888:
-        return CT_None;
     case CMP_FORMAT_RG_8:
-        return CT_None;
     case CMP_FORMAT_R_8:
-        return CT_None;
+    case CMP_FORMAT_RGBA_16:
     case CMP_FORMAT_ARGB_16:
-        return CT_None;
     case CMP_FORMAT_RG_16:
-        return CT_None;
     case CMP_FORMAT_R_16:
-        return CT_None;
     case CMP_FORMAT_ARGB_16F:
-        return CT_None;
     case CMP_FORMAT_RG_16F:
-        return CT_None;
     case CMP_FORMAT_R_16F:
-        return CT_None;
     case CMP_FORMAT_ARGB_32F:
-        return CT_None;
     case CMP_FORMAT_RG_32F:
-        return CT_None;
     case CMP_FORMAT_R_32F:
-        return CT_None;
     case CMP_FORMAT_RGBE_32F:
         return CT_None;
 #ifdef ARGB_32_SUPPORT
     case CMP_FORMAT_ARGB_32:
-        return CT_None;
     case CMP_FORMAT_RG_32:
-        return CT_None;
     case CMP_FORMAT_R_32:
         return CT_None;
 #endif  // ARGB_32_SUPPORT
@@ -454,8 +445,10 @@ CodecType GetCodecType2(CMP_FORMAT format) {
         return CT_BC6H_SF;
     case CMP_FORMAT_BC7:
         return CT_BC7;
+#if (OPTION_BUILD_ASTC == 1)
     case CMP_FORMAT_ASTC:
         return CT_ASTC;
+#endif
     case CMP_FORMAT_ATC_RGB:
         return CT_ATC_RGB;
     case CMP_FORMAT_ATC_RGBA_Explicit:
@@ -480,6 +473,10 @@ CodecType GetCodecType2(CMP_FORMAT format) {
     case CMP_FORMAT_GTC:
         return CT_GTC;
 #endif
+#ifdef USE_LOSSLESS_COMPRESSION
+    case CMP_FORMAT_BROTLIG:
+        return CT_BRLG;
+#endif
 #ifdef USE_APC
     case CMP_FORMAT_APC:
         return CT_APC;
@@ -494,6 +491,8 @@ CodecType GetCodecType2(CMP_FORMAT format) {
 }
 
 CMP_DWORD CalcBufferSizeCT(CodecType nCodecType, CMP_DWORD dwWidth, CMP_DWORD dwHeight, CMP_BYTE nBlockWidth, CMP_BYTE nBlockHeight) {
+    CMP_UNUSED(nBlockHeight);
+    CMP_UNUSED(nBlockWidth);
 #ifdef USE_DBGTRACE
     DbgTrace(("IN: nCodecType %d, dwWidth %d, dwHeight %d", nCodecType, dwWidth, dwHeight));
 #endif
@@ -576,11 +575,13 @@ CMP_DWORD CalcBufferSizeCT(CodecType nCodecType, CMP_DWORD dwWidth, CMP_DWORD dw
         break;
 
     // Block size ranges from 4x4 to 12x12 and 128 bits per block
+#if (OPTION_BUILD_ASTC == 1)
     case CT_ASTC:
         dwWidth  = ((dwWidth + nBlockWidth - 1) / nBlockWidth) * 4;
         dwHeight = ((dwHeight + nBlockHeight - 1) / nBlockHeight) * 4;
         buffsize = dwWidth * dwHeight;
         break;
+#endif
 #ifdef _WIN32
         // Block size is 4x4 and 128 bits per block. in future releases its will vary in Block Sizes and bits per block may change to 256
 #ifdef USE_GTC
@@ -592,6 +593,17 @@ CMP_DWORD CalcBufferSizeCT(CodecType nCodecType, CMP_DWORD dwWidth, CMP_DWORD dw
             buffsize = 4 * 4;
         break;
 #endif
+#ifdef USE_LOSSLESS_COMPRESSION
+        // ToDo : Note blocks are not 4x4 so fix this to the correct size used in the DX12 Brotli-G shader code
+    case CT_BRLG:
+        dwWidth  = ((dwWidth + 3) / 4) * 4;
+        dwHeight = ((dwHeight + 3) / 4) * 4;
+        buffsize = dwWidth * dwHeight;
+        if (buffsize < (4 * 4))
+            buffsize = 4 * 4;
+        break;
+#endif
+
 #ifdef USE_APC
     case CT_APC:
         dwWidth  = ((dwWidth + nBlockWidth - 1) / nBlockWidth) * 4;
@@ -644,6 +656,7 @@ CMP_DWORD CalcBufferSize2(CMP_FORMAT format, CMP_DWORD dwWidth, CMP_DWORD dwHeig
     case CMP_FORMAT_R_8:
         return ((dwPitch) ? (dwPitch * dwHeight) : (dwWidth * dwHeight));
 
+    case CMP_FORMAT_RGBA_16F:
     case CMP_FORMAT_ARGB_16:
     case CMP_FORMAT_ARGB_16F:
         return ((dwPitch) ? (dwPitch * dwHeight) : (dwWidth * 4 * sizeof(CMP_WORD) * dwHeight));
@@ -684,24 +697,19 @@ CMP_DWORD CMP_API CMP_CalculateBufferSize2(const CMP_Texture* pTexture) {
     DbgTrace(("-------> pTexture [%x]", pTexture));
 #endif
 
-    assert(pTexture);
     if (pTexture == NULL)
         return 0;
 
-    assert(pTexture->dwSize == sizeof(CMP_Texture));
     if (pTexture->dwSize != sizeof(CMP_Texture))
         return 0;
 
-    assert(pTexture->dwWidth > 0);
     if (pTexture->dwWidth <= 0)
         return 0;
 
-    assert(pTexture->dwHeight > 0);
     if (pTexture->dwHeight <= 0)
         return 0;
 
-    assert(pTexture->format >= CMP_FORMAT_RGBA_8888_S && pTexture->format <= CMP_FORMAT_MAX);
-    if (pTexture->format < CMP_FORMAT_RGBA_8888_S || pTexture->format > CMP_FORMAT_MAX)
+    if (!CMP_IsValidFormat(pTexture->format))
         return 0;
 
     return CalcBufferSize2(pTexture->format, pTexture->dwWidth, pTexture->dwHeight, pTexture->dwPitch, pTexture->nBlockWidth, pTexture->nBlockHeight);
@@ -795,6 +803,7 @@ CMP_ERROR CMP_API CMP_ProcessTexture(CMP_MipSet* srcMipSet, CMP_MipSet* dstMipSe
 
             MipLevel* pOutMipLevel = CMips.GetMipLevel(dstMipSet, nMipLevel, nFaceOrSlice);
             if (!CMips.AllocateCompressedMipLevelData(pOutMipLevel, destTexture.dwWidth, destTexture.dwHeight, destTexture.dwDataSize)) {
+                cmp_mutex.unlock();
                 return CMP_ERR_MEM_ALLOC_FOR_MIPSET;
             }
 
@@ -827,7 +836,7 @@ CMP_ERROR CMP_API CMP_ProcessTexture(CMP_MipSet* srcMipSet, CMP_MipSet* dstMipSe
 
             // Set any addition feature as needed for the Host
             if (CMP_SetComputeOptions(&options) != CMP_OK) {
-                CMP_DestroyComputeLibrary(false);
+                CMP_DestroyComputeLibrary(true);
                 PrintInfo("Failed to setup SPMD GPU options\n");
                 cmp_mutex.unlock();
                 return CMP_ERR_FAILED_HOST_SETUP;
@@ -836,7 +845,7 @@ CMP_ERROR CMP_API CMP_ProcessTexture(CMP_MipSet* srcMipSet, CMP_MipSet* dstMipSe
             // Do the compression
             if (CMP_CompressTexture(&kernelOptions, *srcMipSet, *dstMipSet, pFeedbackProc) != CMP_OK) {
                 CMips.FreeMipSet(dstMipSet);
-                CMP_DestroyComputeLibrary(false);
+                CMP_DestroyComputeLibrary(true);
                 PrintInfo("Failed to run compute plugin: CPU will be used for compression.\n");
                 cmp_mutex.unlock();
                 return CMP_ERR_FAILED_HOST_SETUP;
@@ -851,12 +860,12 @@ CMP_ERROR CMP_API CMP_ProcessTexture(CMP_MipSet* srcMipSet, CMP_MipSet* dstMipSe
             //===============================================================================
             // Close the Pipeline with option to cache as needed
             //===============================================================================
-            CMP_DestroyComputeLibrary(false);
+            CMP_DestroyComputeLibrary(true);
         }
     }
 
-    if (pFeedbackProc)
-        pFeedbackProc(100, NULL, NULL);
+    //if (pFeedbackProc)
+    //    pFeedbackProc(100, NULL, NULL);
 
     cmp_mutex.unlock();
     return CMP_OK;
@@ -917,7 +926,7 @@ CMP_CompressBlockXY(void** block_encoder, unsigned int x, unsigned int y, void* 
 }
 
 void CMP_API CMP_DestroyBlockEncoder(void** block_encoder) {
-    delete *block_encoder;
+    delete (CMP_Encoder*)*block_encoder;
 }
 
 void CMP_API CMP_GetMipLevel(CMP_MipLevel** data, const CMP_MipSet* pMipSet, int nMipLevel, int nFaceOrSlice) {
@@ -997,8 +1006,8 @@ CMP_ERROR CMP_API CMP_LoadTexture(const char* SourceFile, CMP_MipSet* MipSetIn) 
     CMP_CMIPS CMips;
     CMP_ERROR status = CMP_OK;
 
-    std::string fn             = SourceFile;
-    std::string file_extension = fn.substr(fn.find_last_of(".") + 1);
+    const std::string& fn             = SourceFile;
+    std::string file_extension = fn.substr(fn.find_last_of('.') + 1);
     std::transform(file_extension.begin(), file_extension.end(), file_extension.begin(), toupperChar);
 
     PluginInterface_Image* plugin_Image;
@@ -1045,8 +1054,8 @@ CMP_ERROR CMP_API CMP_SaveTexture(const char* DestFile, CMP_MipSet* MipSetIn)
 
     bool        filesaved = false;
     CMIPS       m_CMIPS;
-    std::string fn             = DestFile;
-    std::string file_extension = fn.substr(fn.find_last_of(".") + 1);
+    const std::string& fn             = DestFile;
+    std::string file_extension = fn.substr(fn.find_last_of('.') + 1);
     std::transform(file_extension.begin(), file_extension.end(), file_extension.begin(), toupperChar);
 
     //if (((((file_extension.compare("DDS") == 0) 
@@ -1063,6 +1072,7 @@ CMP_ERROR CMP_API CMP_SaveTexture(const char* DestFile, CMP_MipSet* MipSetIn)
     if (plugin_Image) {
         bool holdswizzle = MipSetIn->m_swizzle;
 
+        plugin_Image->TC_PluginSetSharedIO(&m_CMIPS);
         if (plugin_Image->TC_PluginFileSaveTexture(DestFile, (MipSet*)MipSetIn) == 0) {
             filesaved = true;
         }

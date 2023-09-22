@@ -24,6 +24,7 @@
 //=====================================================================
 
 #include "plugininterface.h"
+#include "cmp_plugininterface.h"
 #include "ccpu_hpc.h"
 
 #include <chrono>
@@ -224,7 +225,7 @@ void CCPU_HPC::FinishThreadEncoding() {
 }
 
 void CCPU_HPC::Init() {
-    m_cputimer.initialize();
+    m_cputimer = cpu_timer();
 
     m_plugin_compute            = NULL;
     m_ThreadCodecInitialized    = false;
@@ -302,12 +303,13 @@ CMP_ERROR CCPU_HPC::Compress(KernelOptions *Options, MipSet  &SrcTexture, MipSet
 {
     if (m_plugin_compute == NULL) return(CMP_ERR_UNABLE_TO_INIT_COMPUTELIB);
 
-#if (defined(USE_CONVECTION_KERNELS) || defined(USE_GTC) || defined(USE_APC))
+#if (defined(USE_CONVECTION_KERNELS) || defined(USE_GTC) || defined(USE_APC) || defined(USE_LOSSLESS_COMPRESSION))
     if  (
         (destTexture.m_format == CMP_FORMAT_GTC)
 #ifdef USE_APC
         || (destTexture.m_format == CMP_FORMAT_APC)
 #endif
+        || (destTexture.m_format == CMP_FORMAT_BROTLIG)
 #ifdef USE_CONVECTION_KERNELS
         || (destTexture.m_format == CMP_FORMAT_BC1)
         || (destTexture.m_format == CMP_FORMAT_BC5)
@@ -438,7 +440,7 @@ CMP_ERROR CCPU_HPC::Compress(KernelOptions *Options, MipSet  &SrcTexture, MipSet
 
                 if (Options->getPerfStats) {
                     m_cputimer.Stop(1);
-                    pFeedbackTimeMS += m_cputimer.GetMS(1);
+                    pFeedbackTimeMS += m_cputimer.GetTimeMS(1);
                 }
             }
         }
@@ -454,7 +456,7 @@ CMP_ERROR CCPU_HPC::Compress(KernelOptions *Options, MipSet  &SrcTexture, MipSet
 
         // Only collect perf data on topmost miplevel
         if (Options->getPerfStats && (destTexture.m_nIterations < 1)) {
-            m_computeShaderElapsedMS = ((CGU_FLOAT)(m_cputimer.GetMS(0) - pFeedbackTimeMS))/m_num_blocks;
+            m_computeShaderElapsedMS = ((CGU_FLOAT)(m_cputimer.GetTimeMS(0) - pFeedbackTimeMS))/m_num_blocks;
             if (m_computeShaderElapsedMS > 0) {
                 CMP_FLOAT blocksPerSecond = (1000.0f/m_computeShaderElapsedMS);
                 m_CmpMTxPerSec = (BLOCK_SIZE_4X4 * blocksPerSecond) / 1000000.0f;
