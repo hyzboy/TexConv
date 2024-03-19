@@ -1,5 +1,6 @@
 ﻿#include<iostream>
 #include<IL/il.h>
+#include<IL/ilu.h>
 #include<hgl/log/LogInfo.h>
 #include<hgl/util/cmd/CmdParse.h>
 #include<hgl/Time.h>
@@ -46,7 +47,7 @@ public:
 
 int os_main(int argc,os_char **argv)
 {
-    std::cout<<"Image to Texture Convert tools 1.3a"<<std::endl<<std::endl;
+    std::cout<<"Image to Texture Convert tools 1.3b"<<std::endl<<std::endl;
 
     if(argc<=1)
     {
@@ -74,6 +75,7 @@ int os_main(int argc,os_char **argv)
     ParseParamFormat(&icc,cp);								            //检测推荐格式
 
     ilInit();
+    iluImageParameter(ILU_FILTER,ILU_SCALE_MITCHELL);
     
     CMP_RegisterHostPlugins();
     CMP_InitializeBCLibrary();

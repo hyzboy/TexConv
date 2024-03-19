@@ -102,11 +102,14 @@ class CCmdLineParamaters {
         CompressOptions.fInputKneeLow  = AMD_CODEC_KNEELOW_DEFAULT;
         CompressOptions.fInputKneeHigh = AMD_CODEC_KNEEHIGH_DEFAULT;
         CompressOptions.fInputGamma    = AMD_CODEC_GAMMA_DEFAULT;
+        CompressOptions.fInputFilterGamma = 1.0f;
         CompressOptions.dwmodeMask     = 0xCF;  // If you reset this default: seach for comments with dwmodeMask and change the values also
         CompressOptions.DestFormat     = CMP_FORMAT_Unknown;
         CompressOptions.SourceFormat   = CMP_FORMAT_Unknown;
 
         compressImagesFromGLTF = false;
+
+        mangleFileNames = false;
 
         LogProcessResultsFile.assign(LOG_PROCESS_RESULTS_FILE_TXT);
     }
@@ -158,6 +161,8 @@ class CCmdLineParamaters {
     double compute_setup_fDuration;
 
     bool compressImagesFromGLTF;
+
+    bool mangleFileNames; // Flag for whether to mangle the output file names (by appending the compression codec type and file extension), false by default
 
     // Analysis data
     double    SSIM;            // Structural Similarity Index: Average of RGB Channels

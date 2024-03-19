@@ -215,8 +215,6 @@ bool ILImage::Resize(uint nw,uint nh)
     if(nw==il_width&&nh==il_height)return(true);
     if(nw==0||nh==0)return(false);
 
-    iluImageParameter(ILU_FILTER,ILU_LINEAR);
-
     if(!iluScale(nw,nh,il_depth))
         return(false);
 

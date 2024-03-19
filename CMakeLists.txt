@@ -13,16 +13,25 @@ if(WIN32)
     else()
         SET(DEVIL_LIBRARY_PATH "${CMAKE_CURRENT_SOURCE_DIR}/DevIL Windows SDK/lib/x64/unicode/Release")
     endif()
-
+ 
     SET(HGL_DEVIL_LIB   ${DEVIL_LIBRARY_PATH}/DevIL.lib
                         ${DEVIL_LIBRARY_PATH}/ILU.lib
                         ${DEVIL_LIBRARY_PATH}/ILUT.lib)
 endif(WIN32)
 
+set(LIB_BUILD_COMPRESSONATOR_SDK    ON)
+set(LIB_BUILD_FRAMEWORK_SDK         ON)
+set(LIB_BUILD_IMAGEIO               OFF)
+set(LIB_BUILD_ANALYSIS              OFF)
+set(LIB_BUILD_COMMON                ON)
+set(LIB_BUILD_CORE                  ON)
+set(LIB_BUILD_GPUDECODE             ON)
+
 include_directories(CMP_CompressonatorLib)
 include_directories(CMP_Framework/Common)
 include_directories(CMP_Framework/Common/half)
 
+add_subdirectory(Applications/_plugins/common)
 add_subdirectory(CMP_CompressonatorLib)
 add_subdirectory(CMP_Framework)
 add_subdirectory(CMP_Core)
