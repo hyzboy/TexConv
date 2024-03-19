@@ -1,5 +1,6 @@
 ﻿#include<iostream>
 #include<IL/il.h>
+#include<hgl/log/LogInfo.h>
 #include<hgl/util/cmd/CmdParse.h>
 #include<hgl/Time.h>
 #include<hgl/filesystem/FileSystem.h>
@@ -99,7 +100,7 @@ int os_main(int argc,os_char **argv)
 
         const double time_gap=(end_time-start_time)/1000000;
 
-        const OSString time_gap_str=OSString::numberOf(time_gap);
+        const OSString time_gap_str=OSString::floatOf(time_gap,2);
 
         LOG_INFO(OS_TEXT("Total converted ")+OSString::numberOf(eci.GetConvertCount())
                 +OS_TEXT(" textures for ")+time_gap_str.c_str()+OS_TEXT(" seconds."));

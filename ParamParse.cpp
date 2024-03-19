@@ -1,4 +1,5 @@
 #include"ParamParse.h"
+#include<hgl/log/LogInfo.h>
 
 const PixelFormat *ParseParamFormat(const CmdParse &cmd,const os_char *flag,const PixelFormat *default_format)
 {
