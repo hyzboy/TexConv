@@ -31,7 +31,7 @@ include_directories(CMP_CompressonatorLib)
 include_directories(CMP_Framework/Common)
 include_directories(CMP_Framework/Common/half)
 
-add_subdirectory(Applications/_plugins/common)
+add_subdirectory(Applications/_Plugins/Common)
 add_subdirectory(CMP_CompressonatorLib)
 add_subdirectory(CMP_Framework)
 add_subdirectory(CMP_Core)
@@ -87,7 +87,7 @@ endif(WIN32)
 add_executable(TexConv ${TEX_CONV_SOURCE} main.cpp ConvertImage.cpp)
 target_link_libraries(TexConv PRIVATE ${TEX_CONV_LIBRARY})
 
-add_executable(CubeMapConv ${TEX_CONV_SOURCE} CubeMapConvert.cpp)
+add_executable(CubeMapConv ${TEX_CONV_SOURCE} CubemapConvert.cpp)
 target_link_libraries(CubeMapConv PRIVATE ${TEX_CONV_LIBRARY})
 
 add_executable(HDR2PNG HDR2PNG.cpp ${ILIMAGE_SOURCE})

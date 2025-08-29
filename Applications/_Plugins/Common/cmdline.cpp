@@ -2480,7 +2480,7 @@ bool SupportedFileTypes(std::string fileExt)
 //    }
 
     vector<string> supportedTypes = {
-        "DDS", "KTX", "KTX2", "BMP", "PNG", "JPEG", "JPG", "EXR", "TGA", "TIF", "TIFF", "OBJ", "GLTF", "PBM", "PGM", "PPM", "XBM", "XPM", "DRC"
+        "DDS", "KTX", "KTX2", "BMP", "PNG", "JPEG", "JPG", "EXR", "TGA", "TIF", "TIFF", "OBJ", "GLTF", "PBM", "PGM", "PPM", "XBM", "XPM", "DRC", "HEIC", "HEIF", "AVIF"
         };
 #if (OPTION_BUILD_ASTC == 1)
     supportedTypes.push_back("ASTC");
