@@ -8,3 +8,4 @@
 /IntelTextureCompression/kernel_ispc_sse2.obj
 /IntelTextureCompression/kernel_ispc_sse4.h
 /IntelTextureCompression/kernel_ispc_sse4.obj
+build/
