@@ -74,7 +74,7 @@ bool ConvertImage(const OSString &filename,const ImageConvertConfig *cfg)
             if(width>1)width>>=1;
             if(height>1)height>>=1;
 
-            image.Resize(width,height);
+            image.ResizeLanczos3(width,height);  // Use high-quality Lanczos3 instead of default DevIL scaling
         }
     }
 

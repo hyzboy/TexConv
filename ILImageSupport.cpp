@@ -4,6 +4,8 @@
 #include<IL/ilu.h>
 #include<hgl/log/LogInfo.h>
 #include<hgl/filesystem/FileSystem.h>
+#include<cstdlib>
+#include<cstring>
 
 using namespace hgl;
 
@@ -222,6 +224,56 @@ bool ILImage::Resize(uint nw,uint nh)
     il_height=nh;
 
     return(true);
+}
+
+bool ILImage::ResizeLanczos3(uint nw, uint nh)
+{
+    if(nw==il_width&&nh==il_height)return(true);
+    if(nw==0||nh==0)return(false);
+
+    // Get current image data
+    Bind();
+    void* currentData = ilGetData();
+    if (!currentData) return false;
+    
+    // Calculate data size for current format
+    int pixelSize = 1;
+    switch (il_type) {
+        case IL_UNSIGNED_BYTE: pixelSize = 1; break;
+        case IL_UNSIGNED_SHORT: case IL_HALF: pixelSize = 2; break;
+        case IL_UNSIGNED_INT: case IL_FLOAT: pixelSize = 4; break;
+        default: pixelSize = 1; break;
+    }
+    
+    int srcDataSize = il_width * il_height * channel_count * pixelSize;
+    
+    // Create a copy of source data since ilTexImage will overwrite it
+    void* srcDataCopy = std::malloc(srcDataSize);
+    if (!srcDataCopy) return false;
+    std::memcpy(srcDataCopy, currentData, srcDataSize);
+    
+    // Scale using Lanczos3
+    void* scaledData = Lanczos3Scaler::ScaleImage(srcDataCopy, 
+                                                 il_width, il_height, 
+                                                 channel_count, il_type,
+                                                 nw, nh);
+    
+    std::free(srcDataCopy);
+    
+    if (!scaledData) return false;
+    
+    // Create new image with scaled data
+    if (!ilTexImage(nw, nh, il_depth, channel_count, il_format, il_type, scaledData)) {
+        std::free(scaledData);
+        return false;
+    }
+    
+    std::free(scaledData);
+    
+    il_width = nw;
+    il_height = nh;
+    
+    return true;
 }
 
 bool ILImage::Convert(ILuint format,ILuint type)
