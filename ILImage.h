@@ -2,6 +2,7 @@
 #include<IL/il.h>
 #include<hgl/type/String.h>
 #include"Image2D.h"
+#include"Lanczos3Scaler.h"
 
 using namespace hgl;
 
@@ -50,6 +51,7 @@ public:
 //    Image2D *CreateImage2D();
 
     bool Resize(uint,uint);
+    bool ResizeLanczos3(uint,uint);  // High-quality Lanczos3 resize
 
     void *ToRGB(ILuint type=IL_UNSIGNED_BYTE);
     void *ToGray(ILuint type=IL_UNSIGNED_BYTE);

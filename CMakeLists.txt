@@ -31,7 +31,7 @@ include_directories(CMP_CompressonatorLib)
 include_directories(CMP_Framework/Common)
 include_directories(CMP_Framework/Common/half)
 
-add_subdirectory(Applications/_plugins/common)
+add_subdirectory(Applications/_Plugins/Common)
 add_subdirectory(CMP_CompressonatorLib)
 add_subdirectory(CMP_Framework)
 add_subdirectory(CMP_Core)
@@ -52,7 +52,9 @@ SET(INTEL_TC_SOURCE IntelTextureCompression/ispc_texcomp.cpp
 SOURCE_GROUP("Intel Texture Compression" FILES ${INTEL_TC_SOURCE})
 
 SET(ILIMAGE_SOURCE  ILImage.h
-                    ILImageSupport.cpp)
+                    ILImageSupport.cpp
+                    Lanczos3Scaler.h
+                    Lanczos3Scaler.cpp)
 #                    Image2D.h
 #                    Image2D.cpp)
 
