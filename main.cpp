@@ -6,7 +6,7 @@
 #include<hgl/Time.h>
 #include<hgl/filesystem/FileSystem.h>
 #include<hgl/filesystem/EnumFile.h>
-#include"CMP_CompressonatorLib/Compressonator.h"
+#include"Compressonator.h"
 #include"ImageConvertConfig.h"
 #include"ParamParse.h"
 
@@ -77,7 +77,7 @@ int os_main(int argc,os_char **argv)
     ilInit();
     iluImageParameter(ILU_FILTER,ILU_SCALE_MITCHELL);
     
-    CMP_RegisterHostPlugins();
+    //CMP_RegisterHostPlugins();
     CMP_InitializeBCLibrary();
 
     if(filesystem::FileCanRead(argv[argc-1]))
