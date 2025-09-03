@@ -2,14 +2,14 @@
 #include"ILImage.h"
 #include<hgl/log/LogInfo.h>
 #include<hgl/TypeFunc.h>
-#include"CMP_CompressonatorLib/Common.h"
-#include"CMP_CompressonatorLib/Compressonator.h"
+#include"Compressonator.h"
+#include <cstring>
+#include <cstdlib>
 
 class TextureFileCreaterCompress:public TextureFileCreater
 {
     MipSet MipSetIn;
     MipSet MipSetOut;
-    CMP_CMIPS CMips;
     KernelOptions kernel_options;
 
     int channels;
@@ -184,51 +184,72 @@ public:
             return;
         }
 
-        if(!CMips.AllocateMipSet(&MipSetIn,cf,tdt,TT_2D,width,height,1))
+        // Create MipSet using SDK API
+        if(CMP_CreateMipSet(&MipSetIn, width, height, 1, cf, TT_2D) != CMP_OK)
         {
-            std::cerr<<"CMP_ERR_MEM_ALLOC_FOR_MIPSET"<<std::endl;
+            std::cerr<<"CMP_ERR_MEM_ALLOC_FOR_MIPSET (CreateMipSet)"<<std::endl;
             return;
         }
 
-        CMP_MipLevel *cmp_mip_level=CMips.GetMipLevel(&MipSetIn,0);
+        // Get pointer to top-level mip
+        CMP_MipLevel *cmp_mip_level = nullptr;
+        CMP_GetMipLevel(&cmp_mip_level, &MipSetIn, 0, 0);
 
-        if(!CMips.AllocateMipLevelData(cmp_mip_level, width, height, cf, tdt))
+        if(!cmp_mip_level)
         {
-            std::cerr<<"CMP_ERR_MEM_ALLOC_FOR_MIPSET"<<std::endl;
+            std::cerr<<"CMP_ERR_MEM_ALLOC_FOR_MIPSET (GetMipLevel)"<<std::endl;
             return;
         }
+
+        // Compute pitch and size and allocate data buffer for this mip level
+        CMP_DWORD dwPitch;
+        if(channels<3)
+            dwPitch = pixel_bytes * channels * width;
+        else
+            dwPitch = pixel_bytes * 4 * width;
+
+        CMP_DWORD dwSize = dwPitch * height;
+
+        // allocate buffer with malloc so CMP_FreeMipSet can free it
+        CMP_BYTE* pData = (CMP_BYTE*)std::malloc(dwSize);
+        if(!pData)
+        {
+            std::cerr<<"CMP_ERR_MEM_ALLOC_FOR_MIPSET (alloc data)"<<std::endl;
+            return;
+        }
+
+        memcpy(pData, source_data, dwSize);
+
+        cmp_mip_level->m_nWidth = width;
+        cmp_mip_level->m_nHeight = height;
+        cmp_mip_level->m_dwLinearSize = dwSize;
+        cmp_mip_level->m_pbData = pData;
 
         MipSetIn.m_nMipLevels = 1;
         MipSetIn.m_format     = source_fmt;
 
-        CMP_BYTE* pData = cmp_mip_level->m_pbData;
-
-        CMP_DWORD dwPitch;
-
-        if(channels<3)
-            dwPitch=pixel_bytes*channels*MipSetIn.m_nWidth;
-        else
-            dwPitch=pixel_bytes*4*MipSetIn.m_nWidth;
-            
-        CMP_DWORD dwSize  = dwPitch * MipSetIn.m_nHeight;
-
-        memcpy(pData,source_data,dwSize);
+        // ensure MipSetIn dwWidth/dwHeight set for downstream use
+        MipSetIn.dwWidth = width;
+        MipSetIn.dwHeight = height;
+        MipSetIn.pData = pData;
+        MipSetIn.dwDataSize = dwSize;
     }
 
     void InitOption()
     {
         hgl_zero(kernel_options);
 
-        kernel_options.height       =image->height();
-        kernel_options.width        =image->width();
-        kernel_options.fquality     =1.0f;        
-        kernel_options.format       =target_fmt;
-        kernel_options.encodeWith   =CMP_HPC;
-        kernel_options.threads      =8;
-        kernel_options.getPerfStats =false;
-        kernel_options.getDeviceInfo=false;
+        kernel_options.height       = image->height();
+        kernel_options.width        = image->width();
+        kernel_options.fquality     = 1.0f;        
+        kernel_options.format       = target_fmt;
+        kernel_options.srcformat    = source_fmt; // 补充
+        kernel_options.encodeWith   = CMP_HPC;
+        kernel_options.threads      = (target_fmt == CMP_FORMAT_BC4) ? 1 : 8; // BC4单线程
+        kernel_options.getPerfStats = false;
+        kernel_options.getDeviceInfo= false;
 
-        std::cout<<"Compress Image To: "<<image->width()<<"x"<<image->height()<<" "<<target_fmt_name.c_str()<<" format";
+        std::cout << "Compress Image To: " << image->width() << "x" << image->height() << " " << target_fmt_name.c_str() << " format";
     }
 
     static bool CMP_API CMP_Feedback_Proc(CMP_FLOAT fProgress, CMP_DWORD_PTR pUser1, CMP_DWORD_PTR pUser2)
@@ -250,8 +271,9 @@ public:
 
         uint32 result=TextureFileCreater::Write(MipSetOut.pData,MipSetOut.dwDataSize);
 
-        CMips.FreeMipSet(&MipSetOut);
-        CMips.FreeMipSet(&MipSetIn);
+        // Free allocated mipsets using SDK API
+        CMP_FreeMipSet(&MipSetOut);
+        CMP_FreeMipSet(&MipSetIn);
 
         return result;
     }

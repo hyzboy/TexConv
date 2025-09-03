@@ -254,7 +254,14 @@ bool ILImage::LoadFile(const OSString &filename)
 
         const os_char *err_text=GetDevILErrorString(il_err_code);        
         
-        LOG_ERROR(OS_TEXT("can't Load image file <")+filename+OS_TEXT("> Error: ")+(err_text?err_text:OSString::numberOf(il_err_code)));
+        if(err_text)
+        {
+            LOG_ERROR(OS_TEXT("can't Load image file <")+filename+OS_TEXT("> Error: ")+err_text);
+        }
+        else
+        {
+            LOG_ERROR(OS_TEXT("can't Load image file <")+filename+OS_TEXT("> Error: ")+OSString::numberOf(il_err_code));
+        }
 
         return(false);
     }

@@ -1,4 +1,4 @@
-﻿cmake_minimum_required(VERSION 3.5)
+﻿cmake_minimum_required(VERSION 3.10)
 
 project(TexConv)
 
@@ -6,35 +6,85 @@ add_definitions(-DUNICODE -D_UNICODE)
 
 if(WIN32)
 
-    include_directories("${CMAKE_CURRENT_SOURCE_DIR}/DevIL Windows SDK/include")
+    # Find DevIL includes and libraries
+    find_path(DEVIL_SDK_DIR
+        NAMES include/IL/il.h
+        HINTS "${CMAKE_CURRENT_SOURCE_DIR}/DevIL Windows SDK"
+        PATH_SUFFIXES include
+    )
+    include_directories("${DEVIL_SDK_DIR}/include")
 
     IF(HGL_BITS EQUAL 32)
-        SET(DEVIL_LIBRARY_PATH "${CMAKE_CURRENT_SOURCE_DIR}/DevIL Windows SDK/lib/x86/unicode/Release")
+        SET(DEVIL_LIBRARY_PATH "${DEVIL_SDK_DIR}/lib/x86/unicode/Release")
+        SET(COM_SYSTEM x86)
     else()
-        SET(DEVIL_LIBRARY_PATH "${CMAKE_CURRENT_SOURCE_DIR}/DevIL Windows SDK/lib/x64/unicode/Release")
+        SET(DEVIL_LIBRARY_PATH "${DEVIL_SDK_DIR}/lib/x64/unicode/Release")
+        SET(COM_SYSTEM x64)
     endif()
  
     SET(HGL_DEVIL_LIB   ${DEVIL_LIBRARY_PATH}/DevIL.lib
                         ${DEVIL_LIBRARY_PATH}/ILU.lib
                         ${DEVIL_LIBRARY_PATH}/ILUT.lib)
+
+  if(MSVC)
+        if(DEFINED MSVC_RUNTIME_LIBRARY)
+            message(STATUS "Detected MSVC_RUNTIME_LIBRARY=${MSVC_RUNTIME_LIBRARY}")
+            if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+                if(MSVC_RUNTIME_LIBRARY STREQUAL "MultiThreadedDLL" OR MSVC_RUNTIME_LIBRARY MATCHES "MDd")
+                    set(LIB_SUFFIX "MDd")
+                elseif(MSVC_RUNTIME_LIBRARY STREQUAL "MultiThreaded" OR MSVC_RUNTIME_LIBRARY MATCHES "MTd")
+                    set(LIB_SUFFIX "MTd")
+                endif()
+            else()
+                if(MSVC_RUNTIME_LIBRARY STREQUAL "MultiThreadedDLL" OR MSVC_RUNTIME_LIBRARY MATCHES "MD")
+                    set(LIB_SUFFIX "MD")
+                elseif(MSVC_RUNTIME_LIBRARY STREQUAL "MultiThreaded" OR MSVC_RUNTIME_LIBRARY MATCHES "MT")
+                    set(LIB_SUFFIX "MT")
+                endif()
+            endif()
+        else()
+            # Fallback: inspect common CMake flags for runtime markers
+            if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+                set(_flags "${CMAKE_C_FLAGS_DEBUG} ${CMAKE_CXX_FLAGS_DEBUG} ${CMAKE_C_FLAGS} ${CMAKE_CXX_FLAGS}")
+                string(FIND "${_flags}" "/MDd" _pos)
+                if(NOT _pos EQUAL -1)
+                    set(LIB_SUFFIX "MDd")
+                else()
+                    string(FIND "${_flags}" "/MTd" _pos)
+                    if(NOT _pos EQUAL -1)
+                        set(LIB_SUFFIX "MTd")
+                    endif()
+                endif()
+            else()
+                set(_flags "${CMAKE_C_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_C_FLAGS} ${CMAKE_CXX_FLAGS}")
+                string(FIND "${_flags}" "/MD" _pos)
+                if(NOT _pos EQUAL -1)
+                    set(LIB_SUFFIX "MD")
+                else()
+                    string(FIND "${_flags}" "/MT" _pos)
+                    if(NOT _pos EQUAL -1)
+                        set(LIB_SUFFIX "MT")
+                    endif()
+                endif()
+            endif()
+        endif()
+        message(STATUS "Using LIB_SUFFIX='${LIB_SUFFIX}'")
+    endif()
+
+    # Find Compressonator include directory
+    find_path(COMPRESSONATOR_ROOT
+        NAMES include/compressonator.h
+        HINTS "C:\\Compressonator_4.5.52"
+        PATH_SUFFIXES Include include
+    )
+
+    include_directories(${COMPRESSONATOR_ROOT}/Include)
+    link_directories(${COMPRESSONATOR_ROOT}/lib/bin/${COM_SYSTEM})
+
+    SET(AMD_COM_LIB Compressonator_${LIB_SUFFIX}.lib)
+
 endif(WIN32)
 
-set(LIB_BUILD_COMPRESSONATOR_SDK    ON)
-set(LIB_BUILD_FRAMEWORK_SDK         ON)
-set(LIB_BUILD_IMAGEIO               OFF)
-set(LIB_BUILD_ANALYSIS              OFF)
-set(LIB_BUILD_COMMON                ON)
-set(LIB_BUILD_CORE                  ON)
-set(LIB_BUILD_GPUDECODE             ON)
-
-include_directories(CMP_CompressonatorLib)
-include_directories(CMP_Framework/Common)
-include_directories(CMP_Framework/Common/half)
-
-add_subdirectory(Applications/_plugins/common)
-add_subdirectory(CMP_CompressonatorLib)
-add_subdirectory(CMP_Framework)
-add_subdirectory(CMP_Core)
 
 SET(INTEL_TC_SOURCE IntelTextureCompression/ispc_texcomp.cpp
 					IntelTextureCompression/ispc_texcomp.h
@@ -76,7 +126,7 @@ SOURCE_GROUP("Texture File Creater" FILES ${TEXTURE_FILE_CREATER_SOURCE})
 SOURCE_GROUP("CMD Param parse" FILES ${PARAM_PARSE_SOURCE})
 
 SET(TEX_CONV_SOURCE ${ILIMAGE_SOURCE} ${PIXEL_FORMAT_SOURCE} ${TEXTURE_FILE_CREATER_SOURCE} ${PARAM_PARSE_SOURCE})
-SET(TEX_CONV_LIBRARY CMCore CMPlatform CMUtil CMP_Compressonator CMP_Framework CMP_Core ${HGL_DEVIL_LIB})
+SET(TEX_CONV_LIBRARY CMCore CMPlatform CMUtil ${HGL_DEVIL_LIB} ${AMD_COM_LIB})
 
 if(WIN32)
 	set(TEX_CONV_LIBRARY ${TEX_CONV_LIBRARY} glm::glm)

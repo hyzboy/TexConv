@@ -6,7 +6,8 @@
 namespace hgl
 {
     using namespace graph;
-    constexpr char *VulkanNumberTypeName[]=
+
+    constexpr const char *VulkanNumberTypeName[]=
     {
         "NONE",
         

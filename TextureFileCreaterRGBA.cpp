@@ -25,7 +25,7 @@ public:
          ||pixel_format->format==ColorFormat::RGBA32F)
         {
             if(!ToILType(type,pixel_format->bits[0],pixel_format->type))
-                return(nullptr);
+                return(false);
         }
         else if(pixel_format->format==ColorFormat::RGBA4
               ||pixel_format->format==ColorFormat::BGRA4)
