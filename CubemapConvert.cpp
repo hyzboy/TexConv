@@ -6,7 +6,7 @@
 #include"ILImage.h"
 #include"TextureFileCreater.h"
 #include"ImageConvertConfig.h"
-#include"CMP_CompressonatorLib/Compressonator.h"
+#include"Compressonator.h"
 #include"ParamParse.h"
 
 using namespace hgl;
@@ -145,10 +145,10 @@ int os_main(int argc,os_char **argv)
 
     ImageConvertConfig icc;
 
-    if(cp.Find(OS_TEXT("/mip"))!=-1)icc.gen_mipmaps=true;				//检测是否生成mipmaps
+    if(cp.Find(OS_TEXT("/mip"))!=-1)icc.gen_mipmaps=true;
     
     ParseParamColorKey(&icc,cp);
-    ParseParamFormat(&icc,cp);								            //检测推荐格式
+    ParseParamFormat(&icc,cp);
 
     ilInit();
     

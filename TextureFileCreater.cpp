@@ -37,13 +37,13 @@ TextureFileCreater::~TextureFileCreater()
 
 constexpr os_char TEXTURE_FILE_EXT_NAME[][20]=            //顺序必须等同VkImageViewType
 {
-    OS_TEXT(".Tex1D"),
-    OS_TEXT(".Tex2D"),
-    OS_TEXT(".Tex3D"),
-    OS_TEXT(".TexCube"),
-    OS_TEXT(".Tex1DArray"),
-    OS_TEXT(".Tex2DArray"),
-    OS_TEXT(".TexCubeArray")
+    OS_TEXT("Tex1D"),
+    OS_TEXT("Tex2D"),
+    OS_TEXT("Tex3D"),
+    OS_TEXT("TexCube"),
+    OS_TEXT("Tex1DArray"),
+    OS_TEXT("Tex2DArray"),
+    OS_TEXT("TexCubeArray")
 };
 
 constexpr char TEXTURE_FILE_HEADER[]="Texture";

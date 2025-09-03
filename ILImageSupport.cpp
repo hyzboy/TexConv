@@ -4,6 +4,9 @@
 #include<IL/ilu.h>
 #include<hgl/log/LogInfo.h>
 #include<hgl/filesystem/FileSystem.h>
+#include<cmath>
+#include<vector>
+#include<cstring>
 
 using namespace hgl;
 
@@ -130,7 +133,7 @@ void ILImage::Refresh()
     il_depth    =ilGetInteger(IL_IMAGE_DEPTH);
     il_bit		=ilGetInteger(IL_IMAGE_BITS_PER_PIXEL);
     il_format	=ilGetInteger(IL_IMAGE_FORMAT);
-    il_type	    =ilGetInteger(IL_IMAGE_TYPE);
+    il_type    	=ilGetInteger(IL_IMAGE_TYPE);
 
     if(ilGetInteger(IL_IMAGE_ORIGIN)==IL_ORIGIN_LOWER_LEFT)
         iluFlipImage();
@@ -210,18 +213,166 @@ void ILImage::Bind()
     ilBindImage(il_index);
 }
 
+static inline float sinc(float x)
+{
+    if(x==0.0f) return 1.0f;
+    x *= static_cast<float>(M_PI);
+    return std::sin(x)/x;
+}
+
+static inline float lanczos3_kernel(float x)
+{
+    const float a = 3.0f;
+    x = std::fabs(x);
+    if(x >= a) return 0.0f;
+    return sinc(x) * sinc(x / a);
+}
+
+// Precompute contributions for a single pass (either horizontal or vertical)
+static void precompute_contribs(int srcSize, int dstSize, float a, std::vector<std::vector<std::pair<int,float>>> &contrib)
+{
+    contrib.clear();
+    contrib.resize(dstSize);
+
+    const float scale = static_cast<float>(dstSize) / static_cast<float>(srcSize);
+    // For resampling mapping, map dst pixel center to source space
+    for(int i=0;i<dstSize;++i)
+    {
+        const float srcCenter = (i + 0.5f) * (static_cast<float>(srcSize) / static_cast<float>(dstSize)) - 0.5f;
+        int left = static_cast<int>(std::floor(srcCenter - a + 1));
+        int right = static_cast<int>(std::ceil(srcCenter + a - 1));
+
+        // clamp
+        if(left < 0) left = 0;
+        if(right >= srcSize) right = srcSize - 1;
+
+        std::vector<std::pair<int,float>> weights;
+        weights.reserve(right - left + 1);
+
+        float sum = 0.0f;
+        for(int j=left;j<=right;++j)
+        {
+            float w = lanczos3_kernel(srcCenter - static_cast<float>(j));
+            if(w==0.0f) continue;
+            weights.emplace_back(j,w);
+            sum += w;
+        }
+
+        // normalize
+        if(sum!=0.0f)
+        {
+            for(auto &p:weights)
+                p.second /= sum;
+        }
+
+        contrib[i] = std::move(weights);
+    }
+}
+
 bool ILImage::Resize(uint nw,uint nh)
 {
     if(nw==il_width&&nh==il_height)return(true);
     if(nw==0||nh==0)return(false);
 
-    if(!iluScale(nw,nh,il_depth))
-        return(false);
+    // Use Lanczos3 resampling when downscaling or upscaling for better quality
+    // Strategy: Convert image to float (per-channel), perform separable resampling (horizontal then vertical), then set image data
 
-    il_width=nw;
-    il_height=nh;
+    Bind();
 
-    return(true);
+    const ILuint orig_format = il_format;
+    const ILuint orig_type = il_type;
+    const uint orig_channels = channel_count;
+
+    if(orig_channels < 1 || orig_channels > 4)
+        return false;
+
+    const ILenum work_format = format_by_channel[orig_channels-1];
+    const ILenum work_type = IL_FLOAT;
+
+    // Convert to float planar format
+    if(!Convert(work_format, work_type))
+        return false;
+
+    float *src = reinterpret_cast<float*>(ilGetData());
+    if(!src) return false;
+
+    const int sw = static_cast<int>(il_width);
+    const int sh = static_cast<int>(il_height);
+    const int dw = static_cast<int>(nw);
+    const int dh = static_cast<int>(nh);
+    const int channels = static_cast<int>(orig_channels);
+
+    // If size is same just return
+    if(sw==dw && sh==dh) return true;
+
+    // First pass: horizontal resize to dw x sh
+    std::vector<float> tmp(static_cast<size_t>(dw) * sh * channels);
+
+    const float a = 3.0f; // Lanczos window
+    std::vector<std::vector<std::pair<int,float>>> contrib_h;
+    precompute_contribs(sw, dw, a, contrib_h);
+
+    for(int y=0;y<sh;++y)
+    {
+        for(int x=0;x<dw;++x)
+        {
+            const auto &weights = contrib_h[x];
+            for(int c=0;c<channels;++c)
+            {
+                float sum = 0.0f;
+                for(const auto &p:weights)
+                {
+                    int sx = p.first;
+                    float w = p.second;
+                    sum += w * src[(y*sw + sx) * channels + c];
+                }
+                tmp[(y*dw + x) * channels + c] = sum;
+            }
+        }
+    }
+
+    // Second pass: vertical resize from dw x sh to dw x dh
+    std::vector<float> dst(static_cast<size_t>(dw) * dh * channels);
+    std::vector<std::vector<std::pair<int,float>>> contrib_v;
+    precompute_contribs(sh, dh, a, contrib_v);
+
+    for(int x=0;x<dw;++x)
+    {
+        for(int y=0;y<dh;++y)
+        {
+            const auto &weights = contrib_v[y];
+            for(int c=0;c<channels;++c)
+            {
+                float sum = 0.0f;
+                for(const auto &p:weights)
+                {
+                    int sy = p.first;
+                    float w = p.second;
+                    sum += w * tmp[(sy*dw + x) * channels + c];
+                }
+                dst[(y*dw + x) * channels + c] = sum;
+            }
+        }
+    }
+
+    // Replace image data with dst (float) and restore original format/type if needed
+    if(!ilTexImage(dw, dh, 1, channels, work_format, work_type, dst.data()))
+        return false;
+
+    // If the original format/type differ, convert back
+    if(orig_format != work_format || orig_type != work_type)
+    {
+        if(!ilConvertImage(orig_format, orig_type))
+            return false;
+    }
+
+    il_width = nw;
+    il_height = nh;
+    il_format = ilGetInteger(IL_IMAGE_FORMAT);
+    il_type = ilGetInteger(IL_IMAGE_TYPE);
+    il_bit = ilGetInteger(IL_IMAGE_BITS_PER_PIXEL);
+
+    return true;
 }
 
 bool ILImage::Convert(ILuint format,ILuint type)
@@ -383,7 +534,7 @@ template<typename T> void MixRGBA(T *rgba,T *alpha,int size)
 
     for(i=0;i<size;i++)
     {
-    	rgba+=3;
+		rgba+=3;
         *rgba++=*alpha++;
     }
 }
