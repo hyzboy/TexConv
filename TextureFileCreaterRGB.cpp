@@ -1,6 +1,6 @@
 #include"TextureFileCreater.h"
 #include"ILImage.h"
-#include<hgl/log/LogInfo.h>
+#include<hgl/log/log.h>
 #include<hgl/color/ColorFormat.h>
 
 class TextureFileCreaterRGB:public TextureFileCreater
@@ -34,7 +34,7 @@ public:
         }
         else
         {
-            LOG_ERROR(OS_TEXT("Don't support this RGB format"));
+            LogError(OS_TEXT("Don't support this RGB format"));
             return(false);
         }
 
@@ -47,7 +47,7 @@ public:
     {
         const uint total_bytes=(pixel_format->total_bits*image->pixel_total())>>3;
         
-        std::cout<<"Convert Image To: "<<image->width()<<"x"<<image->height()<<" "<<total_bytes<<" bytes."<<std::endl;
+        LogInfo("Convert Image To: "+AnsiString::numberOf(image->width())+"x"+AnsiString::numberOf(image->height())+" "+AnsiString::numberOf(total_bytes)+" bytes.");
 
         if(pixel_format->format==ColorFormat::RGB32U
          ||pixel_format->format==ColorFormat::RGB32I
@@ -79,7 +79,7 @@ public:
         }
         else
         {
-            LOG_ERROR(OS_TEXT("Don't support this RGB format"));
+            LogError(OS_TEXT("Don't support this RGB format"));
             return(0);
         }
     }

@@ -1,1 +1,0 @@
-ispc -O2 "%1.ispc" -o "%2.obj" -h "%2.h" --arch=x86-64 --dllexport --target=sse2,sse4,avx,avx2 --opt=fast-math

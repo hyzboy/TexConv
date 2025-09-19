@@ -26,80 +26,43 @@ if(WIN32)
                         ${DEVIL_LIBRARY_PATH}/ILU.lib
                         ${DEVIL_LIBRARY_PATH}/ILUT.lib)
 
-  if(MSVC)
-        if(DEFINED MSVC_RUNTIME_LIBRARY)
-            message(STATUS "Detected MSVC_RUNTIME_LIBRARY=${MSVC_RUNTIME_LIBRARY}")
-            if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-                if(MSVC_RUNTIME_LIBRARY STREQUAL "MultiThreadedDLL" OR MSVC_RUNTIME_LIBRARY MATCHES "MDd")
-                    set(LIB_SUFFIX "MDd")
-                elseif(MSVC_RUNTIME_LIBRARY STREQUAL "MultiThreaded" OR MSVC_RUNTIME_LIBRARY MATCHES "MTd")
-                    set(LIB_SUFFIX "MTd")
-                endif()
-            else()
-                if(MSVC_RUNTIME_LIBRARY STREQUAL "MultiThreadedDLL" OR MSVC_RUNTIME_LIBRARY MATCHES "MD")
-                    set(LIB_SUFFIX "MD")
-                elseif(MSVC_RUNTIME_LIBRARY STREQUAL "MultiThreaded" OR MSVC_RUNTIME_LIBRARY MATCHES "MT")
-                    set(LIB_SUFFIX "MT")
-                endif()
-            endif()
-        else()
-            # Fallback: inspect common CMake flags for runtime markers
-            if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-                set(_flags "${CMAKE_C_FLAGS_DEBUG} ${CMAKE_CXX_FLAGS_DEBUG} ${CMAKE_C_FLAGS} ${CMAKE_CXX_FLAGS}")
-                string(FIND "${_flags}" "/MDd" _pos)
-                if(NOT _pos EQUAL -1)
-                    set(LIB_SUFFIX "MDd")
-                else()
-                    string(FIND "${_flags}" "/MTd" _pos)
-                    if(NOT _pos EQUAL -1)
-                        set(LIB_SUFFIX "MTd")
-                    endif()
-                endif()
-            else()
-                set(_flags "${CMAKE_C_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_C_FLAGS} ${CMAKE_CXX_FLAGS}")
-                string(FIND "${_flags}" "/MD" _pos)
-                if(NOT _pos EQUAL -1)
-                    set(LIB_SUFFIX "MD")
-                else()
-                    string(FIND "${_flags}" "/MT" _pos)
-                    if(NOT _pos EQUAL -1)
-                        set(LIB_SUFFIX "MT")
-                    endif()
-                endif()
-            endif()
-        endif()
-        message(STATUS "Using LIB_SUFFIX='${LIB_SUFFIX}'")
-    endif()
-
-    # Find Compressonator include directory
-    find_path(COMPRESSONATOR_ROOT
-        NAMES include/compressonator.h
-        HINTS "C:\\Compressonator_4.5.52"
-        PATH_SUFFIXES Include include
-    )
-
-    include_directories(${COMPRESSONATOR_ROOT}/Include)
-    link_directories(${COMPRESSONATOR_ROOT}/lib/bin/${COM_SYSTEM})
-
-    SET(AMD_COM_LIB Compressonator_${LIB_SUFFIX}.lib)
-
 endif(WIN32)
 
+SET(ISPC_TC_HEADER_PATH "${CMAKE_CURRENT_SOURCE_DIR}/ISPCTextureCompressor/ispc_texcomp")
 
-SET(INTEL_TC_SOURCE IntelTextureCompression/ispc_texcomp.cpp
-					IntelTextureCompression/ispc_texcomp.h
-					IntelTextureCompression/kernel_ispc.h
-					IntelTextureCompression/kernel_ispc.obj
-					IntelTextureCompression/kernel_ispc_avx.h
-					IntelTextureCompression/kernel_ispc_avx.obj
-					IntelTextureCompression/kernel_ispc_avx2.h
-					IntelTextureCompression/kernel_ispc_avx2.obj
-					IntelTextureCompression/kernel_ispc_sse2.h
-					IntelTextureCompression/kernel_ispc_sse2.obj
-					IntelTextureCompression/kernel_ispc_sse4.h
-					IntelTextureCompression/kernel_ispc_sse4.obj)
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    SET(ISPC_TC_LIBRARY_PATH "${CMAKE_CURRENT_SOURCE_DIR}/ISPCTextureCompressor/ISPC Texture Compressor/x64/Debug")
 
-SOURCE_GROUP("Intel Texture Compression" FILES ${INTEL_TC_SOURCE})
+    SET(INTEL_TC_LIBRARY    ${ISPC_TC_LIBRARY_PATH}/kernel.obj                        
+                            ${ISPC_TC_LIBRARY_PATH}/kernel_avx.obj
+                            ${ISPC_TC_LIBRARY_PATH}/kernel_avx2.obj
+                            ${ISPC_TC_LIBRARY_PATH}/kernel_sse2.obj
+                            ${ISPC_TC_LIBRARY_PATH}/kernel_sse4.obj
+
+                            ${ISPC_TC_LIBRARY_PATH}/kernel_astc.obj)
+
+
+else()
+    SET(ISPC_TC_LIBRARY_PATH "${CMAKE_CURRENT_SOURCE_DIR}/ISPCTextureCompressor/ISPC Texture Compressor/x64/Release")
+    
+    SET(INTEL_TC_LIBRARY    ${ISPC_TC_LIBRARY_PATH}/kernel.obj                        
+                            ${ISPC_TC_LIBRARY_PATH}/kernel_avx.obj
+                            ${ISPC_TC_LIBRARY_PATH}/kernel_avx2.obj
+                            ${ISPC_TC_LIBRARY_PATH}/kernel_sse2.obj
+                            ${ISPC_TC_LIBRARY_PATH}/kernel_sse4.obj
+                            
+                            ${ISPC_TC_LIBRARY_PATH}/kernel_astc.obj
+                            ${ISPC_TC_LIBRARY_PATH}/kernel_astc_avx.obj
+                            ${ISPC_TC_LIBRARY_PATH}/kernel_astc_avx2.obj
+                            ${ISPC_TC_LIBRARY_PATH}/kernel_astc_sse2.obj
+                            ${ISPC_TC_LIBRARY_PATH}/kernel_astc_sse4.obj)
+endif()
+
+SET(INTEL_TC_SOURCE ${ISPC_TC_HEADER_PATH}/ispc_texcomp.cpp
+					${ISPC_TC_HEADER_PATH}/ispc_texcomp.h
+					${ISPC_TC_HEADER_PATH}/ispc_texcomp_astc.cpp)
+
+SOURCE_GROUP("Intel ISPC Texture Compression" FILES ${INTEL_TC_SOURCE})
 
 SET(ILIMAGE_SOURCE  ILImage.h
                     ILImageSupport.cpp)
@@ -126,7 +89,7 @@ SOURCE_GROUP("Texture File Creater" FILES ${TEXTURE_FILE_CREATER_SOURCE})
 SOURCE_GROUP("CMD Param parse" FILES ${PARAM_PARSE_SOURCE})
 
 SET(TEX_CONV_SOURCE ${ILIMAGE_SOURCE} ${PIXEL_FORMAT_SOURCE} ${TEXTURE_FILE_CREATER_SOURCE} ${PARAM_PARSE_SOURCE})
-SET(TEX_CONV_LIBRARY CMCore CMPlatform CMUtil ${HGL_DEVIL_LIB} ${AMD_COM_LIB})
+SET(TEX_CONV_LIBRARY CMCore CMPlatform CMUtil ${HGL_DEVIL_LIB} ${INTEL_TC_LIBRARY})
 
 if(WIN32)
 	set(TEX_CONV_LIBRARY ${TEX_CONV_LIBRARY} glm::glm)
@@ -134,7 +97,7 @@ else()
 	set(TEX_CONV_LIBRARY ${TEX_CONV_LIBRARY} GLM)
 endif(WIN32)
 
-add_executable(TexConv ${TEX_CONV_SOURCE} main.cpp ConvertImage.cpp)
+add_executable(TexConv ${TEX_CONV_SOURCE} ${INTEL_TC_SOURCE} main.cpp ConvertImage.cpp)
 target_link_libraries(TexConv PRIVATE ${TEX_CONV_LIBRARY})
 
 add_executable(CubeMapConv ${TEX_CONV_SOURCE} CubeMapConvert.cpp)

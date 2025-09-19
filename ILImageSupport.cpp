@@ -2,7 +2,7 @@
 
 #include"ILImage.h"
 #include<IL/ilu.h>
-#include<hgl/log/LogInfo.h>
+#include<hgl/log/log.h>
 #include<hgl/filesystem/FileSystem.h>
 #include<cmath>
 #include<vector>
@@ -160,7 +160,7 @@ void ILImage::Refresh()
         }
         else
         {
-            LOG_ERROR("Don't support the pattle format.");
+            LogError("Don't support the pattle format.");
         }
     }
 
@@ -395,7 +395,7 @@ bool ILImage::LoadFile(const OSString &filename)
 
     if(!filesystem::FileExist(filename))
     {
-        LOG_ERROR(OS_TEXT("Can't find filename: ")+filename);
+        LogError(OS_TEXT("Can't find filename: ")+filename);
         return(false);
     }
 
@@ -407,26 +407,26 @@ bool ILImage::LoadFile(const OSString &filename)
         
         if(err_text)
         {
-            LOG_ERROR(OS_TEXT("can't Load image file <")+filename+OS_TEXT("> Error: ")+err_text);
+            LogError(OS_TEXT("can't Load image file <")+filename+OS_TEXT("> Error: ")+err_text);
         }
         else
         {
-            LOG_ERROR(OS_TEXT("can't Load image file <")+filename+OS_TEXT("> Error: ")+OSString::numberOf(il_err_code));
+            LogError(OS_TEXT("can't Load image file <")+filename+OS_TEXT("> Error: ")+OSString::numberOf(il_err_code));
         }
 
         return(false);
     }
 
-    LOG_INFO(OS_TEXT("\nFile: ")+filename);
+    LogInfo(OS_TEXT("\nFile: ")+filename);
 
     Refresh();
 
-    LOG_INFO(OS_TEXT("\t width: ")+OSString::numberOf(il_width));
-    LOG_INFO(OS_TEXT("\theight: ")+OSString::numberOf(il_height));
-    LOG_INFO(OS_TEXT("\t depth: ")+OSString::numberOf(il_depth));
-    LOG_INFO(OS_TEXT("\t   bit: ")+OSString::numberOf(il_bit));
-    LOG_INFO(OS_TEXT("\tformat: ")+GetILFormatName(il_format));
-    LOG_INFO(OS_TEXT("\t  type: ")+GetILTypeName(il_type));
+    LogInfo(OS_TEXT("\t width: ")+OSString::numberOf(il_width));
+    LogInfo(OS_TEXT("\theight: ")+OSString::numberOf(il_height));
+    LogInfo(OS_TEXT("\t depth: ")+OSString::numberOf(il_depth));
+    LogInfo(OS_TEXT("\t   bit: ")+OSString::numberOf(il_bit));
+    LogInfo(OS_TEXT("\tformat: ")+GetILFormatName(il_format));
+    LogInfo(OS_TEXT("\t  type: ")+GetILTypeName(il_type));
 
     return(true);    
 }

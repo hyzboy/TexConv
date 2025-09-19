@@ -2,7 +2,7 @@
 #include<hgl/util/cmd/CmdParse.h>
 #include<hgl/filesystem/FileSystem.h>
 #include<hgl/type/StringList.h>
-#include<hgl/log/LogInfo.h>
+#include<hgl/log/log.h>
 #include"ILImage.h"
 #include"TextureFileCreater.h"
 #include"ImageConvertConfig.h"
@@ -38,7 +38,7 @@ bool ConvertCubemap(const OSString &filename,const OSStringList &file_list,const
              ||channels!=image[i].channels()
              ||bits!=image[i].bit())
             {
-                LOG_ERROR(OS_TEXT("image formats can't batch"));
+                LogError(OS_TEXT("image formats can't batch"));
                 return(false);
             }
         }
@@ -51,7 +51,7 @@ bool ConvertCubemap(const OSString &filename,const OSStringList &file_list,const
     
     if(channels<=0||channels>4)
     {
-        LOG_ERROR(OS_TEXT("image format don't support "));
+        LogError(OS_TEXT("image format don't support "));
         return(false);
     }
 
@@ -64,19 +64,19 @@ bool ConvertCubemap(const OSString &filename,const OSStringList &file_list,const
 
     if (!tex_file_creater->CreateTexFile(filename, VK_IMAGE_VIEW_TYPE_CUBE))
     {
-        LOG_ERROR(OS_TEXT("Create Texture failed."));
+        LogError(OS_TEXT("Create Texture failed."));
         return(false);
     }
 
     if (!tex_file_creater->WriteSize2D(width, height))
     {
-        LOG_ERROR(OS_TEXT("Write size failed."));
+        LogError(OS_TEXT("Write size failed."));
         return(false);
     }
 
     if (!tex_file_creater->WritePixelFormat(miplevel))
     {
-        LOG_ERROR(OS_TEXT("Write format failed."));
+        LogError(OS_TEXT("Write format failed."));
         return(false);
     }
 
@@ -90,7 +90,7 @@ bool ConvertCubemap(const OSString &filename,const OSStringList &file_list,const
 
             if (!tex_file_creater->InitFormat(&image[face]))
             {
-                LOG_ERROR(OS_TEXT("Init texture format failed."));
+                LogError(OS_TEXT("Init texture format failed."));
                 return(false);
             }
 
@@ -120,7 +120,7 @@ bool ConvertCubemap(const OSString &filename,const OSStringList &file_list,const
     
     tex_file_creater->Close();
         
-    LOG_INFO(OS_TEXT("pixel total length: ")+OSString::numberOf(total)+OS_TEXT(" bytes."));
+    LogInfo(OS_TEXT("pixel total length: ")+OSString::numberOf(total)+OS_TEXT(" bytes."));
     return(true);
 }
 
@@ -164,7 +164,7 @@ int os_main(int argc,os_char **argv)
             file_list.Add(argv[i]);
         else
         {
-            LOG_ERROR(OS_TEXT("Can't check file ")+OSString(argv[i]));
+            LogError(OS_TEXT("Can't check file ")+OSString(argv[i]));
             return(false);
         }
     }

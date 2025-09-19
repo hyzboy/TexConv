@@ -1,5 +1,6 @@
 #pragma once
 #include<IL/il.h>
+#include<hgl/log/Log.h>
 #include<hgl/type/String.h>
 #include"Image2D.h"
 
@@ -7,6 +8,10 @@ using namespace hgl;
 
 class ILImage
 {
+    OBJECT_LOGGER
+
+private:
+
     ILuint il_index;
     ILuint il_width,il_height,il_depth;
     ILuint il_bit,il_format,il_type;

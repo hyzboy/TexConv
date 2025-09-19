@@ -1,6 +1,6 @@
 ﻿#include"TextureFileCreater.h"
 #include<hgl/filesystem/FileSystem.h>
-#include<hgl/log/LogInfo.h>
+#include<hgl/log/log.h>
 
 using namespace hgl::filesystem;
 
@@ -53,16 +53,16 @@ bool TextureFileCreater::CreateTexFile(const OSString &old_filename, const VkIma
 {
     OSString pn,fn;
 
-    SplitFilename<os_char>(pn,fn,old_filename);
+    SplitPath<os_char>(pn,fn,old_filename);
 
     if(type<VK_IMAGE_VIEW_TYPE_1D
      ||type>VK_IMAGE_VIEW_TYPE_CUBE_ARRAY)
     {
-        LOG_ERROR(OS_TEXT("TextureFileCreater::WriteFileHeader(")+old_filename+OS_TEXT(") texture type error that it's ")+OSString::numberOf(int(type)));
+        LogError(OS_TEXT("TextureFileCreater::WriteFileHeader(")+old_filename+OS_TEXT(") texture type error that it's ")+OSString::numberOf(int(type)));
         return(false);
     }
 
-    filename=ReplaceExtName<os_char>(old_filename,TEXTURE_FILE_EXT_NAME[type]);
+    filename=ReplaceExtension<os_char>(old_filename,TEXTURE_FILE_EXT_NAME[type]);
 
     if(!fos.CreateTrunc(filename))
         return(false);

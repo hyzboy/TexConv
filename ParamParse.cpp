@@ -1,5 +1,6 @@
 #include"ParamParse.h"
-#include<hgl/log/LogInfo.h>
+#include<hgl/log/log.h>
+#include<iostream>
 
 const PixelFormat *ParseParamFormat(const CmdParse &cmd,const os_char *flag,const PixelFormat *default_format)
 {
@@ -11,21 +12,23 @@ const PixelFormat *ParseParamFormat(const CmdParse &cmd,const os_char *flag,cons
 
     if(result)return(result);
 
-    LOG_INFO(OS_TEXT("[FORMAT ERROR] Don't support ")+fmtstr+OS_TEXT(" format."));
+    GLogInfo(OS_TEXT("[FORMAT ERROR] Don't support ")+fmtstr+OS_TEXT(" format."));
 
     return default_format;
 }
 
 void ParseParamFormat(ImageConvertConfig *icc,const CmdParse &cmd)
 {
-    //指定格式
+    //指锟斤拷锟斤拷式
     icc->pixel_fmt[0]=ParseParamFormat(cmd,OS_TEXT("/R:"),      GetPixelFormat(ColorFormat::R8));
     icc->pixel_fmt[1]=ParseParamFormat(cmd,OS_TEXT("/RG:"),     GetPixelFormat(ColorFormat::RG8));
     icc->pixel_fmt[2]=ParseParamFormat(cmd,OS_TEXT("/RGB:"),    GetPixelFormat(ColorFormat::RGB565));
     icc->pixel_fmt[3]=ParseParamFormat(cmd,OS_TEXT("/RGBA:"),   GetPixelFormat(ColorFormat::RGBA8));
 
     for(uint i=0;i<4;i++)
+    {
         std::cout<<(i+1)<<": "<<icc->pixel_fmt[i]->name<<std::endl;
+    }
 }
 
 void ParseParamColorKey(ImageConvertConfig *icc,const CmdParse &cmd)

@@ -1,4 +1,4 @@
-#include<hgl/log/LogInfo.h>
+#include<hgl/log/log.h>
 #include<IL/ilu.h>
 #include"ILImage.h"
 #include"TextureFileCreater.h"
@@ -20,7 +20,7 @@ bool ConvertImage(const OSString &filename,const ImageConvertConfig *cfg)
 
     if(channels<=0||channels>4)
     {
-        LOG_ERROR(OS_TEXT("image format don't support "));
+        GLogError(OS_TEXT("image format don't support "));
         return(false);
     }
 
@@ -32,25 +32,25 @@ bool ConvertImage(const OSString &filename,const ImageConvertConfig *cfg)
 
     if(!tex_file_creater->CreateTexFile(filename,VK_IMAGE_VIEW_TYPE_2D))
     {
-        LOG_ERROR(OS_TEXT("Create Texture failed."));
+        GLogError(OS_TEXT("Create Texture failed."));
         return(false);
     }
 
     if(!tex_file_creater->WriteSize2D(width,height))
     {
-        LOG_ERROR(OS_TEXT("Write size failed."));
+        GLogError(OS_TEXT("Write size failed."));
         return(false);
     }
 
     if(!tex_file_creater->WritePixelFormat(miplevel))
     {
-        LOG_ERROR(OS_TEXT("Write format failed."));
+        GLogError(OS_TEXT("Write format failed."));
         return(false);
     }
 
     if(!tex_file_creater->InitFormat(&image))
     {
-        LOG_ERROR(OS_TEXT("Init texture format failed."));
+        GLogError(OS_TEXT("Init texture format failed."));
         return(false);
     }
 
@@ -78,7 +78,7 @@ bool ConvertImage(const OSString &filename,const ImageConvertConfig *cfg)
         }
     }
 
-    LOG_INFO(OS_TEXT("pixel total length: ")+OSString::numberOf(total)+OS_TEXT(" bytes."));
+    GLogInfo(OS_TEXT("pixel total length: ")+OSString::numberOf(total)+OS_TEXT(" bytes."));
 
     tex_file_creater->Close();
 

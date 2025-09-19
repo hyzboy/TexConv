@@ -14,6 +14,10 @@ class TextureFileCreater
 {
 protected:
 
+    OBJECT_LOGGER
+
+protected:
+
     ILImage *image;
     const PixelFormat *pixel_format;
 

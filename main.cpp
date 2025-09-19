@@ -1,12 +1,11 @@
 ﻿#include<iostream>
 #include<IL/il.h>
 #include<IL/ilu.h>
-#include<hgl/log/LogInfo.h>
+#include<hgl/log/Logger.h>
 #include<hgl/util/cmd/CmdParse.h>
 #include<hgl/Time.h>
 #include<hgl/filesystem/FileSystem.h>
 #include<hgl/filesystem/EnumFile.h>
-#include"Compressonator.h"
 #include"ImageConvertConfig.h"
 #include"ParamParse.h"
 
@@ -47,7 +46,7 @@ public:
 
 int os_main(int argc,os_char **argv)
 {
-    std::cout<<"Image to Texture Convert tools 1.3b"<<std::endl<<std::endl;
+    std::cout<<"Image to Texture Convert tools 1.4"<<std::endl<<std::endl;
 
     if(argc<=1)
     {
@@ -77,9 +76,6 @@ int os_main(int argc,os_char **argv)
     ilInit();
     iluImageParameter(ILU_FILTER,ILU_SCALE_MITCHELL);
     
-    //CMP_RegisterHostPlugins();
-    CMP_InitializeBCLibrary();
-
     if(filesystem::FileCanRead(argv[argc-1]))
     {
         ConvertImage(argv[argc-1],&icc);
@@ -104,11 +100,10 @@ int os_main(int argc,os_char **argv)
 
         const OSString time_gap_str=OSString::floatOf(time_gap,2);
 
-        LOG_INFO(OS_TEXT("Total converted ")+OSString::numberOf(eci.GetConvertCount())
+        GLogInfo(OS_TEXT("Total converted ")+OSString::numberOf(eci.GetConvertCount())
                 +OS_TEXT(" textures for ")+time_gap_str.c_str()+OS_TEXT(" seconds."));
     }
 
-    CMP_ShutdownBCLibrary();
 	ilShutDown();
     return 0;
 }
