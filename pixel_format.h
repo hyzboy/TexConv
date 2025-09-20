@@ -74,7 +74,7 @@ struct ColorDataFormat
 struct PixelFormat
 {
     ColorFormat         format;
-    char                name[32];
+    char                name[10];
 
     uint8               channels;   //颜色通道数
     char                color[4];

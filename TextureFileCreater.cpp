@@ -124,14 +124,15 @@ bool TextureFileCreater::WriteSize2DArray(const uint32 width,const uint32 height
 
 bool TextureFileCreater::WritePixelFormat(const uint mip_level)
 {
-    constexpr uint8 spaces[7]={0,0,0,0,0,0,0};
-
     if (pixel_format->format > ColorFormat::COMPRESS)
     {
-        if(!dos->WriteUint8(0))return(false);
-        if(!dos->WriteUint16(uint(pixel_format->format)-uint(ColorFormat::BC1RGB)))return(false);
+        char spaces[10]={};
 
-        if(dos->WriteUint8(spaces,7)!=7)return(false);
+        if(!dos->WriteUint8(0))return(false);
+
+        hgl::strcpy(spaces,9,pixel_format->name);       //压缩格式名字没有超过9字节的
+
+        if(dos->Write(spaces,9)!=9)return(false);
     }
     else
     {
