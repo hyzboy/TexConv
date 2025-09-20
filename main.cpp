@@ -30,6 +30,14 @@ protected:
 
     void ProcFile(EnumFileConfig *efc,FileInfo &fi) override
     {
+        const os_char *ext=hgl::strrchr(fi.name,'.');
+
+        if(ext)
+        {
+            if(hgl::stricmp(ext,OS_TEXT(".Tex2D"))==0)  //已经是纹理文件了
+                return;
+        }
+
         if(ConvertImage(fi.fullname,cfg))
             ++convert_count;
     }

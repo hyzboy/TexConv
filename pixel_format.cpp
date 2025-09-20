@@ -71,7 +71,8 @@ namespace hgl
         {ColorFormat::BC3,      "BC3",      0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},  8,VulkanBaseType::NONE},
         {ColorFormat::BC4,      "BC4",      0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},  4,VulkanBaseType::NONE},
         {ColorFormat::BC5,      "BC5",      0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},  8,VulkanBaseType::NONE},
-        {ColorFormat::BC6,      "BC6",      0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},  8,VulkanBaseType::NONE},
+        {ColorFormat::BC6H,     "BC6H",     0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},  8,VulkanBaseType::NONE},
+        {ColorFormat::BC6H_SF,  "BC6H_SF",  0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},  8,VulkanBaseType::NONE},
         {ColorFormat::BC7,      "BC7",      0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},  8,VulkanBaseType::NONE}
     };
 

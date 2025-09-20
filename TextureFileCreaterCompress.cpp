@@ -34,7 +34,8 @@ public:
             "BC3",
             "BC4",
             "BC5",
-            "BC6",
+            "BC6H",
+            "BC6H_SF",
             "BC7"
         };
 
@@ -43,13 +44,13 @@ public:
         target_fmt_name=fmt_name_list[fmt_index];
 
         // build OSString message
-        OSString msg = OS_TEXT("Compress Image to: ");
-        msg += OSString::numberOf(image->width());
-        msg += OS_TEXT("x");
-        msg += OSString::numberOf(image->height());
-        msg += OS_TEXT(" ");
-        msg += OSString::numberOf(fmt_index);
-        msg += OS_TEXT(" format.");
+        AnsiString msg = "Compress Image to: ";
+        msg += AnsiString::numberOf(image->width());
+        msg += "x";
+        msg += AnsiString::numberOf(image->height());
+        msg += " ";
+        msg += target_fmt_name.c_str();
+        msg += " format.";
 
         LogInfo(msg.c_str());
 
@@ -166,7 +167,8 @@ public:
         {
             CompressBlocksBC5(&src, dst);
         }
-        else if(target_fmt_name == "BC6")
+        else if(target_fmt_name == "BC6H"
+              ||target_fmt_name == "BC6H_SF")
         {
             bc6h_enc_settings settings{};
             // use very slow profile for BC6H
@@ -193,14 +195,13 @@ public:
         }
 
         // build message
-        OSString msg = OS_TEXT("Compress Image To: ");
-        msg += OSString::numberOf(width);
-        msg += OS_TEXT("x");
-        msg += OSString::numberOf(height);
-        msg += OS_TEXT(" ");
-        msg += OSString::numberOf((uint)dst_size);
-        msg += OS_TEXT(" bytes.");
-
+        AnsiString msg = "Compress Image To: ";
+        msg += AnsiString::numberOf(width);
+        msg += "x";
+        msg += AnsiString::numberOf(height);
+        msg += " ";
+        msg += AnsiString::numberOf((uint)dst_size);
+        msg += " bytes.";
         
         LogInfo(msg.c_str());
 

@@ -57,7 +57,8 @@ enum class ColorFormat
     BC3,
     BC4,
     BC5,
-    BC6,
+    BC6H,
+    BC6H_SF,
     BC7,
 
     END
