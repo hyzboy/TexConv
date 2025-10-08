@@ -3,7 +3,7 @@
 #include<IL/ilu.h>
 #include<hgl/log/Logger.h>
 #include<hgl/util/cmd/CmdParse.h>
-#include<hgl/Time.h>
+#include<hgl/time/Time.h>
 #include<hgl/filesystem/FileSystem.h>
 #include<hgl/filesystem/EnumFile.h>
 #include"ImageConvertConfig.h"

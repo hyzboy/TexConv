@@ -11,11 +11,6 @@ bool ConvertImage(const OSString &filename,const ImageConvertConfig *cfg)
     if(!image.LoadFile(filename))
         return(false);
  
-    int miplevel=1;
-
-    if(cfg->gen_mipmaps)
-        miplevel=hgl::GetMipLevel(image.width(),image.height());
-    
     const uint channels=image.channels();
 
     if(channels<=0||channels>4)
@@ -42,6 +37,20 @@ bool ConvertImage(const OSString &filename,const ImageConvertConfig *cfg)
         return(false);
     }
 
+    int miplevel=1;
+    const bool is_compress_fmt=(fmt->channels==0);
+
+    if(cfg->gen_mipmaps)
+    {
+        miplevel=hgl::GetMipLevel(image.width(),image.height());
+
+        if(is_compress_fmt)     //压缩格式最小只能4X4,所以没有2X2/1X1这种尺寸
+        {
+            if(width>4||height>4)
+                miplevel-=2;        //对于大于4x4的图片，减少2级mipmaps
+        }
+    }
+
     if(!tex_file_creater->WritePixelFormat(miplevel))
     {
         GLogError(OS_TEXT("Write format failed."));
@@ -57,6 +66,8 @@ bool ConvertImage(const OSString &filename,const ImageConvertConfig *cfg)
     uint total=0;
     uint bytes=0;
 
+    uint min_size=(is_compress_fmt?4:1);
+
     for(int i=0;i<miplevel;i++)
     {
         bytes=tex_file_creater->Write();
@@ -71,8 +82,8 @@ bool ConvertImage(const OSString &filename,const ImageConvertConfig *cfg)
 
         if(miplevel>1&&i<miplevel)
         {
-            if(width>1)width>>=1;
-            if(height>1)height>>=1;
+            if(width>min_size)width>>=1;
+            if(height>min_size)height>>=1;
 
             image.Resize(width,height);
         }
