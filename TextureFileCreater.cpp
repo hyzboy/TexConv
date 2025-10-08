@@ -35,21 +35,10 @@ TextureFileCreater::~TextureFileCreater()
     SAFE_CLEAR(dos);
 }
 
-constexpr os_char TEXTURE_FILE_EXT_NAME[][20]=            //顺序必须等同VkImageViewType
-{
-    OS_TEXT("Tex1D"),
-    OS_TEXT("Tex2D"),
-    OS_TEXT("Tex3D"),
-    OS_TEXT("TexCube"),
-    OS_TEXT("Tex1DArray"),
-    OS_TEXT("Tex2DArray"),
-    OS_TEXT("TexCubeArray")
-};
-
 constexpr char TEXTURE_FILE_HEADER[]="Texture";
 constexpr uint TEXTURE_FILE_HEADER_LENGTH=sizeof(TEXTURE_FILE_HEADER)-1;
 
-bool TextureFileCreater::CreateTexFile(const OSString &old_filename, const VkImageViewType &type)
+bool TextureFileCreater::CreateTexFile(const OSString &old_filename, const OSString &new_filename,const VkImageViewType &type)
 {
     OSString pn,fn;
 
@@ -62,9 +51,10 @@ bool TextureFileCreater::CreateTexFile(const OSString &old_filename, const VkIma
         return(false);
     }
 
-    filename=ReplaceExtension<os_char>(old_filename,TEXTURE_FILE_EXT_NAME[type]);
+    //filename=ReplaceExtension<os_char>(old_filename,TEXTURE_FILE_EXT_NAME[type]);
+    filename=new_filename;
 
-    if(!fos.CreateTrunc(filename))
+    if(!fos.CreateTrunc(new_filename))
         return(false);
 
     dos=new io::LEDataOutputStream(&fos);

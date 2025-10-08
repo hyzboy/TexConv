@@ -35,7 +35,7 @@ public:
     TextureFileCreater(const PixelFormat *pf);
     virtual ~TextureFileCreater();
 
-	virtual bool CreateTexFile(const OSString &, const VkImageViewType &);
+	virtual bool CreateTexFile(const OSString &, const OSString &, const VkImageViewType &);
 
     virtual bool WriteSize1D(const uint32 length);
     virtual bool WriteSize2D(const uint32 width,const uint32 height);
