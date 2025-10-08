@@ -1,27 +1,9 @@
 #include<hgl/log/log.h>
-#include<IL/ilu.h>
 #include"ILImage.h"
 #include"TextureFileCreater.h"
 #include"ImageConvertConfig.h"
-#include<hgl/filesystem/FileSystem.h>
 
-using namespace hgl::filesystem;
-
-namespace
-{
-    constexpr os_char TEXTURE_FILE_EXT_NAME[][20]=            //顺序必须等同VkImageViewType
-    {
-        OS_TEXT("Tex1D"),
-        OS_TEXT("Tex2D"),
-        OS_TEXT("Tex3D"),
-        OS_TEXT("TexCube"),
-        OS_TEXT("Tex1DArray"),
-        OS_TEXT("Tex2DArray"),
-        OS_TEXT("TexCubeArray")
-    };
-}
-
-bool ConvertImage(const OSString &filename,const ImageConvertConfig *cfg)
+bool ConvertImage(const OSString &filename,const OSString &new_filename,const ImageConvertConfig *cfg)
 {
     ILImage image;
 
@@ -42,8 +24,6 @@ bool ConvertImage(const OSString &filename,const ImageConvertConfig *cfg)
 
     AutoDelete<TextureFileCreater> tex_file_creater=CreateTFC(fmt,channels);
     
-    OSString new_filename=ReplaceExtension<os_char>(filename,TEXTURE_FILE_EXT_NAME[size_t(VK_IMAGE_VIEW_TYPE_2D)]);
-
     if(!tex_file_creater->CreateTexFile(filename,new_filename,VK_IMAGE_VIEW_TYPE_2D))
     {
         GLogError(OS_TEXT("Create Texture failed."));

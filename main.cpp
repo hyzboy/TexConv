@@ -17,7 +17,21 @@ bool sub_folder      =false;
 
 void CMP_RegisterHostPlugins();
 
-bool ConvertImage(const OSString &filename,const ImageConvertConfig *cfg);
+bool ConvertImage(const OSString &filename,const OSString &new_filename,const ImageConvertConfig *cfg);
+
+namespace
+{
+    constexpr os_char TEXTURE_FILE_EXT_NAME[][20]=            //顺序必须等同VkImageViewType
+    {
+        OS_TEXT("Tex1D"),
+        OS_TEXT("Tex2D"),
+        OS_TEXT("Tex3D"),
+        OS_TEXT("TexCube"),
+        OS_TEXT("Tex1DArray"),
+        OS_TEXT("Tex2DArray"),
+        OS_TEXT("TexCubeArray")
+    };
+}
 
 class EnumConvertImage:public EnumFile
 {
@@ -38,7 +52,9 @@ protected:
                 return;
         }
 
-        if(ConvertImage(fi.fullname,cfg))
+        OSString new_filename=ReplaceExtension<os_char>(fi.fullname,TEXTURE_FILE_EXT_NAME[size_t(VK_IMAGE_VIEW_TYPE_2D)]);
+
+        if(ConvertImage(fi.fullname,new_filename,cfg))
             ++convert_count;
     }
 
@@ -75,7 +91,7 @@ int os_main(int argc,os_char **argv)
 
     ImageConvertConfig icc;
 
-    if(cp.Find(OS_TEXT("/s"))!=-1)sub_folder=true;					//检测是否处理子目录
+    if(cp.Find(OS_TEXT("/s"))!=-1)sub_folder=true;					    //检测是否处理子目录
     if(cp.Find(OS_TEXT("/mip"))!=-1)icc.gen_mipmaps=true;				//检测是否生成mipmaps
     
     ParseParamColorKey(&icc,cp);
@@ -86,7 +102,9 @@ int os_main(int argc,os_char **argv)
     
     if(filesystem::FileCanRead(argv[argc-1]))
     {
-        ConvertImage(argv[argc-1],&icc);
+        OSString new_filename=ReplaceExtension<os_char>(argv[argc-1],TEXTURE_FILE_EXT_NAME[size_t(VK_IMAGE_VIEW_TYPE_2D)]);
+
+        ConvertImage(argv[argc-1],new_filename,&icc);
     }
     else
     {
