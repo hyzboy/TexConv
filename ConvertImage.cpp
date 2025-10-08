@@ -29,6 +29,10 @@ bool ConvertImage(const OSString &filename,const OSString &new_filename,const Im
         GLogError(OS_TEXT("Create Texture failed."));
         return(false);
     }
+    else
+    {
+        GLogInfo(OS_TEXT("Convert <")+filename+OS_TEXT("> to <")+new_filename+OS_TEXT(">."));
+    }
 
     if(!tex_file_creater->WriteSize2D(width,height))
     {
