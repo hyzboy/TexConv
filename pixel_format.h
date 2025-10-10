@@ -61,6 +61,13 @@ enum class ColorFormat
     BC6H_SF,
     BC7,
 
+    //BasisU无论是ETC1S还是UASTC都可以解压成任意想要的目标格式
+    //ETC1S压缩比高，质量中等
+    //UASTC压缩比低，质量高
+
+    BU_ETC1S,
+    BU_ASTC,
+
     END
 };//enum class ColorFormat
 

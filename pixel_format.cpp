@@ -73,7 +73,10 @@ namespace hgl
         {ColorFormat::BC5,      "BC5",      0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},  8,VulkanBaseType::NONE},
         {ColorFormat::BC6H,     "BC6H",     0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},  8,VulkanBaseType::NONE},
         {ColorFormat::BC6H_SF,  "BC6H_SF",  0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},  8,VulkanBaseType::NONE},
-        {ColorFormat::BC7,      "BC7",      0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},  8,VulkanBaseType::NONE}
+        {ColorFormat::BC7,      "BC7",      0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},  8,VulkanBaseType::NONE},
+
+        {ColorFormat::BU_ETC1S, "BU_ETC1S", 0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},  0,VulkanBaseType::NONE},
+        {ColorFormat::BU_ASTC,  "BU_ASTC",  0,{ 0 , 0 , 0 , 0 },{ 0, 0, 0, 0},  0,VulkanBaseType::NONE}
     };
 
     constexpr uint PixelFormatCount=sizeof(pf_list)/sizeof(PixelFormat);

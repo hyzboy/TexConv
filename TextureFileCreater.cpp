@@ -173,7 +173,8 @@ TextureFileCreater *CreateTextureFileCreaterRG(const PixelFormat *);
 TextureFileCreater *CreateTextureFileCreaterRGB(const PixelFormat *);
 TextureFileCreater *CreateTextureFileCreaterRGBA(const PixelFormat *);
 
-TextureFileCreater *CreateTextureFileCreaterCompress(const PixelFormat *);
+TextureFileCreater *CreateTextureFileCreaterCompress(const PixelFormat *pf);
+TextureFileCreater *CreateTextureFileCreaterBasisU(const PixelFormat *pf);
 
 TextureFileCreater *CreateTFC(const PixelFormat *fmt,const int channels)
 {
@@ -192,6 +193,8 @@ TextureFileCreater *CreateTFC(const PixelFormat *fmt,const int channels)
 
     if(fmt->format<ColorFormat::COMPRESS)
         return CreateTFC[channels-1](fmt);
+    else if(fmt->format == ColorFormat::BU_ETC1S || fmt->format == ColorFormat::BU_ASTC)
+        return CreateTextureFileCreaterBasisU(fmt);
     else
         return CreateTextureFileCreaterCompress(fmt);
 }

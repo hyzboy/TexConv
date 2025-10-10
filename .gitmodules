@@ -1,3 +1,7 @@
 [submodule "ISPCTextureCompressor"]
 	path = ISPCTextureCompressor
 	url = https://github.com/GameTechDev/ISPCTextureCompressor.git
+
+[submodule "BasisU"]
+	path = basis_universal
+	url = https://github.com/BinomialLLC/basis_universal.git
