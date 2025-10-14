@@ -2,7 +2,7 @@
 
 project(TexConv)
 
-add_subdirectory(basis_universal)
+add_subdirectory(zstd/build/cmake)
 
 add_definitions(-DUNICODE -D_UNICODE)
 
@@ -81,8 +81,7 @@ SET(TEXTURE_FILE_CREATER_SOURCE TextureFileCreater.h
                                 TextureFileCreaterRG.cpp
                                 TextureFileCreaterRGB.cpp
                                 TextureFileCreaterRGBA.cpp
-                                TextureFileCreaterCompress.cpp
-                                TextureFileCreaterBasisU.cpp)
+                                TextureFileCreaterCompress.cpp)
 
 SET(PARAM_PARSE_SOURCE ParamParse.h ParamParse.cpp)
 
@@ -101,7 +100,7 @@ else()
 endif(WIN32)
 
 add_executable(TexConv ${TEX_CONV_SOURCE} ${INTEL_TC_SOURCE} main.cpp ConvertImage.cpp)
-target_link_libraries(TexConv PRIVATE ${TEX_CONV_LIBRARY} basisu_encoder )
+target_link_libraries(TexConv PRIVATE ${TEX_CONV_LIBRARY} libzstd_static)
 
 add_executable(CubeMapConv ${TEX_CONV_SOURCE} CubeMapConvert.cpp)
 target_link_libraries(CubeMapConv PRIVATE ${TEX_CONV_LIBRARY})
