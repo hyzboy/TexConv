@@ -15,6 +15,8 @@ using namespace hgl::util;
 
 bool sub_folder      =false;
 
+CompressionProvider  compression_privoder=CompressionProvider::Intel_ISPC;
+
 void CMP_RegisterHostPlugins();
 
 bool ConvertImage(const OSString &filename,const OSString &new_filename,const ImageConvertConfig *cfg);
@@ -53,6 +55,8 @@ protected:
         }
 
         OSString new_filename=ReplaceExtension<os_char>(fi.fullname,TEXTURE_FILE_EXT_NAME[size_t(VK_IMAGE_VIEW_TYPE_2D)]);
+
+        cfg->provider=compression_privoder;
 
         if(ConvertImage(fi.fullname,new_filename,cfg))
             ++convert_count;
@@ -95,6 +99,11 @@ int os_main(int argc,os_char **argv)
 
     if(cp.Find(OS_TEXT("/s"))!=-1)sub_folder=true;                     //检测是否处理子目录
     if(cp.Find(OS_TEXT("/mip"))!=-1)icc.gen_mipmaps=true;              //检测是否生成mipmaps
+
+    if(cp.Find(OS_TEXT("/AMD"))!=-1)
+        compression_privoder=CompressionProvider::AMD_Compressonator;
+    else
+        compression_privoder=CompressionProvider::Intel_ISPC;
     
     ParseParamColorKey(&icc,cp);
     ParseParamFormat(&icc,cp);                                         //检测推荐格式

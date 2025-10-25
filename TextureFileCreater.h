@@ -2,6 +2,7 @@
 
 #include"ILImage.h"
 #include"pixel_format.h"
+#include"ImageConvertConfig.h"
 #include<vulkan/vulkan.h>
 #include<hgl/io/FileOutputStream.h>
 #include<hgl/io/DataOutputStream.h>
@@ -54,4 +55,4 @@ public:
     virtual void Delete();
 };//class TextureFileCreater
 
-TextureFileCreater *CreateTFC(const PixelFormat *,const int channels);
+TextureFileCreater *CreateTFC(const PixelFormat *,const int channels,const CompressionProvider cp);

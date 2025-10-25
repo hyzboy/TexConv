@@ -22,7 +22,7 @@ bool ConvertImage(const OSString &filename,const OSString &new_filename,const Im
     uint width = image.width();
     uint height = image.height();
 
-    AutoDelete<TextureFileCreater> tex_file_creater=CreateTFC(fmt,channels);
+    AutoDelete<TextureFileCreater> tex_file_creater=CreateTFC(fmt,channels,cfg->provider);
     
     if(!tex_file_creater->CreateTexFile(filename,new_filename,VK_IMAGE_VIEW_TYPE_2D))
     {

@@ -1,12 +1,12 @@
 #include"TextureFileCreater.h"
 #include"ILImage.h"
-#include<hgl/log/LogInfo.h>
+#include<hgl/log/log.h>
 #include<hgl/TypeFunc.h>
 #include"Compressonator.h"
 #include <cstring>
 #include <cstdlib>
 
-class TextureFileCreaterCompress:public TextureFileCreater
+class TextureFileCreaterCompressAMD:public TextureFileCreater
 {
     MipSet MipSetIn;
     MipSet MipSetOut;
@@ -265,7 +265,7 @@ public:
 
         hgl_zero(MipSetOut);
 
-        CMP_ProcessTexture(&MipSetIn,&MipSetOut,kernel_options,&TextureFileCreaterCompress::CMP_Feedback_Proc);
+        CMP_ProcessTexture(&MipSetIn,&MipSetOut,kernel_options,&TextureFileCreaterCompressAMD::CMP_Feedback_Proc);
 
         std::cout<<" "<<MipSetOut.dwDataSize<<" bytes."<<std::endl;
 
@@ -279,7 +279,7 @@ public:
     }
 };//class TextureFileCreaterCompress:public TextureFileCreater
 
-TextureFileCreater *CreateTextureFileCreaterCompress(const PixelFormat *pf)
+TextureFileCreater *CreateTextureFileCreaterCompressAMD(const PixelFormat *pf)
 {
-    return(new TextureFileCreaterCompress(pf));
+    return(new TextureFileCreaterCompressAMD(pf));
 }

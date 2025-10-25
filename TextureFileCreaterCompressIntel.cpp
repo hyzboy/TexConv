@@ -6,7 +6,7 @@
 #include<cstring>
 #include<cstdlib>
 
-class TextureFileCreaterCompress:public TextureFileCreater
+class TextureFileCreaterCompressIntel:public TextureFileCreater
 {
     int channels;
     int type;
@@ -213,7 +213,7 @@ public:
     }
 };//class TextureFileCreaterCompress:public TextureFileCreater
 
-TextureFileCreater *CreateTextureFileCreaterCompress(const PixelFormat *pf)
+TextureFileCreater *CreateTextureFileCreaterCompressIntel(const PixelFormat *pf)
 {
-    return(new TextureFileCreaterCompress(pf));
+    return(new TextureFileCreaterCompressIntel(pf));
 }
