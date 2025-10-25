@@ -2,8 +2,6 @@
 
 project(TexConv)
 
-add_subdirectory(zstd/build/cmake)
-
 add_definitions(-DUNICODE -D_UNICODE)
 
 if(WIN32)
@@ -27,6 +25,62 @@ if(WIN32)
     SET(HGL_DEVIL_LIB   ${DEVIL_LIBRARY_PATH}/DevIL.lib
                         ${DEVIL_LIBRARY_PATH}/ILU.lib
                         ${DEVIL_LIBRARY_PATH}/ILUT.lib)
+
+    if(MSVC)
+        if(DEFINED MSVC_RUNTIME_LIBRARY)
+            message(STATUS "Detected MSVC_RUNTIME_LIBRARY=${MSVC_RUNTIME_LIBRARY}")
+            if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+                if(MSVC_RUNTIME_LIBRARY STREQUAL "MultiThreadedDLL" OR MSVC_RUNTIME_LIBRARY MATCHES "MDd")
+                    set(LIB_SUFFIX "MDd")
+                elseif(MSVC_RUNTIME_LIBRARY STREQUAL "MultiThreaded" OR MSVC_RUNTIME_LIBRARY MATCHES "MTd")
+                    set(LIB_SUFFIX "MTd")
+                endif()
+            else()
+                if(MSVC_RUNTIME_LIBRARY STREQUAL "MultiThreadedDLL" OR MSVC_RUNTIME_LIBRARY MATCHES "MD")
+                    set(LIB_SUFFIX "MD")
+                elseif(MSVC_RUNTIME_LIBRARY STREQUAL "MultiThreaded" OR MSVC_RUNTIME_LIBRARY MATCHES "MT")
+                    set(LIB_SUFFIX "MT")
+                endif()
+            endif()
+        else()
+            # Fallback: inspect common CMake flags for runtime markers
+            if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+                set(_flags "${CMAKE_C_FLAGS_DEBUG} ${CMAKE_CXX_FLAGS_DEBUG} ${CMAKE_C_FLAGS} ${CMAKE_CXX_FLAGS}")
+                string(FIND "${_flags}" "/MDd" _pos)
+                if(NOT _pos EQUAL -1)
+                    set(LIB_SUFFIX "MDd")
+                else()
+                    string(FIND "${_flags}" "/MTd" _pos)
+                    if(NOT _pos EQUAL -1)
+                        set(LIB_SUFFIX "MTd")
+                    endif()
+                endif()
+            else()
+                set(_flags "${CMAKE_C_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_C_FLAGS} ${CMAKE_CXX_FLAGS}")
+                string(FIND "${_flags}" "/MD" _pos)
+                if(NOT _pos EQUAL -1)
+                    set(LIB_SUFFIX "MD")
+                else()
+                    string(FIND "${_flags}" "/MT" _pos)
+                    if(NOT _pos EQUAL -1)
+                        set(LIB_SUFFIX "MT")
+                    endif()
+                endif()
+            endif()
+        endif()
+        message(STATUS "Using LIB_SUFFIX='${LIB_SUFFIX}'")
+    endif()
+
+    # Find Compressonator include directory
+    find_path(COMPRESSONATOR_ROOT
+        NAMES include/compressonator.h
+        HINTS "C:\\Compressonator_4.5.52"
+        PATH_SUFFIXES Include include
+    )
+    
+    include_directories(${COMPRESSONATOR_ROOT}/Include)
+    link_directories(${COMPRESSONATOR_ROOT}/lib/bin/${COM_SYSTEM})
+    SET(AMD_COM_LIB Compressonator_${LIB_SUFFIX}.lib)
 
 endif(WIN32)
 
@@ -81,7 +135,8 @@ SET(TEXTURE_FILE_CREATER_SOURCE TextureFileCreater.h
                                 TextureFileCreaterRG.cpp
                                 TextureFileCreaterRGB.cpp
                                 TextureFileCreaterRGBA.cpp
-                                TextureFileCreaterCompress.cpp)
+                                TextureFileCreaterCompressAMD.cpp
+                                TextureFileCreaterCompressIntel.cpp)
 
 SET(PARAM_PARSE_SOURCE ParamParse.h ParamParse.cpp)
 
@@ -91,7 +146,7 @@ SOURCE_GROUP("Texture File Creater" FILES ${TEXTURE_FILE_CREATER_SOURCE})
 SOURCE_GROUP("CMD Param parse" FILES ${PARAM_PARSE_SOURCE})
 
 SET(TEX_CONV_SOURCE ${ILIMAGE_SOURCE} ${PIXEL_FORMAT_SOURCE} ${TEXTURE_FILE_CREATER_SOURCE} ${PARAM_PARSE_SOURCE})
-SET(TEX_CONV_LIBRARY CMCore CMPlatform CMUtil ${HGL_DEVIL_LIB} ${INTEL_TC_LIBRARY})
+SET(TEX_CONV_LIBRARY CMCore CMPlatform CMUtil ${HGL_DEVIL_LIB} ${INTEL_TC_LIBRARY} ${AMD_COM_LIB})
 
 if(WIN32)
 	set(TEX_CONV_LIBRARY ${TEX_CONV_LIBRARY} glm::glm)
@@ -100,7 +155,7 @@ else()
 endif(WIN32)
 
 add_executable(TexConv ${TEX_CONV_SOURCE} ${INTEL_TC_SOURCE} main.cpp ConvertImage.cpp)
-target_link_libraries(TexConv PRIVATE ${TEX_CONV_LIBRARY} libzstd_static)
+target_link_libraries(TexConv PRIVATE ${TEX_CONV_LIBRARY})
 
 add_executable(CubeMapConv ${TEX_CONV_SOURCE} CubeMapConvert.cpp)
 target_link_libraries(CubeMapConv PRIVATE ${TEX_CONV_LIBRARY})
