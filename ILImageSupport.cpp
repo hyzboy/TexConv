@@ -100,6 +100,48 @@ namespace
 
         return OS_TEXT("Error type");
     }
+
+    const OSString GetILPattleName(const ILuint pattle)
+    {
+        #define IL_PATTLE2NAME(name)    if(pattle==IL_##name)return OS_TEXT(#name);
+        IL_PATTLE2NAME(PAL_RGB24)
+        IL_PATTLE2NAME(PAL_BGR24)
+        IL_PATTLE2NAME(PAL_RGB32)
+        IL_PATTLE2NAME(PAL_BGR32)
+        IL_PATTLE2NAME(PAL_RGBA32)
+        IL_PATTLE2NAME(PAL_BGRA32)
+        #undef IL_PATTLE2NAME
+        return OS_TEXT("Error pattle");
+    }
+
+    const bool IsMonochrome(ILubyte *pal_data,const ILuint pal_size,const ILuint pal_channels)
+    {
+        if(!pal_data||pal_size==0)return(false);
+
+        ILubyte *p=pal_data;
+
+        for(ILuint i=0;i<pal_size;i+=3)
+        {
+            if(p[0]!=p[1]||p[0]!=p[2])
+                return(false);
+
+            p+=pal_channels;
+        }
+
+        return(true);
+    }
+
+    const bool IsMonoPattle(const ILuint pattle)
+    {
+        if(pattle==IL_PAL_RGB24||pattle==IL_PAL_BGR24)
+        {
+            return IsMonochrome(ilGetPalette(),ilGetInteger(IL_PALETTE_NUM_COLS),3);
+        }
+        else
+        {
+            return IsMonochrome(ilGetPalette(),ilGetInteger(IL_PALETTE_NUM_COLS),4);
+        }
+    }
 }//namespace
 
 ILImage::ILImage()
@@ -135,32 +177,61 @@ void ILImage::Refresh()
     il_format	=ilGetInteger(IL_IMAGE_FORMAT);
     il_type    	=ilGetInteger(IL_IMAGE_TYPE);
 
+    LogInfo("Origin image info: ");
+    LogInfo("\t width: " + AnsiString::numberOf(il_width));
+    LogInfo("\t height: "+AnsiString::numberOf(il_height));
+    LogInfo("\t depth: "+AnsiString::numberOf(il_depth));
+    LogInfo("\t bits per pixel: "+AnsiString::numberOf(il_bit));
+    LogInfo(OS_TEXT("\t format: ")+GetILFormatName(il_format));
+    LogInfo(OS_TEXT("\t type: ")+GetILTypeName(il_type));
+
     if(ilGetInteger(IL_IMAGE_ORIGIN)==IL_ORIGIN_LOWER_LEFT)
+    {
         iluFlipImage();
+        LogInfo("Image flipped to upper-left origin.");
+    }
 
     if(il_format==IL_COLOR_INDEX)
     {
         uint il_pattle=ilGetInteger(IL_PALETTE_TYPE);
 
-        if(il_pattle==IL_PAL_RGB24||il_pattle==IL_PAL_BGR24
-         ||il_pattle==IL_PAL_RGB32||il_pattle==IL_PAL_BGR32)
+        LogInfo(OS_TEXT("Image is paletted, pattle type: ")+GetILPattleName(il_pattle));
+
+        if(IsMonoPattle(il_pattle))
         {
-            channel_count=3;
-            il_format=IL_RGB;
+            channel_count=1;
+            il_format=IL_LUMINANCE;
             il_type=IL_UNSIGNED_BYTE;
             ilConvertImage(il_format,il_type);
+
+            LogInfo("Converted paletted image to LUMINANCE format.");
         }
         else
-        if(il_pattle==IL_PAL_RGBA32||il_pattle==IL_PAL_BGRA32)
-        {
-            channel_count=4;
-            il_format=IL_RGBA;
-            il_type=IL_UNSIGNED_BYTE;
-            ilConvertImage(il_format,il_type);
-        }
-        else
-        {
-            LogError("Don't support the pattle format.");
+        {            
+            if(il_pattle==IL_PAL_RGB24||il_pattle==IL_PAL_BGR24
+             ||il_pattle==IL_PAL_RGB32||il_pattle==IL_PAL_BGR32)
+            {
+                channel_count=3;
+                il_format=IL_RGB;
+                il_type=IL_UNSIGNED_BYTE;
+                ilConvertImage(il_format,il_type);
+
+                LogInfo("Converted paletted image to RGB format.");
+            }
+            else
+            if(il_pattle==IL_PAL_RGBA32||il_pattle==IL_PAL_BGRA32)
+            {
+                channel_count=4;
+                il_format=IL_RGBA;
+                il_type=IL_UNSIGNED_BYTE;
+                ilConvertImage(il_format,il_type);
+
+                LogInfo("Converted paletted image to RGBA format.");
+            }
+            else
+            {
+                LogError("Don't support the pattle format.");
+            }
         }
     }
 
@@ -171,6 +242,8 @@ void ILImage::Refresh()
     if(il_format==IL_RGB||il_format==IL_BGR)        channel_count=3;else
     if(il_format==IL_RGBA||il_format==IL_BGRA)      channel_count=4;else
         channel_count=0;
+
+    LogInfo("Final image channel count: "+AnsiString::numberOf(channel_count));
 }
 
 constexpr ILenum format_by_channel[]=

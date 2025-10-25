@@ -75,7 +75,7 @@ public:
 
 int os_main(int argc,os_char **argv)
 {
-    std::cout<<"Image to Texture Convert tools 1.4.2"<<std::endl<<std::endl;
+    std::cout<<"Image to Texture Convert tools 1.5"<<std::endl<<std::endl;
 
     if(argc<=1)
     {
