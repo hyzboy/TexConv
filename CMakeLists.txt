@@ -27,48 +27,10 @@ if(WIN32)
                         ${DEVIL_LIBRARY_PATH}/ILUT.lib)
 
     if(MSVC)
-        if(DEFINED MSVC_RUNTIME_LIBRARY)
-            message(STATUS "Detected MSVC_RUNTIME_LIBRARY=${MSVC_RUNTIME_LIBRARY}")
-            if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-                if(MSVC_RUNTIME_LIBRARY STREQUAL "MultiThreadedDLL" OR MSVC_RUNTIME_LIBRARY MATCHES "MDd")
-                    set(LIB_SUFFIX "MDd")
-                elseif(MSVC_RUNTIME_LIBRARY STREQUAL "MultiThreaded" OR MSVC_RUNTIME_LIBRARY MATCHES "MTd")
-                    set(LIB_SUFFIX "MTd")
-                endif()
-            else()
-                if(MSVC_RUNTIME_LIBRARY STREQUAL "MultiThreadedDLL" OR MSVC_RUNTIME_LIBRARY MATCHES "MD")
-                    set(LIB_SUFFIX "MD")
-                elseif(MSVC_RUNTIME_LIBRARY STREQUAL "MultiThreaded" OR MSVC_RUNTIME_LIBRARY MATCHES "MT")
-                    set(LIB_SUFFIX "MT")
-                endif()
-            endif()
-        else()
-            # Fallback: inspect common CMake flags for runtime markers
-            if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-                set(_flags "${CMAKE_C_FLAGS_DEBUG} ${CMAKE_CXX_FLAGS_DEBUG} ${CMAKE_C_FLAGS} ${CMAKE_CXX_FLAGS}")
-                string(FIND "${_flags}" "/MDd" _pos)
-                if(NOT _pos EQUAL -1)
-                    set(LIB_SUFFIX "MDd")
-                else()
-                    string(FIND "${_flags}" "/MTd" _pos)
-                    if(NOT _pos EQUAL -1)
-                        set(LIB_SUFFIX "MTd")
-                    endif()
-                endif()
-            else()
-                set(_flags "${CMAKE_C_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_C_FLAGS} ${CMAKE_CXX_FLAGS}")
-                string(FIND "${_flags}" "/MD" _pos)
-                if(NOT _pos EQUAL -1)
-                    set(LIB_SUFFIX "MD")
-                else()
-                    string(FIND "${_flags}" "/MT" _pos)
-                    if(NOT _pos EQUAL -1)
-                        set(LIB_SUFFIX "MT")
-                    endif()
-                endif()
-            endif()
-        endif()
-        message(STATUS "Using LIB_SUFFIX='${LIB_SUFFIX}'")
+        # 为AMD Compressonator库准备所有可能的后缀
+        # 注意：实际链接时，只有项目配置匹配的库才会被使用
+        set(LIB_SUFFIX_LIST "MD" "MDd" "MT" "MTd")
+        message(STATUS "Will support all runtime library variants: ${LIB_SUFFIX_LIST}")
     endif()
 
     # Find Compressonator include directory
@@ -80,39 +42,63 @@ if(WIN32)
     
     include_directories(${COMPRESSONATOR_ROOT}/Include)
     link_directories(${COMPRESSONATOR_ROOT}/lib/bin/${COM_SYSTEM})
-    SET(AMD_COM_LIB Compressonator_${LIB_SUFFIX}.lib)
+    
+    # 使用生成器表达式根据配置类型选择库文件
+    # 默认使用MD/MDd（DLL运行时），这是Visual Studio的默认设置
+    # 如果项目使用MT/MTd，需要在CMakeLists.txt顶部设置：
+    # set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    
+    # 简化方案：检测是否设置了静态运行时库
+    if(CMAKE_MSVC_RUNTIME_LIBRARY AND CMAKE_MSVC_RUNTIME_LIBRARY MATCHES "MultiThreaded[^D]")
+        # 使用静态运行时库 (MT/MTd)
+        SET(AMD_COM_LIB_DEBUG "Compressonator_MTd.lib")
+        SET(AMD_COM_LIB_RELEASE "Compressonator_MT.lib")
+        message(STATUS "Using static runtime: MT/MTd")
+    else()
+        # 使用DLL运行时库 (MD/MDd) - 默认
+        SET(AMD_COM_LIB_DEBUG "Compressonator_MDd.lib")
+        SET(AMD_COM_LIB_RELEASE "Compressonator_MD.lib")
+        message(STATUS "Using DLL runtime: MD/MDd")
+    endif()
+    
+    SET(AMD_COM_LIB 
+        $<$<CONFIG:Debug>:${AMD_COM_LIB_DEBUG}>
+        $<$<NOT:$<CONFIG:Debug>>:${AMD_COM_LIB_RELEASE}>
+    )
+
+    message(STATUS "AMD Compressonator Debug Library: ${AMD_COM_LIB_DEBUG}")
+    message(STATUS "AMD Compressonator Release Library: ${AMD_COM_LIB_RELEASE}")
 
 endif(WIN32)
 
 SET(ISPC_TC_HEADER_PATH "${CMAKE_CURRENT_SOURCE_DIR}/ISPCTextureCompressor/ispc_texcomp")
 
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    SET(ISPC_TC_LIBRARY_PATH "${CMAKE_CURRENT_SOURCE_DIR}/ISPCTextureCompressor/ISPC Texture Compressor/x64/Debug")
+# 使用生成器表达式支持多配置生成器（如Visual Studio）
+SET(ISPC_TC_LIBRARY_PATH_DEBUG "${CMAKE_CURRENT_SOURCE_DIR}/ISPCTextureCompressor/ISPC Texture Compressor/x64/Debug")
+SET(ISPC_TC_LIBRARY_PATH_RELEASE "${CMAKE_CURRENT_SOURCE_DIR}/ISPCTextureCompressor/ISPC Texture Compressor/x64/Release")
 
-    SET(INTEL_TC_LIBRARY    ${ISPC_TC_LIBRARY_PATH}/kernel.obj                        
-                            ${ISPC_TC_LIBRARY_PATH}/kernel_avx.obj
-                            ${ISPC_TC_LIBRARY_PATH}/kernel_avx2.obj
-                            ${ISPC_TC_LIBRARY_PATH}/kernel_sse2.obj
-                            ${ISPC_TC_LIBRARY_PATH}/kernel_sse4.obj
-
-                            ${ISPC_TC_LIBRARY_PATH}/kernel_astc.obj)
-
-
-else()
-    SET(ISPC_TC_LIBRARY_PATH "${CMAKE_CURRENT_SOURCE_DIR}/ISPCTextureCompressor/ISPC Texture Compressor/x64/Release")
+# Debug和Release共有的库文件
+SET(INTEL_TC_LIBRARY_COMMON
+    $<$<CONFIG:Debug>:${ISPC_TC_LIBRARY_PATH_DEBUG}/kernel.obj>
+    $<$<CONFIG:Debug>:${ISPC_TC_LIBRARY_PATH_DEBUG}/kernel_avx.obj>
+    $<$<CONFIG:Debug>:${ISPC_TC_LIBRARY_PATH_DEBUG}/kernel_avx2.obj>
+    $<$<CONFIG:Debug>:${ISPC_TC_LIBRARY_PATH_DEBUG}/kernel_sse2.obj>
+    $<$<CONFIG:Debug>:${ISPC_TC_LIBRARY_PATH_DEBUG}/kernel_sse4.obj>
+    $<$<CONFIG:Debug>:${ISPC_TC_LIBRARY_PATH_DEBUG}/kernel_astc.obj>
     
-    SET(INTEL_TC_LIBRARY    ${ISPC_TC_LIBRARY_PATH}/kernel.obj                        
-                            ${ISPC_TC_LIBRARY_PATH}/kernel_avx.obj
-                            ${ISPC_TC_LIBRARY_PATH}/kernel_avx2.obj
-                            ${ISPC_TC_LIBRARY_PATH}/kernel_sse2.obj
-                            ${ISPC_TC_LIBRARY_PATH}/kernel_sse4.obj
-                            
-                            ${ISPC_TC_LIBRARY_PATH}/kernel_astc.obj
-                            ${ISPC_TC_LIBRARY_PATH}/kernel_astc_avx.obj
-                            ${ISPC_TC_LIBRARY_PATH}/kernel_astc_avx2.obj
-                            ${ISPC_TC_LIBRARY_PATH}/kernel_astc_sse2.obj
-                            ${ISPC_TC_LIBRARY_PATH}/kernel_astc_sse4.obj)
-endif()
+    $<$<NOT:$<CONFIG:Debug>>:${ISPC_TC_LIBRARY_PATH_RELEASE}/kernel.obj>
+    $<$<NOT:$<CONFIG:Debug>>:${ISPC_TC_LIBRARY_PATH_RELEASE}/kernel_avx.obj>
+    $<$<NOT:$<CONFIG:Debug>>:${ISPC_TC_LIBRARY_PATH_RELEASE}/kernel_avx2.obj>
+    $<$<NOT:$<CONFIG:Debug>>:${ISPC_TC_LIBRARY_PATH_RELEASE}/kernel_sse2.obj>
+    $<$<NOT:$<CONFIG:Debug>>:${ISPC_TC_LIBRARY_PATH_RELEASE}/kernel_sse4.obj>
+    $<$<NOT:$<CONFIG:Debug>>:${ISPC_TC_LIBRARY_PATH_RELEASE}/kernel_astc.obj>
+    $<$<NOT:$<CONFIG:Debug>>:${ISPC_TC_LIBRARY_PATH_RELEASE}/kernel_astc_avx.obj>
+    $<$<NOT:$<CONFIG:Debug>>:${ISPC_TC_LIBRARY_PATH_RELEASE}/kernel_astc_avx2.obj>
+    $<$<NOT:$<CONFIG:Debug>>:${ISPC_TC_LIBRARY_PATH_RELEASE}/kernel_astc_sse2.obj>
+    $<$<NOT:$<CONFIG:Debug>>:${ISPC_TC_LIBRARY_PATH_RELEASE}/kernel_astc_sse4.obj>
+)
+
+SET(INTEL_TC_LIBRARY ${INTEL_TC_LIBRARY_COMMON})
 
 SET(INTEL_TC_SOURCE ${ISPC_TC_HEADER_PATH}/ispc_texcomp.cpp
 					${ISPC_TC_HEADER_PATH}/ispc_texcomp.h

@@ -6,6 +6,7 @@
 #include<hgl/time/Time.h>
 #include<hgl/filesystem/FileSystem.h>
 #include<hgl/filesystem/EnumFile.h>
+#include"Compressonator.h"
 #include"ImageConvertConfig.h"
 #include"ParamParse.h"
 
@@ -74,12 +75,12 @@ public:
 
 int os_main(int argc,os_char **argv)
 {
-    std::cout<<"Image to Texture Convert tools 1.4.1"<<std::endl<<std::endl;
+    std::cout<<"Image to Texture Convert tools 1.4.2"<<std::endl<<std::endl;
 
     if(argc<=1)
     {
         std::cout<< "Command format:\n"
-                    "\tTexConv [/R:][/RG:][/RGB:][/RGBA:] [/ColorKey:rrggbb] [/s] [/mip] [/out:<new_name_without_ext>] <pathname or filename>\n"
+                    "\tTexConv [/AMD|Intel] [/R:][/RG:][/RGB:][/RGBA:] [/ColorKey:rrggbb] [/s] [/mip] [/out:<new_name_without_ext>] <pathname or filename>\n"
                     "\n"
                     "Params:\n"
                     "\t/s : proc sub-directory\n"
@@ -97,13 +98,32 @@ int os_main(int argc,os_char **argv)
 
     ImageConvertConfig icc;
 
-    if(cp.Find(OS_TEXT("/s"))!=-1)sub_folder=true;                     //检测是否处理子目录
-    if(cp.Find(OS_TEXT("/mip"))!=-1)icc.gen_mipmaps=true;              //检测是否生成mipmaps
+    if(cp.Contains(OS_TEXT("/s")))sub_folder=true;                     //检测是否处理子目录
+    if(cp.Contains(OS_TEXT("/mip")))icc.gen_mipmaps=true;              //检测是否生成mipmaps
 
-    if(cp.Find(OS_TEXT("/AMD"))!=-1)
+    if(cp.Contains(OS_TEXT("/AMD")))
+    {
         compression_privoder=CompressionProvider::AMD_Compressonator;
+    }
     else
+    if(cp.Contains(OS_TEXT("/Intel")))
+    {
         compression_privoder=CompressionProvider::Intel_ISPC;
+    }
+    else
+    {
+        compression_privoder=CompressionProvider::Intel_ISPC;
+    }
+
+    if(compression_privoder==CompressionProvider::Intel_ISPC)
+    {
+        GLogInfo("Using Intel ISPC Texture Compressor");
+    }
+    else
+    {
+        GLogInfo("Using AMD Compressonator Texture Compressor");
+        CMP_InitializeBCLibrary();
+    }
     
     ParseParamColorKey(&icc,cp);
     ParseParamFormat(&icc,cp);                                         //检测推荐格式
@@ -159,6 +179,11 @@ int os_main(int argc,os_char **argv)
 
         GLogInfo(OS_TEXT("Total converted ")+OSString::numberOf(eci.GetConvertCount())
                 +OS_TEXT(" textures for ")+time_gap_str.c_str()+OS_TEXT(" seconds."));
+    }
+    
+    if(compression_privoder==CompressionProvider::AMD_Compressonator)
+    {
+        CMP_ShutdownBCLibrary();
     }
 
     ilShutDown();
