@@ -36,15 +36,15 @@ public:
         
         constexpr CMP_FORMAT fmt_list[]=
         {
-            CMP_FORMAT_BC1,     //ColorFormat::BC1
-            CMP_FORMAT_BC1,     //ColorFormat::BC1
-            CMP_FORMAT_BC2,     //ColorFormat::BC2
-            CMP_FORMAT_BC3,     //ColorFormat::BC3
-            CMP_FORMAT_BC4,     //ColorFormat::BC4
-            CMP_FORMAT_BC5,     //ColorFormat::BC5
-            CMP_FORMAT_BC6H,    //ColorFormat::BC6H
+            CMP_FORMAT_BC1, //ColorFormat::BC1
+            CMP_FORMAT_BC1, //ColorFormat::BC1
+            CMP_FORMAT_BC2, //ColorFormat::BC2
+            CMP_FORMAT_BC3, //ColorFormat::BC3
+            CMP_FORMAT_BC4, //ColorFormat::BC4
+            CMP_FORMAT_BC5, //ColorFormat::BC5
+            CMP_FORMAT_BC6H, //ColorFormat::BC6H
             CMP_FORMAT_BC6H_SF, //ColorFormat::BC6H_SF
-            CMP_FORMAT_BC7,     //ColorFormat::BC7
+            CMP_FORMAT_BC7, //ColorFormat::BC7
         };
 
         constexpr char fmt_name_list[][8]=
@@ -66,15 +66,27 @@ public:
 
         target_fmt_name=fmt_name_list[fmt_index];
         
-//        std::cout<<"Compress Image to "<<target_fmt_name.c_str()<<" Format."<<std::endl;
-
-        if(type==IL_UNSIGNED_BYTE   ){cf=CF_8bit;    pixel_bytes=1;}else
-        if(type==IL_UNSIGNED_SHORT  ){cf=CF_16bit;   pixel_bytes=2;}else
-        if(type==IL_UNSIGNED_INT    ){cf=CF_32bit;   pixel_bytes=4;}else
-        if(type==IL_HALF            ){cf=CF_Float16; pixel_bytes=2;}else
-        if(type==IL_FLOAT           ){cf=CF_Float32; pixel_bytes=4;}else
+        // Log message similar to Intel compressor
         {
-            std::cerr<<"unknow type: "<<type<<std::endl;
+            AnsiString msg = "Compress Image to: ";
+            msg += AnsiString::numberOf(image->width());
+            msg += "x";
+            msg += AnsiString::numberOf(image->height());
+            msg += " ";
+            msg += target_fmt_name.c_str();
+            msg += " format.";
+            LogInfo(msg.c_str());
+        }
+
+// std::cout<<"Compress Image to "<<target_fmt_name.c_str()<<" Format."<<std::endl;
+
+        if(type==IL_UNSIGNED_BYTE ){cf=CF_8bit; pixel_bytes=1;}else
+        if(type==IL_UNSIGNED_SHORT ){cf=CF_16bit; pixel_bytes=2;}else
+        if(type==IL_UNSIGNED_INT ){cf=CF_32bit; pixel_bytes=4;}else
+        if(type==IL_HALF ){cf=CF_Float16; pixel_bytes=2;}else
+        if(type==IL_FLOAT ){cf=CF_Float32; pixel_bytes=4;}else
+        {
+            LogError(OS_TEXT("unknow type: %d"), type);
             return(false);
         }
         
@@ -82,12 +94,12 @@ public:
         {
             tdt=TDT_R;
             
-            if(type==IL_UNSIGNED_BYTE   )source_fmt=CMP_FORMAT_R_8;else
-            if(type==IL_UNSIGNED_SHORT  )source_fmt=CMP_FORMAT_R_16;else
-            if(type==IL_HALF            )source_fmt=CMP_FORMAT_R_16F;else
-            if(type==IL_FLOAT           )source_fmt=CMP_FORMAT_R_32F;else
+            if(type==IL_UNSIGNED_BYTE )source_fmt=CMP_FORMAT_R_8;else
+            if(type==IL_UNSIGNED_SHORT )source_fmt=CMP_FORMAT_R_16;else
+            if(type==IL_HALF )source_fmt=CMP_FORMAT_R_16F;else
+            if(type==IL_FLOAT )source_fmt=CMP_FORMAT_R_32F;else
             {
-                std::cerr<<"channels 1 unknow type: "<<type<<std::endl;
+                LogError(OS_TEXT("channels1 unknow type: %d"), type);
                 return(false);
             }
 
@@ -98,12 +110,12 @@ public:
         {
             tdt=TDT_RG;
             
-            if(type==IL_UNSIGNED_BYTE   )source_fmt=CMP_FORMAT_RG_8;else
-            if(type==IL_UNSIGNED_SHORT  )source_fmt=CMP_FORMAT_RG_16;else
-            if(type==IL_HALF            )source_fmt=CMP_FORMAT_RG_16F;else
-            if(type==IL_FLOAT           )source_fmt=CMP_FORMAT_RG_32F;else
+            if(type==IL_UNSIGNED_BYTE )source_fmt=CMP_FORMAT_RG_8;else
+            if(type==IL_UNSIGNED_SHORT )source_fmt=CMP_FORMAT_RG_16;else
+            if(type==IL_HALF )source_fmt=CMP_FORMAT_RG_16F;else
+            if(type==IL_FLOAT )source_fmt=CMP_FORMAT_RG_32F;else
             {
-                std::cerr<<"channels 2 unknow type: "<<type<<std::endl;
+                LogError(OS_TEXT("channels2 unknow type: %d"), type);
                 return(false);
             }
             
@@ -114,12 +126,12 @@ public:
         {
             tdt=TDT_XRGB;
             
-            if(type==IL_UNSIGNED_BYTE   )source_fmt=CMP_FORMAT_RGBA_8888;else
-            if(type==IL_UNSIGNED_SHORT  )source_fmt=CMP_FORMAT_RGBA_16;else
-            if(type==IL_HALF            )source_fmt=CMP_FORMAT_RGBA_16F;else
-            if(type==IL_FLOAT           )source_fmt=CMP_FORMAT_RGBA_32F;else
+            if(type==IL_UNSIGNED_BYTE )source_fmt=CMP_FORMAT_RGBA_8888;else
+            if(type==IL_UNSIGNED_SHORT )source_fmt=CMP_FORMAT_RGBA_16;else
+            if(type==IL_HALF )source_fmt=CMP_FORMAT_RGBA_16F;else
+            if(type==IL_FLOAT )source_fmt=CMP_FORMAT_RGBA_32F;else
             {
-                std::cerr<<"channels 3 unknow type: "<<type<<std::endl;
+                LogError(OS_TEXT("channels3 unknow type: %d"), type);
                 return(false);
             }
 
@@ -130,20 +142,20 @@ public:
         {
             tdt=TDT_ARGB;
             
-            if(type==IL_UNSIGNED_BYTE   )source_fmt=CMP_FORMAT_RGBA_8888;else
-            if(type==IL_UNSIGNED_SHORT  )source_fmt=CMP_FORMAT_RGBA_16;else
-            if(type==IL_HALF            )source_fmt=CMP_FORMAT_RGBA_16F;else
-            if(type==IL_FLOAT           )source_fmt=CMP_FORMAT_RGBA_32F;else
+            if(type==IL_UNSIGNED_BYTE )source_fmt=CMP_FORMAT_RGBA_8888;else
+            if(type==IL_UNSIGNED_SHORT )source_fmt=CMP_FORMAT_RGBA_16;else
+            if(type==IL_HALF )source_fmt=CMP_FORMAT_RGBA_16F;else
+            if(type==IL_FLOAT )source_fmt=CMP_FORMAT_RGBA_32F;else
             {
-                std::cerr<<"channels 4 unknow type: "<<type<<std::endl;
+                LogError(OS_TEXT("channels4 unknow type: %d"), type);
                 return(false);
-            }            
+            } 
             
             image->ConvertToRGBA(type);
         }
         else
         {
-            std::cerr<<"unknow channels: "<<channels<<std::endl;
+            LogError(OS_TEXT("unknow channels: %d"), channels);
             return(false);
         }
 
@@ -165,7 +177,7 @@ public:
         }
         else
         if(channels==2)
-        {  
+        { 
             source_data=image->GetRG(type);
         }
         else
@@ -175,29 +187,29 @@ public:
         }
         else
         if(channels==4)
-        {   
+        { 
             source_data=image->GetRGBA(type);
         }
         else
         {
-            std::cerr<<"unknow channels: "<<channels<<std::endl;
+            LogError(OS_TEXT("unknow channels: %d"), channels);
             return;
         }
 
         // Create MipSet using SDK API
-        if(CMP_CreateMipSet(&MipSetIn, width, height, 1, cf, TT_2D) != CMP_OK)
+        if(CMP_CreateMipSet(&MipSetIn, width, height,1, cf, TT_2D) != CMP_OK)
         {
-            std::cerr<<"CMP_ERR_MEM_ALLOC_FOR_MIPSET (CreateMipSet)"<<std::endl;
+            LogError(OS_TEXT("CMP_ERR_MEM_ALLOC_FOR_MIPSET (CreateMipSet)"));
             return;
         }
 
         // Get pointer to top-level mip
         CMP_MipLevel *cmp_mip_level = nullptr;
-        CMP_GetMipLevel(&cmp_mip_level, &MipSetIn, 0, 0);
+        CMP_GetMipLevel(&cmp_mip_level, &MipSetIn,0,0);
 
         if(!cmp_mip_level)
         {
-            std::cerr<<"CMP_ERR_MEM_ALLOC_FOR_MIPSET (GetMipLevel)"<<std::endl;
+            LogError(OS_TEXT("CMP_ERR_MEM_ALLOC_FOR_MIPSET (GetMipLevel)"));
             return;
         }
 
@@ -206,7 +218,7 @@ public:
         if(channels<3)
             dwPitch = pixel_bytes * channels * width;
         else
-            dwPitch = pixel_bytes * 4 * width;
+            dwPitch = pixel_bytes *4 * width;
 
         CMP_DWORD dwSize = dwPitch * height;
 
@@ -214,7 +226,7 @@ public:
         CMP_BYTE* pData = (CMP_BYTE*)std::malloc(dwSize);
         if(!pData)
         {
-            std::cerr<<"CMP_ERR_MEM_ALLOC_FOR_MIPSET (alloc data)"<<std::endl;
+            LogError(OS_TEXT("CMP_ERR_MEM_ALLOC_FOR_MIPSET (alloc data)"));
             return;
         }
 
@@ -225,8 +237,8 @@ public:
         cmp_mip_level->m_dwLinearSize = dwSize;
         cmp_mip_level->m_pbData = pData;
 
-        MipSetIn.m_nMipLevels = 1;
-        MipSetIn.m_format     = source_fmt;
+        MipSetIn.m_nMipLevels =1;
+        MipSetIn.m_format = source_fmt;
 
         // ensure MipSetIn dwWidth/dwHeight set for downstream use
         MipSetIn.dwWidth = width;
@@ -239,17 +251,25 @@ public:
     {
         hgl_zero(kernel_options);
 
-        kernel_options.height       = image->height();
-        kernel_options.width        = image->width();
-        kernel_options.fquality     = 1.0f;        
-        kernel_options.format       = target_fmt;
-        kernel_options.srcformat    = source_fmt; // 补充
-        kernel_options.encodeWith   = CMP_HPC;
-        kernel_options.threads      = (target_fmt == CMP_FORMAT_BC4) ? 1 : 8; // BC4单线程
+        kernel_options.height = image->height();
+        kernel_options.width = image->width();
+        kernel_options.fquality =1.0f; 
+        kernel_options.format = target_fmt;
+        kernel_options.srcformat = source_fmt; // 补充
+        kernel_options.encodeWith = CMP_HPC;
+        kernel_options.threads = (target_fmt == CMP_FORMAT_BC4) ?1 :8; // BC4单线程
         kernel_options.getPerfStats = false;
         kernel_options.getDeviceInfo= false;
 
-        std::cout << "Compress Image To: " << image->width() << "x" << image->height() << " " << target_fmt_name.c_str() << " format";
+        // Log consistent message style with Intel compressor
+        AnsiString msg = "Compress Image To: ";
+        msg += AnsiString::numberOf(image->width());
+        msg += "x";
+        msg += AnsiString::numberOf(image->height());
+        msg += " ";
+        msg += target_fmt_name.c_str();
+        msg += " format";
+        LogInfo(msg.c_str());
     }
 
     static bool CMP_API CMP_Feedback_Proc(CMP_FLOAT fProgress, CMP_DWORD_PTR pUser1, CMP_DWORD_PTR pUser2)
@@ -257,7 +277,7 @@ public:
         putchar('.');
         return(false);
     }
- 
+    
     uint32 Write() override
     {
         InitOption();
@@ -267,7 +287,17 @@ public:
 
         CMP_ProcessTexture(&MipSetIn,&MipSetOut,kernel_options,&TextureFileCreaterCompressAMD::CMP_Feedback_Proc);
 
-        std::cout<<" "<<MipSetOut.dwDataSize<<" bytes."<<std::endl;
+        // Log final compressed size similar to Intel
+        {
+            AnsiString msg = "Compress Image To: ";
+            msg += AnsiString::numberOf(image->width());
+            msg += "x";
+            msg += AnsiString::numberOf(image->height());
+            msg += " ";
+            msg += AnsiString::numberOf((uint)MipSetOut.dwDataSize);
+            msg += " bytes.";
+            LogInfo(msg.c_str());
+        }
 
         uint32 result=TextureFileCreater::Write(MipSetOut.pData,MipSetOut.dwDataSize);
 
