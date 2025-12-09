@@ -21,6 +21,6 @@ public:
 
     ImageConvertConfig()
     {
-        hgl_zero(*this);
+        mem_zero(*this);
     }
 };//struct ImageConvertConfig

@@ -167,7 +167,7 @@ public:
         const int width=image->width();
         const int height=image->height();
         
-        hgl_zero(MipSetIn);
+        mem_zero(MipSetIn);
 
         void *source_data=nullptr;
 
@@ -249,7 +249,7 @@ public:
 
     void InitOption()
     {
-        hgl_zero(kernel_options);
+        mem_zero(kernel_options);
 
         kernel_options.height = image->height();
         kernel_options.width = image->width();
@@ -283,7 +283,7 @@ public:
         InitOption();
         InitMipSetIn();
 
-        hgl_zero(MipSetOut);
+        mem_zero(MipSetOut);
 
         CMP_ProcessTexture(&MipSetIn,&MipSetOut,kernel_options,&TextureFileCreaterCompressAMD::CMP_Feedback_Proc);
 
