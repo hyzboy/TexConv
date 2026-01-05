@@ -1,5 +1,5 @@
 #include<iostream>
-#include<ILImage.h>
+#include"ImageLoader.h"
 #include<hgl/type/DataType.h>
 #include<hgl/filesystem/FileSystem.h>
 
@@ -25,9 +25,9 @@ int main(int argc,char **argv)
     if(argc<1)
         return 0;
 
-    ilInit();
+    InitImageLibrary(nullptr);
 
-    ILImage rgb_image;
+    ImageLoader rgb_image;
 
     if(!rgb_image.LoadFile(argv[1]))
     {
@@ -35,7 +35,7 @@ int main(int argc,char **argv)
         return(1);
     }
     
-    uint8 *rgb=(uint8 *)rgb_image.GetRGB(IL_UNSIGNED_BYTE);
+    uint8 *rgb=(uint8 *)rgb_image.GetRGB(IMAGE_UNSIGNED_BYTE);
 
     const uint pixels=rgb_image.pixel_total();
 
@@ -51,8 +51,8 @@ int main(int argc,char **argv)
 
     filename+=OS_TEXT("_XY.png");
 
-    if(SaveImageToFile(filename,rgb_image.width(),rgb_image.height(),3,IL_UNSIGNED_BYTE,rgb))
+    if(SaveImageToFile(filename,rgb_image.width(),rgb_image.height(),3,IMAGE_UNSIGNED_BYTE,rgb))
         std_cout<<OS_TEXT("Save To ")<<filename.c_str()<<OS_TEXT(" successed!")<<std::endl;
 
-    ilShutDown();
+    ShutdownImageLibrary();
 }

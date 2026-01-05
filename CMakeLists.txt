@@ -4,27 +4,65 @@ project(TexConv)
 
 add_definitions(-DUNICODE -D_UNICODE)
 
-if(WIN32)
+# Option to use ImageMagick instead of DevIL
+option(USE_IMAGEMAGICK "Use ImageMagick instead of DevIL for image processing" ON)
 
-    # Find DevIL includes and libraries
-    find_path(DEVIL_SDK_DIR
-        NAMES include/IL/il.h
-        HINTS "${CMAKE_CURRENT_SOURCE_DIR}/DevIL Windows SDK"
-        PATH_SUFFIXES include
-    )
-    include_directories("${DEVIL_SDK_DIR}/include")
-
-    IF(HGL_BITS EQUAL 32)
-        SET(DEVIL_LIBRARY_PATH "${DEVIL_SDK_DIR}/lib/x86/unicode/Release")
-        SET(COM_SYSTEM x86)
-    else()
-        SET(DEVIL_LIBRARY_PATH "${DEVIL_SDK_DIR}/lib/x64/unicode/Release")
-        SET(COM_SYSTEM x64)
+if(USE_IMAGEMAGICK)
+    # Find ImageMagick with Magick++ support
+    find_package(ImageMagick COMPONENTS Magick++ REQUIRED)
+    
+    if(NOT ImageMagick_FOUND)
+        message(FATAL_ERROR "ImageMagick not found. Please install ImageMagick with Magick++ support or set USE_IMAGEMAGICK=OFF to use DevIL.")
     endif()
- 
-    SET(HGL_DEVIL_LIB   ${DEVIL_LIBRARY_PATH}/DevIL.lib
-                        ${DEVIL_LIBRARY_PATH}/ILU.lib
-                        ${DEVIL_LIBRARY_PATH}/ILUT.lib)
+    
+    add_definitions(-DUSE_IMAGEMAGICK)
+    include_directories(${ImageMagick_INCLUDE_DIRS})
+    
+    # Set image library sources and libs for ImageMagick
+    SET(IMAGE_LIBRARY_SOURCES MagickImage.h MagickImageSupport.cpp)
+    SET(IMAGE_LIBS ${ImageMagick_LIBRARIES})
+    
+    message(STATUS "Using ImageMagick for image processing")
+    message(STATUS "ImageMagick include dirs: ${ImageMagick_INCLUDE_DIRS}")
+    message(STATUS "ImageMagick libraries: ${ImageMagick_LIBRARIES}")
+else()
+    # Use DevIL (legacy support)
+    if(WIN32)
+        # Find DevIL includes and libraries
+        find_path(DEVIL_SDK_DIR
+            NAMES include/IL/il.h
+            HINTS "${CMAKE_CURRENT_SOURCE_DIR}/DevIL Windows SDK"
+            PATH_SUFFIXES include
+        )
+        include_directories("${DEVIL_SDK_DIR}/include")
+
+        IF(HGL_BITS EQUAL 32)
+            SET(DEVIL_LIBRARY_PATH "${DEVIL_SDK_DIR}/lib/x86/unicode/Release")
+            SET(COM_SYSTEM x86)
+        else()
+            SET(DEVIL_LIBRARY_PATH "${DEVIL_SDK_DIR}/lib/x64/unicode/Release")
+            SET(COM_SYSTEM x64)
+        endif()
+     
+        SET(HGL_DEVIL_LIB   ${DEVIL_LIBRARY_PATH}/DevIL.lib
+                            ${DEVIL_LIBRARY_PATH}/ILU.lib
+                            ${DEVIL_LIBRARY_PATH}/ILUT.lib)
+    else()
+        # For Linux/macOS, try to find DevIL via pkg-config or standard paths
+        find_library(IL_LIB NAMES IL)
+        find_library(ILU_LIB NAMES ILU)
+        find_library(ILUT_LIB NAMES ILUT)
+        SET(HGL_DEVIL_LIB ${IL_LIB} ${ILU_LIB} ${ILUT_LIB})
+    endif()
+    
+    # Set image library sources and libs for DevIL
+    SET(IMAGE_LIBRARY_SOURCES ILImage.h ILImageSupport.cpp)
+    SET(IMAGE_LIBS ${HGL_DEVIL_LIB})
+    
+    message(STATUS "Using DevIL for image processing")
+endif()
+
+if(WIN32)
 
     if(MSVC)
         # 为AMD Compressonator库准备所有可能的后缀
@@ -106,10 +144,8 @@ SET(INTEL_TC_SOURCE ${ISPC_TC_HEADER_PATH}/ispc_texcomp.cpp
 
 SOURCE_GROUP("Intel ISPC Texture Compression" FILES ${INTEL_TC_SOURCE})
 
-SET(ILIMAGE_SOURCE  ILImage.h
-                    ILImageSupport.cpp)
-#                    Image2D.h
-#                    Image2D.cpp)
+# Image library source files (DevIL or ImageMagick)
+# This is set conditionally at the top of the file based on USE_IMAGEMAGICK option
 
 SET(PIXEL_FORMAT_SOURCE pixel_format.cpp
                         pixel_format.h
@@ -126,13 +162,13 @@ SET(TEXTURE_FILE_CREATER_SOURCE TextureFileCreater.h
 
 SET(PARAM_PARSE_SOURCE ParamParse.h ParamParse.cpp)
 
-SOURCE_GROUP("Image File" FILES ${ILIMAGE_SOURCE})
+SOURCE_GROUP("Image File" FILES ${IMAGE_LIBRARY_SOURCES})
 SOURCE_GROUP("Pixel Format" FILES ${PIXEL_FORMAT_SOURCE})
 SOURCE_GROUP("Texture File Creater" FILES ${TEXTURE_FILE_CREATER_SOURCE})
 SOURCE_GROUP("CMD Param parse" FILES ${PARAM_PARSE_SOURCE})
 
-SET(TEX_CONV_SOURCE ${ILIMAGE_SOURCE} ${PIXEL_FORMAT_SOURCE} ${TEXTURE_FILE_CREATER_SOURCE} ${PARAM_PARSE_SOURCE})
-SET(TEX_CONV_LIBRARY CMCore CMPlatform CMUtil ${HGL_DEVIL_LIB} ${INTEL_TC_LIBRARY} ${AMD_COM_LIB})
+SET(TEX_CONV_SOURCE ${IMAGE_LIBRARY_SOURCES} ${PIXEL_FORMAT_SOURCE} ${TEXTURE_FILE_CREATER_SOURCE} ${PARAM_PARSE_SOURCE})
+SET(TEX_CONV_LIBRARY CMCore CMPlatform CMUtil ${IMAGE_LIBS} ${INTEL_TC_LIBRARY} ${AMD_COM_LIB})
 
 if(WIN32)
 	set(TEX_CONV_LIBRARY ${TEX_CONV_LIBRARY} glm::glm)
@@ -146,8 +182,8 @@ target_link_libraries(TexConv PRIVATE ${TEX_CONV_LIBRARY})
 add_executable(CubeMapConv ${TEX_CONV_SOURCE} CubeMapConvert.cpp)
 target_link_libraries(CubeMapConv PRIVATE ${TEX_CONV_LIBRARY})
 
-add_executable(HDR2PNG HDR2PNG.cpp ${ILIMAGE_SOURCE})
-target_link_libraries(HDR2PNG PRIVATE CMCore CMPlatform CMUtil ${HGL_DEVIL_LIB})
+add_executable(HDR2PNG HDR2PNG.cpp ${IMAGE_LIBRARY_SOURCES})
+target_link_libraries(HDR2PNG PRIVATE CMCore CMPlatform CMUtil ${IMAGE_LIBS})
 
 IF(CM_BUILD_GUI_TOOLS)
     set(IDENTIFIER "com.hyzgame.texconv")
@@ -155,17 +191,17 @@ IF(CM_BUILD_GUI_TOOLS)
     target_link_libraries(TexConv PRIVATE Qt${CM_QT_MAJOR_VERSION}::Core Qt${CM_QT_MAJOR_VERSION}::Gui Qt${CM_QT_MAJOR_VERSION}::Widgets)
 ENDIF(CM_BUILD_GUI_TOOLS)
 
-add_executable(ComboTexture ComboTexture.cpp ${ILIMAGE_SOURCE})
-target_link_libraries(ComboTexture PRIVATE CMCore CMPlatform CMUtil ${HGL_DEVIL_LIB})
+add_executable(ComboTexture ComboTexture.cpp ${IMAGE_LIBRARY_SOURCES})
+target_link_libraries(ComboTexture PRIVATE CMCore CMPlatform CMUtil ${IMAGE_LIBS})
 
 #add_executable(YUVTest YUVTest.cpp YUV.cpp SpheremapNormal.cpp ${ILIMAGE_SOURCE})
 #target_link_libraries(YUVTest PRIVATE CMCore CMPlatform CMUtil ${HGL_DEVIL_LIB})
 
-#add_executable(NormalTest NormalTest.cpp SpheremapNormal.cpp ${ILIMAGE_SOURCE})
-#target_link_libraries(NormalTest PRIVATE CMCore CMPlatform CMUtil ${HGL_DEVIL_LIB})
+#add_executable(NormalTest NormalTest.cpp SpheremapNormal.cpp ${IMAGE_LIBRARY_SOURCES})
+#target_link_libraries(NormalTest PRIVATE CMCore CMPlatform CMUtil ${IMAGE_LIBS})
 
-add_executable(DFGen DistanceFieldGenerater.cpp ILImage.h ILImageSupport.cpp)
-target_link_libraries(DFGen PRIVATE CMCore CMPlatform CMUtil ${HGL_DEVIL_LIB})
+add_executable(DFGen DistanceFieldGenerater.cpp ${IMAGE_LIBRARY_SOURCES})
+target_link_libraries(DFGen PRIVATE CMCore CMPlatform CMUtil ${IMAGE_LIBS})
 
 macro(texture_tool_project project_name)
     set_property(TARGET ${project_name} PROPERTY FOLDER "CM/Tools/Texture")

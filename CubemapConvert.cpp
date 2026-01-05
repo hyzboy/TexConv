@@ -3,7 +3,7 @@
 #include<hgl/filesystem/FileSystem.h>
 #include<hgl/type/StringList.h>
 #include<hgl/log/log.h>
-#include"ILImage.h"
+#include"ImageLoader.h"
 #include"TextureFileCreater.h"
 #include"ImageConvertConfig.h"
 #include"Compressonator.h"
@@ -15,7 +15,7 @@ using namespace hgl::util;
 
 bool ConvertCubemap(const OSString &filename,const OSStringList &file_list,const ImageConvertConfig *cfg)
 {
-    ILImage image[6];
+    ImageLoader image[6];
 
     uint width,height,channels,bits;
 

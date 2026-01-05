@@ -1,11 +1,11 @@
 #include<hgl/log/log.h>
-#include"ILImage.h"
+#include"ImageLoader.h"
 #include"TextureFileCreater.h"
 #include"ImageConvertConfig.h"
 
 bool ConvertImage(const OSString &filename,const OSString &new_filename,const ImageConvertConfig *cfg)
 {
-    ILImage image;
+    ImageLoader image;
 
     if(!image.LoadFile(filename))
         return(false);

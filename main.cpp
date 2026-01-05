@@ -1,6 +1,5 @@
 ﻿#include<iostream>
-#include<IL/il.h>
-#include<IL/ilu.h>
+#include"ImageLoader.h"
 #include<hgl/log/Logger.h>
 #include<hgl/util/cmd/CmdParse.h>
 #include<hgl/time/Time.h>
@@ -132,8 +131,7 @@ int os_main(int argc,os_char **argv)
     OSString out_base_name;
     const bool has_out_base = cp.GetString(OS_TEXT("/out:"), out_base_name);
 
-    ilInit();
-    iluImageParameter(ILU_FILTER,ILU_SCALE_MITCHELL);
+    InitImageLibrary(nullptr);
     
     const OSString input_path=argv[argc-1];
 
@@ -186,6 +184,6 @@ int os_main(int argc,os_char **argv)
         CMP_ShutdownBCLibrary();
     }
 
-    ilShutDown();
+    ShutdownImageLibrary();
     return 0;
 }

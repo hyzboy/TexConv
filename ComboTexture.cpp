@@ -1,6 +1,6 @@
 ﻿#include<iostream>
 #include<iomanip>
-#include"ILImage.h"
+#include"ImageLoader.h"
 #include<hgl/type/DataType.h>
 #include<hgl/util/cmd/CmdParse.h>
 #include<hgl/type/Smart.h>
@@ -83,7 +83,7 @@ namespace hgl
 
         MixRGBA<uint8>(pixels,rgb,a,w*h);
 
-        if(SaveImageToFile(out_filename,w,h,scale,4,IL_UNSIGNED_BYTE,pixels))
+        if(SaveImageToFile(out_filename,w,h,scale,4,IMAGE_UNSIGNED_BYTE,pixels))
         {
             std_cout<<OS_TEXT("Output ")<<flag.c_str()<<OS_TEXT(": ")<<out_filename.c_str()<<std::endl;
             return(true);
@@ -100,7 +100,7 @@ namespace hgl
 
         MixRGBA<uint8>(pixels,r,g,b,a,w*h);
 
-        if(SaveImageToFile(out_filename,w,h,scale,4,IL_UNSIGNED_BYTE,pixels))
+        if(SaveImageToFile(out_filename,w,h,scale,4,IMAGE_UNSIGNED_BYTE,pixels))
         {
             std_cout<<OS_TEXT("Output ")<<flag.c_str()<<OS_TEXT(": ")<<out_filename.c_str()<<std::endl;
             return(true);
@@ -117,7 +117,7 @@ namespace hgl
 
         MixRGB<uint8>(pixels,r,g,b,w*h);
 
-        if(SaveImageToFile(out_filename,w,h,scale,3,IL_UNSIGNED_BYTE,pixels))
+        if(SaveImageToFile(out_filename,w,h,scale,3,IMAGE_UNSIGNED_BYTE,pixels))
         {
             std_cout<<OS_TEXT("Output ")<<flag.c_str()<<OS_TEXT(": ")<<out_filename.c_str()<<std::endl;
             return(true);
@@ -177,11 +177,11 @@ int os_main(int argc,os_char **argv)
         return(0);
     }
 
-    ilInit();
+    InitImageLibrary(nullptr);
 
     if(stricmp(argv[2],"MPBR")==0)
     {
-        ILImage color,normal,metallic,roughness;
+        ImageLoader color,normal,metallic,roughness;
 
         uint w,h;
 
@@ -210,25 +210,25 @@ int os_main(int argc,os_char **argv)
         AutoDeleteArray<uint8> u(pixel_total);
         AutoDeleteArray<uint8> v(pixel_total);
 
-        RGB2YUV(y,u,v,(uint8 *)color.GetRGB(IL_UNSIGNED_BYTE),pixel_total,gamma);
+        RGB2YUV(y,u,v,(uint8 *)color.GetRGB(IMAGE_UNSIGNED_BYTE),pixel_total,gamma);
 
         SaveRGBAFile(   argv[1],
                         w,h,1.0,
-                        (uint8 *)normal.GetRGB(IL_UNSIGNED_BYTE),
+                        (uint8 *)normal.GetRGB(IMAGE_UNSIGNED_BYTE),
                         y,
                         OS_TEXT("NormalLuma"));
 
         SaveRGBAFile(   argv[1],
                         w,h,0.5,
                         u,v,
-                        (uint8 *)metallic.GetLum(IL_UNSIGNED_BYTE),
-                        (uint8 *)roughness.GetLum(IL_UNSIGNED_BYTE),
+                        (uint8 *)metallic.GetLum(IMAGE_UNSIGNED_BYTE),
+                        (uint8 *)roughness.GetLum(IMAGE_UNSIGNED_BYTE),
                         OS_TEXT("CbCrMR"));
     }
     else
     if(stricmp(argv[2],"4RGB")==0)
     {
-        ILImage rgb[4];
+        ImageLoader rgb[4];
 
         uint w,h;
 
@@ -260,7 +260,7 @@ int os_main(int argc,os_char **argv)
             u[i].alloc(pixel_total);
             v[i].alloc(pixel_total);
 
-            RGB2YUV(y[i],u[i],v[i],(uint8 *)rgb[i].GetRGB(IL_UNSIGNED_BYTE),pixel_total,gamma);
+            RGB2YUV(y[i],u[i],v[i],(uint8 *)rgb[i].GetRGB(IMAGE_UNSIGNED_BYTE),pixel_total,gamma);
         }
 
         SaveRGBAFile(   argv[1],
@@ -281,7 +281,7 @@ int os_main(int argc,os_char **argv)
     else
     if(stricmp(argv[2],"2CN")==0)
     {
-        ILImage color[2],normal[2];
+        ImageLoader color[2],normal[2];
 
         uint w,h;
 
@@ -314,18 +314,18 @@ int os_main(int argc,os_char **argv)
             u[i].alloc(pixel_total);
             v[i].alloc(pixel_total);
 
-            RGB2YUV(y[i],u[i],v[i],(uint8 *)color[i].GetRGB(IL_UNSIGNED_BYTE),pixel_total,gamma);
+            RGB2YUV(y[i],u[i],v[i],(uint8 *)color[i].GetRGB(IMAGE_UNSIGNED_BYTE),pixel_total,gamma);
         }
 
         SaveRGBAFile(   argv[1],
                         w,h,1.0,
-                        (uint8 *)normal[0].GetRGB(IL_UNSIGNED_BYTE),
+                        (uint8 *)normal[0].GetRGB(IMAGE_UNSIGNED_BYTE),
                         y[0],
                         OS_TEXT("NormalLuma1"));
 
         SaveRGBAFile(   argv[1],
                         w,h,1.0,
-                        (uint8 *)normal[1].GetRGB(IL_UNSIGNED_BYTE),
+                        (uint8 *)normal[1].GetRGB(IMAGE_UNSIGNED_BYTE),
                         y[1],
                         OS_TEXT("NormalLuma2"));
 
@@ -336,6 +336,6 @@ int os_main(int argc,os_char **argv)
                         OS_TEXT("2CbCr"));
     }
 
-    ilShutDown();
+    ShutdownImageLibrary();
     return 0;
 }
