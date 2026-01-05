@@ -1,5 +1,5 @@
 #include"TextureFileCreater.h"
-#include"ILImage.h"
+#include"ImageLoader.h"
 #include<hgl/log/log.h>
 #include<hgl/color/ColorFormat.h>
 
@@ -13,7 +13,7 @@ public:
 
 public:
 
-    bool InitFormat(ILImage* img) override
+    bool InitFormat(ImageLoader* img) override
     {
         image = img;
 

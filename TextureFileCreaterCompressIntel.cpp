@@ -1,5 +1,5 @@
 #include"TextureFileCreater.h"
-#include"ILImage.h"
+#include"ImageLoader.h"
 #include<hgl/log/log.h>
 #include<hgl/TypeFunc.h>
 #include"ISPCTextureCompressor/ispc_texcomp/ispc_texcomp.h"
@@ -19,7 +19,7 @@ public:
 
 public:
 
-    bool InitFormat(ILImage* img) override
+    bool InitFormat(ImageLoader* img) override
     {
         image = img;
 

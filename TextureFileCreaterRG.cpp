@@ -1,5 +1,5 @@
 ﻿#include"TextureFileCreater.h"
-#include"ILImage.h"
+#include"ImageLoader.h"
 #include<iostream>
 
 class TextureFileCreaterRG:public TextureFileCreater
@@ -12,7 +12,7 @@ public:
 
 public:
 
-    bool InitFormat(ILImage *img) override
+    bool InitFormat(ImageLoader *img) override
     {
         image=img;
 

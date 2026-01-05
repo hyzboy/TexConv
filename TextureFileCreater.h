@@ -1,6 +1,6 @@
 #pragma once
 
-#include"ILImage.h"
+#include"ImageLoader.h"
 #include"pixel_format.h"
 #include"ImageConvertConfig.h"
 #include<vulkan/vulkan.h>
@@ -19,7 +19,7 @@ protected:
 
 protected:
 
-    ILImage *image;
+    ImageLoader *image;
     const PixelFormat *pixel_format;
 
 protected:
@@ -48,7 +48,7 @@ public:
 
     virtual bool WritePixelFormat(const uint miplevel);
     
-    virtual bool InitFormat(ILImage *)=0;
+    virtual bool InitFormat(ImageLoader *)=0;
     virtual uint32 Write()=0;
 
     virtual void Close();
