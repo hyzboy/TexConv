@@ -64,6 +64,8 @@ public:
 
     bool Resize(uint, uint);
 
+    // Pixel data accessors
+    // Note: All Get* and To* methods allocate memory with 'new[]' that must be freed by caller with 'delete[]'
     void *ToRGB(ILuint type = IL_UNSIGNED_BYTE);
     void *ToGray(ILuint type = IL_UNSIGNED_BYTE);
     

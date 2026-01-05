@@ -63,11 +63,41 @@ namespace
         }
     }
 
+    // Convert OSString (wide or narrow) to UTF-8 std::string for ImageMagick
+    std::string ToUTF8String(const OSString& str)
+    {
+#ifdef UNICODE
+        // Windows wide string to UTF-8
+        if(str.empty()) return std::string();
+        
+        int size_needed = WideCharToMultiByte(CP_UTF8, 0, str.c_str(), (int)str.length(), 
+                                              nullptr, 0, nullptr, nullptr);
+        if(size_needed <= 0) return std::string();
+        
+        std::string result(size_needed, 0);
+        WideCharToMultiByte(CP_UTF8, 0, str.c_str(), (int)str.length(), 
+                           &result[0], size_needed, nullptr, nullptr);
+        return result;
+#else
+        // Already narrow string, assume UTF-8
+        return std::string(str.c_str());
+#endif
+    }
+
     // Convert string from narrow to wide for logging
     OSString ToOSString(const std::string& str)
     {
 #ifdef UNICODE
-        return OSString(str.begin(), str.end());
+        if(str.empty()) return OSString();
+        
+        int size_needed = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), (int)str.length(), 
+                                              nullptr, 0);
+        if(size_needed <= 0) return OSString();
+        
+        OSString result(size_needed, 0);
+        MultiByteToWideChar(CP_UTF8, 0, str.c_str(), (int)str.length(), 
+                           &result[0], size_needed);
+        return result;
 #else
         return OSString(str.c_str());
 #endif
@@ -233,17 +263,9 @@ bool MagickImage::LoadFile(const OSString &filename)
             return false;
         }
 
-#ifdef UNICODE
-        // Convert wide string to narrow string for ImageMagick
-        std::string narrowPath;
-        for(size_t i = 0; i < filename.length(); ++i)
-        {
-            narrowPath += static_cast<char>(filename[i]);
-        }
-        m_image.read(narrowPath);
-#else
-        m_image.read(filename.c_str());
-#endif
+        // Convert to UTF-8 for ImageMagick
+        std::string utf8Path = ToUTF8String(filename);
+        m_image.read(utf8Path);
 
         // Ensure consistent orientation (top-left origin)
         if(m_image.orientation() == Magick::BottomLeftOrientation ||
@@ -449,7 +471,7 @@ constexpr ILuint format_by_channel[] =
 bool SaveImageToFile(const OSString &filename, ILuint w, ILuint h, const float scale, ILuint c, ILuint t, void *data)
 {
     if(filename.IsEmpty()) return false;
-    if(w <= 0 || h <= 1) return false;
+    if(w <= 0 || h <= 0) return false;
     if(c < 1 || c > 4) return false;
     if(!data) return false;
 
@@ -473,17 +495,9 @@ bool SaveImageToFile(const OSString &filename, ILuint w, ILuint h, const float s
         // Flip for correct orientation
         image.flip();
 
-#ifdef UNICODE
-        // Convert wide string to narrow string for ImageMagick
-        std::string narrowPath;
-        for(size_t i = 0; i < filename.length(); ++i)
-        {
-            narrowPath += static_cast<char>(filename[i]);
-        }
-        image.write(narrowPath);
-#else
-        image.write(filename.c_str());
-#endif
+        // Convert to UTF-8 for ImageMagick
+        std::string utf8Path = ToUTF8String(filename);
+        image.write(utf8Path);
 
         return true;
     }
