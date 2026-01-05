@@ -1,10 +1,8 @@
 ﻿#pragma once
 
 #include<hgl/type/DataType.h>
-#include<hgl/graph/VKFormat.h>
 
 using namespace hgl;
-using namespace hgl::graph;
 
 enum class ColorFormat
 {
@@ -63,6 +61,23 @@ enum class ColorFormat
 
     END
 };//enum class ColorFormat
+
+enum class VulkanBaseType
+{
+    NONE=0,
+    
+    UINT,
+    SINT,
+    UNORM,
+    SNORM,
+    USCALED,
+    SSCALED,
+    UFLOAT,
+    SFLOAT,
+    SRGB,
+
+    ENUM_CLASS_RANGE(UINT,SRGB)
+};//
 
 struct ColorDataFormat
 {

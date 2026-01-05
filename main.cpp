@@ -54,7 +54,7 @@ protected:
                 return;
         }
 
-        OSString new_filename=ReplaceExtension<os_char>(fi.fullname,TEXTURE_FILE_EXT_NAME[size_t(VK_IMAGE_VIEW_TYPE_2D)]);
+        OSString new_filename=ReplaceExtension<os_char>(fi.fullname,OS_TEXT("Tex2D"));
 
         cfg->provider=compression_privoder;
 
@@ -141,11 +141,11 @@ int os_main(int argc,os_char **argv)
 
         if(has_out_base)
         {
-            new_filename=out_base_name+OSString(OS_TEXT("."))+TEXTURE_FILE_EXT_NAME[size_t(VK_IMAGE_VIEW_TYPE_2D)];
+            new_filename=out_base_name+OSString(OS_TEXT(".Tex2D"));
         }
         else
         {
-            new_filename=ReplaceExtension<os_char>(input_path.c_str(),TEXTURE_FILE_EXT_NAME[size_t(VK_IMAGE_VIEW_TYPE_2D)]);
+            new_filename=ReplaceExtension<os_char>(input_path.c_str(),OS_TEXT("Tex2D"));
         }
 
         ConvertImage(input_path.c_str(),new_filename,&icc);

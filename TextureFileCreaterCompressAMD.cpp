@@ -1,7 +1,6 @@
 #include"TextureFileCreater.h"
 #include"ImageLoader.h"
 #include<hgl/log/log.h>
-#include<hgl/TypeFunc.h>
 #include"Compressonator.h"
 #include <cstring>
 #include <cstdlib>

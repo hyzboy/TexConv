@@ -7,17 +7,26 @@
 using namespace hgl;
 
 // Define type constants compatible with DevIL
-#define IL_UNSIGNED_BYTE    0x1401
-#define IL_UNSIGNED_SHORT   0x1403
-#define IL_FLOAT            0x1406
-#define IL_HALF             0x140B
+#define IL_BYTE           0x1400
+#define IL_UNSIGNED_BYTE  0x1401
+#define IL_SHORT          0x1402
+#define IL_UNSIGNED_SHORT 0x1403
+#define IL_INT            0x1404
+#define IL_UNSIGNED_INT   0x1405
+#define IL_FLOAT          0x1406
+#define IL_DOUBLE         0x140A
+#define IL_HALF           0x140B
 
 // Define format constants compatible with DevIL
+#define IL_COLOUR_INDEX     0x1900
+#define IL_COLOR_INDEX      0x1900
+#define IL_ALPHA			0x1906
 #define IL_RGB              0x1907
 #define IL_RGBA             0x1908
+#define IL_BGR              0x80E0
+#define IL_BGRA             0x80E1
 #define IL_LUMINANCE        0x1909
 #define IL_LUMINANCE_ALPHA  0x190A
-#define IL_ALPHA            0x1906
 
 // Type alias for compatibility
 typedef unsigned int ILuint;

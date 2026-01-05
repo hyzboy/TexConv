@@ -4,6 +4,7 @@
 #include <cmath>
 #include <vector>
 #include <cstring>
+#include <numbers>
 
 using namespace hgl;
 
@@ -68,14 +69,14 @@ namespace
     {
 #ifdef UNICODE
         // Windows wide string to UTF-8
-        if(str.empty()) return std::string();
+        if(str.IsEmpty()) return std::string();
         
-        int size_needed = WideCharToMultiByte(CP_UTF8, 0, str.c_str(), (int)str.length(), 
+        int size_needed = WideCharToMultiByte(CP_UTF8, 0, str.c_str(), (int)str.Length(), 
                                               nullptr, 0, nullptr, nullptr);
         if(size_needed <= 0) return std::string();
         
         std::string result(size_needed, 0);
-        WideCharToMultiByte(CP_UTF8, 0, str.c_str(), (int)str.length(), 
+        WideCharToMultiByte(CP_UTF8, 0, str.c_str(), (int)str.Length(), 
                            &result[0], size_needed, nullptr, nullptr);
         return result;
 #else
@@ -107,7 +108,7 @@ namespace
     static inline float sinc(float x)
     {
         if(x == 0.0f) return 1.0f;
-        x *= static_cast<float>(M_PI);
+        x *= std::numbers::pi_v<float>;
         return std::sin(x) / x;
     }
 
@@ -503,7 +504,7 @@ bool SaveImageToFile(const OSString &filename, ILuint w, ILuint h, const float s
     }
     catch(Magick::Exception &error)
     {
-        LogError(OS_TEXT("SaveImageToFile failed: ") + ToOSString(error.what()));
+        GLogError(OS_TEXT("SaveImageToFile failed: ") + ToOSString(error.what()));
         return false;
     }
 }
