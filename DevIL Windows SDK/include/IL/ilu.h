@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 //
 // ImageLib Utility Sources
 // Copyright (C) 2000-2017 by Denton Woods
@@ -29,11 +29,11 @@ extern "C" {
 
 
 #ifdef _WIN32
-	#if (defined(IL_USE_PRAGMA_LIBS)) && (!defined(_IL_BUILD_LIBRARY))
-		#if defined(_MSC_VER) || defined(__BORLANDC__)
-			#pragma comment(lib, "ILU.lib")
-		#endif
-	#endif
+    #if (defined(IL_USE_PRAGMA_LIBS)) && (!defined(_IL_BUILD_LIBRARY))
+        #if defined(_MSC_VER) || defined(__BORLANDC__)
+            #pragma comment(lib, "ILU.lib")
+        #endif
+    #endif
 #endif
 
 
@@ -70,7 +70,7 @@ extern "C" {
 #define ILU_UPPER_RIGHT        0x0704
 #define ILU_CENTER             0x0705
 #define ILU_CONVOLUTION_MATRIX 0x0710
-  
+
 #define ILU_VERSION_NUM IL_VERSION_NUM
 #define ILU_VENDOR      IL_VENDOR
 
@@ -105,34 +105,34 @@ extern "C" {
 
 typedef struct ILinfo
 {
-	ILuint  Id;         // the image's id
-	ILubyte *Data;      // the image's data
-	ILuint  Width;      // the image's width
-	ILuint  Height;     // the image's height
-	ILuint  Depth;      // the image's depth
-	ILubyte Bpp;        // bytes per pixel (not bits) of the image
-	ILuint  SizeOfData; // the total size of the data (in bytes)
-	ILenum  Format;     // image format (in IL enum style)
-	ILenum  Type;       // image type (in IL enum style)
-	ILenum  Origin;     // origin of the image
-	ILubyte *Palette;   // the image's palette
-	ILenum  PalType;    // palette type
-	ILuint  PalSize;    // palette size
-	ILenum  CubeFlags;  // flags for what cube map sides are present
-	ILuint  NumNext;    // number of images following
-	ILuint  NumMips;    // number of mipmaps
-	ILuint  NumLayers;  // number of layers
+    ILuint  Id;         // the image's id
+    ILubyte *Data;      // the image's data
+    ILuint  Width;      // the image's width
+    ILuint  Height;     // the image's height
+    ILuint  Depth;      // the image's depth
+    ILubyte Bpp;        // bytes per pixel (not bits) of the image
+    ILuint  SizeOfData; // the total size of the data (in bytes)
+    ILenum  Format;     // image format (in IL enum style)
+    ILenum  Type;       // image type (in IL enum style)
+    ILenum  Origin;     // origin of the image
+    ILubyte *Palette;   // the image's palette
+    ILenum  PalType;    // palette type
+    ILuint  PalSize;    // palette size
+    ILenum  CubeFlags;  // flags for what cube map sides are present
+    ILuint  NumNext;    // number of images following
+    ILuint  NumMips;    // number of mipmaps
+    ILuint  NumLayers;  // number of layers
 } ILinfo;
 
 
 typedef struct ILpointf {
-	ILfloat x;
-	ILfloat y;
+    ILfloat x;
+    ILfloat y;
 } ILpointf;
 
 typedef struct ILpointi {
-	ILint x;
-	ILint y;
+    ILint x;
+    ILint y;
 } ILpointi;
 
 ILAPI ILboolean      ILAPIENTRY iluAlienify(void);
@@ -152,7 +152,7 @@ ILAPI ILboolean      ILAPIENTRY iluEnlargeCanvas(ILuint Width, ILuint Height, IL
 ILAPI ILboolean      ILAPIENTRY iluEnlargeImage(ILfloat XDim, ILfloat YDim, ILfloat ZDim);
 ILAPI ILboolean      ILAPIENTRY iluEqualize(void);
 ILAPI ILboolean      ILAPIENTRY iluEqualize2(void);
-ILAPI ILconst_string 		 ILAPIENTRY iluErrorString(ILenum Error);
+ILAPI ILconst_string          ILAPIENTRY iluErrorString(ILenum Error);
 ILAPI ILboolean      ILAPIENTRY iluConvolution(ILint *matrix, ILint scale, ILint bias);
 ILAPI ILboolean      ILAPIENTRY iluFlipImage(void);
 ILAPI ILboolean      ILAPIENTRY iluGammaCorrect(ILfloat Gamma);
@@ -160,7 +160,7 @@ ILAPI ILuint         ILAPIENTRY iluGenImage(void); // Deprecated
 ILAPI void           ILAPIENTRY iluGetImageInfo(ILinfo *Info);
 ILAPI ILint          ILAPIENTRY iluGetInteger(ILenum Mode);
 ILAPI void           ILAPIENTRY iluGetIntegerv(ILenum Mode, ILint *Param);
-ILAPI ILstring 		 ILAPIENTRY iluGetString(ILenum StringName);
+ILAPI ILstring          ILAPIENTRY iluGetString(ILenum StringName);
 ILAPI void           ILAPIENTRY iluImageParameter(ILenum PName, ILenum Param);
 ILAPI void           ILAPIENTRY iluInit(void);
 ILAPI ILboolean      ILAPIENTRY iluInvertAlpha(void);

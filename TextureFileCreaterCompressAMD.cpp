@@ -1,4 +1,4 @@
-#include"TextureFileCreater.h"
+﻿#include"TextureFileCreater.h"
 #include"ImageLoader.h"
 #include<hgl/log/log.h>
 #include"Compressonator.h"
@@ -32,7 +32,7 @@ public:
 
         channels=image->channels();
         type=image->type();
-        
+
         constexpr CMP_FORMAT fmt_list[]=
         {
             CMP_FORMAT_BC1, //ColorFormat::BC1
@@ -64,7 +64,7 @@ public:
         target_fmt=fmt_list[fmt_index];
 
         target_fmt_name=fmt_name_list[fmt_index];
-        
+
         // Log message similar to Intel compressor
         {
             AnsiString msg = "Compress Image to: ";
@@ -88,11 +88,11 @@ public:
             LogError(OS_TEXT("unknow type: %d"), type);
             return(false);
         }
-        
+
         if(channels==1)
         {
             tdt=TDT_R;
-            
+
             if(type==IL_UNSIGNED_BYTE )source_fmt=CMP_FORMAT_R_8;else
             if(type==IL_UNSIGNED_SHORT )source_fmt=CMP_FORMAT_R_16;else
             if(type==IL_HALF )source_fmt=CMP_FORMAT_R_16F;else
@@ -108,7 +108,7 @@ public:
         if(channels==2)
         {
             tdt=TDT_RG;
-            
+
             if(type==IL_UNSIGNED_BYTE )source_fmt=CMP_FORMAT_RG_8;else
             if(type==IL_UNSIGNED_SHORT )source_fmt=CMP_FORMAT_RG_16;else
             if(type==IL_HALF )source_fmt=CMP_FORMAT_RG_16F;else
@@ -117,14 +117,14 @@ public:
                 LogError(OS_TEXT("channels2 unknow type: %d"), type);
                 return(false);
             }
-            
+
             image->ConvertToRG(type);
         }
         else
         if(channels==3)
         {
             tdt=TDT_XRGB;
-            
+
             if(type==IL_UNSIGNED_BYTE )source_fmt=CMP_FORMAT_RGBA_8888;else
             if(type==IL_UNSIGNED_SHORT )source_fmt=CMP_FORMAT_RGBA_16;else
             if(type==IL_HALF )source_fmt=CMP_FORMAT_RGBA_16F;else
@@ -140,7 +140,7 @@ public:
         if(channels==4)
         {
             tdt=TDT_ARGB;
-            
+
             if(type==IL_UNSIGNED_BYTE )source_fmt=CMP_FORMAT_RGBA_8888;else
             if(type==IL_UNSIGNED_SHORT )source_fmt=CMP_FORMAT_RGBA_16;else
             if(type==IL_HALF )source_fmt=CMP_FORMAT_RGBA_16F;else
@@ -148,8 +148,8 @@ public:
             {
                 LogError(OS_TEXT("channels4 unknow type: %d"), type);
                 return(false);
-            } 
-            
+            }
+
             image->ConvertToRGBA(type);
         }
         else
@@ -165,7 +165,7 @@ public:
     {
         const int width=image->width();
         const int height=image->height();
-        
+
         mem_zero(MipSetIn);
 
         void *source_data=nullptr;
@@ -176,7 +176,7 @@ public:
         }
         else
         if(channels==2)
-        { 
+        {
             source_data=image->GetRG(type);
         }
         else
@@ -186,7 +186,7 @@ public:
         }
         else
         if(channels==4)
-        { 
+        {
             source_data=image->GetRGBA(type);
         }
         else
@@ -252,7 +252,7 @@ public:
 
         kernel_options.height = image->height();
         kernel_options.width = image->width();
-        kernel_options.fquality =1.0f; 
+        kernel_options.fquality =1.0f;
         kernel_options.format = target_fmt;
         kernel_options.srcformat = source_fmt; // 补充
         kernel_options.encodeWith = CMP_HPC;
@@ -276,7 +276,7 @@ public:
         putchar('.');
         return(false);
     }
-    
+
     uint32 Write() override
     {
         InitOption();

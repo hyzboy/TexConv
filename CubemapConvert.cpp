@@ -1,4 +1,4 @@
-#include<iostream>
+﻿#include<iostream>
 #include<hgl/util/cmd/CmdParse.h>
 #include<hgl/filesystem/FileSystem.h>
 #include<hgl/type/StringList.h>
@@ -43,12 +43,12 @@ bool ConvertCubemap(const OSString &filename,const OSStringList &file_list,const
             }
         }
     }
- 
+
     int miplevel=1;
 
     if(cfg->gen_mipmaps)
         miplevel=hgl::GetMipLevel(width,height);
-    
+
     if(channels<=0||channels>4)
     {
         LogError(OS_TEXT("image format don't support "));
@@ -117,9 +117,9 @@ bool ConvertCubemap(const OSString &filename,const OSStringList &file_list,const
             image[face].Resize(width,height);
         }
     }
-    
+
     tex_file_creater->Close();
-        
+
     LogInfo(OS_TEXT("pixel total length: ")+OSString::numberOf(total)+OS_TEXT(" bytes."));
     return(true);
 }
@@ -146,12 +146,12 @@ int os_main(int argc,os_char **argv)
     ImageConvertConfig icc;
 
     if(cp.Find(OS_TEXT("/mip"))!=-1)icc.gen_mipmaps=true;
-    
+
     ParseParamColorKey(&icc,cp);
     ParseParamFormat(&icc,cp);
 
     ilInit();
-    
+
     CMP_RegisterHostPlugins();
     CMP_InitializeBCLibrary();
 
@@ -188,8 +188,8 @@ int os_main(int argc,os_char **argv)
 
         ConvertCubemap(out_filename,file_list,&icc);
     }
-            
+
     CMP_ShutdownBCLibrary();
-	ilShutDown();
+    ilShutDown();
     return 0;
 }

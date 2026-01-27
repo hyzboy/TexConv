@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 //
 // ImageLib Sources
 // Copyright (C) 2000-2017 by Denton Woods
@@ -16,9 +16,9 @@
 #include "IL/il.h"
 
 #ifdef DEBUG
-	#include <assert.h>
+    #include <assert.h>
 #else
-	#define assert(x)
+    #define assert(x)
 #endif
 
 
@@ -49,9 +49,9 @@ extern "C" {
 //! Basic Palette struct
 typedef struct ILpal
 {
-	ILubyte* Palette; //!< the image palette (if any)
-	ILuint   PalSize; //!< size of the palette (in bytes)
-	ILenum   PalType; //!< the palette types in il.h (0x0500 range)
+    ILubyte* Palette; //!< the image palette (if any)
+    ILuint   PalSize; //!< size of the palette (in bytes)
+    ILenum   PalType; //!< the palette types in il.h (0x0500 range)
 } ILpal;
 
 
@@ -59,34 +59,34 @@ typedef struct ILpal
 /*! Every bit of information about an image is stored in this internal structure.*/
 typedef struct ILimage
 {
-	ILuint          Width;       //!< the image's width
-	ILuint          Height;      //!< the image's height
-	ILuint          Depth;       //!< the image's depth
-	ILubyte         Bpp;         //!< bytes per pixel (now number of channels)
-	ILubyte         Bpc;         //!< bytes per channel
-	ILuint          Bps;         //!< bytes per scanline (components for IL)
-	ILubyte*        Data;        //!< the image data
-	ILuint          SizeOfData;  //!< the total size of the data (in bytes)
-	ILuint          SizeOfPlane; //!< SizeOfData in a 2d image, size of each plane slice in a 3d image (in bytes)
-	ILenum          Format;      //!< image format (in IL enum style)
-	ILenum          Type;        //!< image type (in IL enum style)
-	ILenum          Origin;      //!< origin of the image
-	ILpal           Pal;         //!< palette details
-	ILuint          Duration;    //!< length of the time to display this "frame"
-	ILenum          CubeFlags;   //!< cube map flags for sides present in chain
-	struct ILimage* Mipmaps;     //!< mipmapped versions of this image terminated by a NULL - usu. NULL
-	struct ILimage* Next;        //!< next image in the chain - usu. NULL
-	struct ILimage* Faces;       //!< next cubemap face in the chain - usu. NULL
-	struct ILimage* Layers;      //!< subsequent layers in the chain - usu. NULL
-	ILuint*         AnimList;    //!< animation list
-	ILuint          AnimSize;    //!< animation list size
-	void*           Profile;     //!< colour profile
-	ILuint          ProfileSize; //!< colour profile size
-	ILuint          OffX;        //!< x-offset of the image
-	ILuint			OffY;        //!< y-offset of the image
-	ILubyte*        DxtcData;    //!< compressed data
-	ILenum          DxtcFormat;  //!< compressed data format
-	ILuint          DxtcSize;    //!< compressed data size
+    ILuint          Width;       //!< the image's width
+    ILuint          Height;      //!< the image's height
+    ILuint          Depth;       //!< the image's depth
+    ILubyte         Bpp;         //!< bytes per pixel (now number of channels)
+    ILubyte         Bpc;         //!< bytes per channel
+    ILuint          Bps;         //!< bytes per scanline (components for IL)
+    ILubyte*        Data;        //!< the image data
+    ILuint          SizeOfData;  //!< the total size of the data (in bytes)
+    ILuint          SizeOfPlane; //!< SizeOfData in a 2d image, size of each plane slice in a 3d image (in bytes)
+    ILenum          Format;      //!< image format (in IL enum style)
+    ILenum          Type;        //!< image type (in IL enum style)
+    ILenum          Origin;      //!< origin of the image
+    ILpal           Pal;         //!< palette details
+    ILuint          Duration;    //!< length of the time to display this "frame"
+    ILenum          CubeFlags;   //!< cube map flags for sides present in chain
+    struct ILimage* Mipmaps;     //!< mipmapped versions of this image terminated by a NULL - usu. NULL
+    struct ILimage* Next;        //!< next image in the chain - usu. NULL
+    struct ILimage* Faces;       //!< next cubemap face in the chain - usu. NULL
+    struct ILimage* Layers;      //!< subsequent layers in the chain - usu. NULL
+    ILuint*         AnimList;    //!< animation list
+    ILuint          AnimSize;    //!< animation list size
+    void*           Profile;     //!< colour profile
+    ILuint          ProfileSize; //!< colour profile size
+    ILuint          OffX;        //!< x-offset of the image
+    ILuint            OffY;        //!< y-offset of the image
+    ILubyte*        DxtcData;    //!< compressed data
+    ILenum          DxtcFormat;  //!< compressed data format
+    ILuint          DxtcSize;    //!< compressed data size
 } ILimage;
 
 
@@ -121,7 +121,7 @@ ILAPI void    ILAPIENTRY iMemSwap(ILubyte *, ILubyte *, const ILuint);
 //
 // Image functions
 //
-ILAPI void	    ILAPIENTRY iBindImageTemp  (void);
+ILAPI void        ILAPIENTRY iBindImageTemp  (void);
 ILAPI ILboolean ILAPIENTRY ilClearImage_   (ILimage *Image);
 ILAPI void      ILAPIENTRY ilCloseImage    (ILimage *Image);
 ILAPI void      ILAPIENTRY ilClosePal      (ILpal *Palette);
@@ -142,9 +142,9 @@ ILAPI void*     ILAPIENTRY ilConvertBuffer (ILuint SizeOfData, ILenum SrcFormat,
 ILAPI ILimage*  ILAPIENTRY iConvertImage   (ILimage *Image, ILenum DestFormat, ILenum DestType);
 ILAPI ILpal*    ILAPIENTRY iConvertPal     (ILpal *Pal, ILenum DestFormat);
 ILAPI ILubyte*  ILAPIENTRY iGetFlipped     (ILimage *Image);
-ILAPI ILboolean	ILAPIENTRY iMirror();
+ILAPI ILboolean    ILAPIENTRY iMirror();
 ILAPI void      ILAPIENTRY iFlipBuffer(ILubyte *buff, ILuint depth, ILuint line_size, ILuint line_num);
-ILubyte*				   iFlipNewBuffer(ILubyte *buff, ILuint depth, ILuint line_size, ILuint line_num);
+ILubyte*                   iFlipNewBuffer(ILubyte *buff, ILuint depth, ILuint line_size, ILuint line_num);
 ILAPI void      ILAPIENTRY iGetIntegervImage(ILimage *Image, ILenum Mode, ILint *Param);
 
 // Internal library functions in ILU

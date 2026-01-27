@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 //
 // ImageLib Utility Sources
 // Copyright (C) 2000-2002 by Denton Woods
@@ -15,9 +15,9 @@
 
 typedef struct Edge
 {
-	ILint	yUpper;
-	ILfloat	xIntersect, dxPerScan;
-	struct	Edge *next;
+    ILint    yUpper;
+    ILfloat    xIntersect, dxPerScan;
+    struct    Edge *next;
 } Edge;
 
 

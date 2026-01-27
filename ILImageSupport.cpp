@@ -1,4 +1,4 @@
-//注：起名为ILImageSupport是为了避免与IL中现有的ilimage冲突
+﻿//注：起名为ILImageSupport是为了避免与IL中现有的ilimage冲突
 
 #include"ILImage.h"
 #include<IL/ilu.h>
@@ -17,7 +17,7 @@ namespace
         uint code;
         const os_char *name;
     };
-    
+
     constexpr const DevILError devil_error_text[]=
     {
     #define DEVIL_ERROR_TEXT(name)  {IL_##name,OS_TEXT(#name)},
@@ -62,7 +62,7 @@ namespace
                 return err.name;
 
         return nullptr;
-    }    
+    }
 
     const OSString GetILFormatName(const ILuint format)
     {
@@ -81,7 +81,7 @@ namespace
 
         return OS_TEXT("Error format");
     }
-    
+
     const OSString GetILTypeName(const ILuint type)
     {
         #define IL_TYPE2NAME(name)    if(type==IL_##name)return OS_TEXT(#name);
@@ -170,12 +170,12 @@ void ILImage::Copy(ILImage *img)
 
 void ILImage::Refresh()
 {
-    il_width	=ilGetInteger(IL_IMAGE_WIDTH);
-    il_height	=ilGetInteger(IL_IMAGE_HEIGHT);
+    il_width    =ilGetInteger(IL_IMAGE_WIDTH);
+    il_height    =ilGetInteger(IL_IMAGE_HEIGHT);
     il_depth    =ilGetInteger(IL_IMAGE_DEPTH);
-    il_bit		=ilGetInteger(IL_IMAGE_BITS_PER_PIXEL);
-    il_format	=ilGetInteger(IL_IMAGE_FORMAT);
-    il_type    	=ilGetInteger(IL_IMAGE_TYPE);
+    il_bit        =ilGetInteger(IL_IMAGE_BITS_PER_PIXEL);
+    il_format    =ilGetInteger(IL_IMAGE_FORMAT);
+    il_type        =ilGetInteger(IL_IMAGE_TYPE);
 
     LogInfo("Origin image info: ");
     LogInfo("\t width: " + AnsiString::numberOf(il_width));
@@ -207,7 +207,7 @@ void ILImage::Refresh()
             LogInfo("Converted paletted image to LUMINANCE format.");
         }
         else
-        {            
+        {
             if(il_pattle==IL_PAL_RGB24||il_pattle==IL_PAL_BGR24
              ||il_pattle==IL_PAL_RGB32||il_pattle==IL_PAL_BGR32)
             {
@@ -235,8 +235,8 @@ void ILImage::Refresh()
         }
     }
 
-    il_bit		=ilGetInteger(IL_IMAGE_BITS_PER_PIXEL);
-    
+    il_bit        =ilGetInteger(IL_IMAGE_BITS_PER_PIXEL);
+
     if(il_format==IL_LUMINANCE||il_format==IL_ALPHA)channel_count=1;else
     if(il_format==IL_LUMINANCE_ALPHA)               channel_count=2;else
     if(il_format==IL_RGB||il_format==IL_BGR)        channel_count=3;else
@@ -248,10 +248,10 @@ void ILImage::Refresh()
 
 constexpr ILenum format_by_channel[]=
 {
-	IL_LUMINANCE,
-	IL_LUMINANCE_ALPHA,
-	IL_RGB,
-	IL_RGBA,
+    IL_LUMINANCE,
+    IL_LUMINANCE_ALPHA,
+    IL_RGB,
+    IL_RGBA,
 };
 
 bool SaveImageToFile(const OSString &filename,ILuint w,ILuint h,const float scale,ILuint c,ILuint t,void *data)
@@ -455,10 +455,10 @@ bool ILImage::Convert(ILuint format,ILuint type)
 
     if(!ilConvertImage(format,type))
         return(false);
-    
+
     il_format   =format;
     il_type     =type;
-    il_bit		=ilGetInteger(IL_IMAGE_BITS_PER_PIXEL);
+    il_bit        =ilGetInteger(IL_IMAGE_BITS_PER_PIXEL);
     return(true);
 }
 
@@ -476,8 +476,8 @@ bool ILImage::LoadFile(const OSString &filename)
     {
         ILenum il_err_code=ilGetError();
 
-        const os_char *err_text=GetDevILErrorString(il_err_code);        
-        
+        const os_char *err_text=GetDevILErrorString(il_err_code);
+
         if(err_text)
         {
             LogError(OS_TEXT("can't Load image file <")+filename+OS_TEXT("> Error: ")+err_text);
@@ -501,7 +501,7 @@ bool ILImage::LoadFile(const OSString &filename)
     LogInfo(OS_TEXT("\tformat: ")+GetILFormatName(il_format));
     LogInfo(OS_TEXT("\t  type: ")+GetILTypeName(il_type));
 
-    return(true);    
+    return(true);
 }
 
 const PixelDataType GetPixelDataType(ILuint type)
@@ -545,7 +545,7 @@ template<typename T> void MixRG(T *tar,T *src,T *alpha,const uint count)
 //    {
 //        src=GetRGBA(il_type);
 //    }
-//    
+//
 //    const uint pixel_byte=(il_bit>>3);
 //    const uint total_bytes=pixel_count*pixel_byte;
 //
@@ -603,11 +603,11 @@ void *ILImage::GetData(ILuint format,ILuint type)
 
 template<typename T> void MixRGBA(T *rgba,T *alpha,int size)
 {
-	int i;
+    int i;
 
     for(i=0;i<size;i++)
     {
-		rgba+=3;
+        rgba+=3;
         *rgba++=*alpha++;
     }
 }

@@ -123,7 +123,7 @@ int os_main(int argc,os_char **argv)
         GLogInfo("Using AMD Compressonator Texture Compressor");
         CMP_InitializeBCLibrary();
     }
-    
+
     ParseParamColorKey(&icc,cp);
     ParseParamFormat(&icc,cp);                                         //检测推荐格式
 
@@ -132,7 +132,7 @@ int os_main(int argc,os_char **argv)
     const bool has_out_base = cp.GetString(OS_TEXT("/out:"), out_base_name);
 
     InitImageLibrary(nullptr);
-    
+
     const OSString input_path=argv[argc-1];
 
     if(filesystem::FileCanRead(argv[argc-1]))
@@ -178,7 +178,7 @@ int os_main(int argc,os_char **argv)
         GLogInfo(OS_TEXT("Total converted ")+OSString::numberOf(eci.GetConvertCount())
                 +OS_TEXT(" textures for ")+time_gap_str.c_str()+OS_TEXT(" seconds."));
     }
-    
+
     if(compression_privoder==CompressionProvider::AMD_Compressonator)
     {
         CMP_ShutdownBCLibrary();

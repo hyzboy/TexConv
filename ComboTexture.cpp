@@ -20,7 +20,7 @@ namespace hgl
 
     constexpr double clamp_u=0.436*255.0;
     constexpr double clamp_v=0.615*255.0;
-        
+
     void RGB2YUV(uint8 *y,uint8 *u,uint8 *v,const uint8 *rgb,const uint count,const double gamma)
     {
         uint8 r,g,b;
@@ -31,9 +31,9 @@ namespace hgl
             g=*rgb++;
             b=*rgb++;
 
-            *y  =				  0.299		* r	+ 0.587 	* g + 0.114 	* b;
-            *u++=(clamp_u		- 0.14713 	* r	- 0.28886 	* g	+ 0.436 	* b) / 0.872;
-            *v++=(clamp_v		+ 0.615 	* r	- 0.51499 	* g	- 0.10001 	* b) / 1.230;
+            *y  =                  0.299        * r    + 0.587     * g + 0.114     * b;
+            *u++=(clamp_u        - 0.14713     * r    - 0.28886     * g    + 0.436     * b) / 0.872;
+            *v++=(clamp_v        + 0.615     * r    - 0.51499     * g    - 0.10001     * b) / 1.230;
 
             *y=clamp(pow((*y)/255.0f,gamma))*255;
             ++y;
@@ -250,7 +250,7 @@ int os_main(int argc,os_char **argv)
         rgb[1].Resize(w,h);
         rgb[2].Resize(w,h);
         rgb[3].Resize(w,h);
-        
+
         const uint pixel_total=w*h;
         AutoDeleteArray<uint8> y[4],u[4],v[4];
 
@@ -299,7 +299,7 @@ int os_main(int argc,os_char **argv)
 
         w=color[0].width();
         h=color[0].height();
-        
+
         color[1].Resize(w,h);
         normal[0].Resize(w,h);
         normal[1].Resize(w,h);

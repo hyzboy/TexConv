@@ -1,4 +1,4 @@
-#include "MagickImage.h"
+﻿#include "MagickImage.h"
 #include <hgl/log/log.h>
 #include <hgl/filesystem/FileSystem.h>
 #include <cmath>
@@ -70,13 +70,13 @@ namespace
 #ifdef UNICODE
         // Windows wide string to UTF-8
         if(str.IsEmpty()) return std::string();
-        
-        int size_needed = WideCharToMultiByte(CP_UTF8, 0, str.c_str(), (int)str.Length(), 
+
+        int size_needed = WideCharToMultiByte(CP_UTF8, 0, str.c_str(), (int)str.Length(),
                                               nullptr, 0, nullptr, nullptr);
         if(size_needed <= 0) return std::string();
-        
+
         std::string result(size_needed, 0);
-        WideCharToMultiByte(CP_UTF8, 0, str.c_str(), (int)str.Length(), 
+        WideCharToMultiByte(CP_UTF8, 0, str.c_str(), (int)str.Length(),
                            &result[0], size_needed, nullptr, nullptr);
         return result;
 #else
@@ -90,13 +90,13 @@ namespace
     {
 #ifdef UNICODE
         if(str.empty()) return OSString();
-        
-        int size_needed = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), (int)str.length(), 
+
+        int size_needed = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), (int)str.length(),
                                               nullptr, 0);
         if(size_needed <= 0) return OSString();
-        
+
         OSString result(size_needed, 0);
-        MultiByteToWideChar(CP_UTF8, 0, str.c_str(), (int)str.length(), 
+        MultiByteToWideChar(CP_UTF8, 0, str.c_str(), (int)str.length(),
                            &result[0], size_needed);
         return result;
 #else
@@ -121,7 +121,7 @@ namespace
     }
 
     // Precompute contributions for resizing pass
-    static void precompute_contribs(int srcSize, int dstSize, float a, 
+    static void precompute_contribs(int srcSize, int dstSize, float a,
                                     std::vector<std::vector<std::pair<int, float>>> &contrib)
     {
         contrib.clear();
@@ -196,7 +196,7 @@ void MagickImage::Refresh()
 
         // Determine format based on image type
         Magick::ImageType imgType = m_image.type();
-        
+
         if(imgType == Magick::GrayscaleType || imgType == Magick::GrayscaleAlphaType)
         {
             if(m_image.alpha())
@@ -298,7 +298,7 @@ bool MagickImage::Resize(uint nw, uint nh)
         // Use Lanczos filter for high-quality resizing
         m_image.filterType(Magick::LanczosFilter);
         m_image.resize(Magick::Geometry(nw, nh));
-        
+
         m_width = nw;
         m_height = nh;
 
@@ -369,12 +369,12 @@ void *MagickImage::GetData(ILuint format, ILuint type)
         const char* map = GetChannelMap(format);
         Magick::StorageType storage = GetMagickStorageType(type);
         uint channels = GetChannelCount(format);
-        
+
         size_t size = m_width * m_height * channels * GetBytesPerComponent(type);
         void *data = new uint8_t[size];
 
         m_image.write(0, 0, m_width, m_height, map, storage, data);
-        
+
         return data;
     }
     catch(Magick::Exception &error)
@@ -404,7 +404,7 @@ void *MagickImage::GetR(ILuint type)
 {
     if(m_format == IL_ALPHA)
         return GetAlpha(type);
-    
+
     if(m_format == IL_LUMINANCE)
     {
         if(m_type != type)
@@ -430,7 +430,7 @@ void *MagickImage::GetAlpha(ILuint type)
         void *data = new uint8_t[size];
 
         m_image.write(0, 0, m_width, m_height, "A", storage, data);
-        
+
         return data;
     }
     catch(Magick::Exception &error)
@@ -453,7 +453,7 @@ void MixRGBA(T *rgba, T *alpha, int size)
 void *MagickImage::GetRGBA(ILuint type)
 {
     void *data = GetData(IL_RGBA, type);
-    
+
     if(!data)
         return nullptr;
 

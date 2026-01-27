@@ -25,7 +25,7 @@ public:
     uint32 Write() override
     {
         const uint total_bytes=(pixel_format->total_bits*image->pixel_total())>>3;
-        
+
         std::cout<<"Convert Image To: "<<image->width()<<"x"<<image->height()<<" "<<total_bytes<<" bytes."<<std::endl;
 
         void *data=image->GetRG(type);

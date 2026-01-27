@@ -50,7 +50,7 @@ namespace hgl
         {
             in.x=(*x)/255.0f;++x;
             in.y=(*y)/255.0f;++y;
-            
+
 //Spheremap Transform,PSNR 48.071 dB,15 GPU cycles
             fenc=in*4.0f-Vector2f(2.0f);
             f=dot(fenc,fenc);
@@ -59,7 +59,7 @@ namespace hgl
             out.x=fenc.x*g;
             out.y=fenc.y*g;
             out.z=1-f/2.0f;
-            
+
             out=out.Clamp01();
 
             *rgb=out.x*255;++rgb;

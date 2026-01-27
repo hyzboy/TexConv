@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include<IL/il.h>
 #include<hgl/log/Log.h>
 #include<hgl/type/String.h>
@@ -58,7 +58,7 @@ public:
 
     void *ToRGB(ILuint type=IL_UNSIGNED_BYTE);
     void *ToGray(ILuint type=IL_UNSIGNED_BYTE);
-    
+
     void *GetR(ILuint type);
 
     void *GetRG(ILuint type){return GetData(IL_LUMINANCE_ALPHA,type);}

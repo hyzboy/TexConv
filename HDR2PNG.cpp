@@ -1,4 +1,4 @@
-#include<iostream>
+﻿#include<iostream>
 #include"ImageLoader.h"
 #include<hgl/color/sRGBConvert.h>
 #include<hgl/filesystem/Filename.h>
@@ -9,7 +9,7 @@ using namespace hgl::filesystem;
 int convert(const OSString &filename)
 {
     ImageLoader hdr;
-    
+
     if(!hdr.LoadFile(filename))
     {
         os_err<<"Can't load file: "<<filename.c_str()<<std::endl;
@@ -20,8 +20,8 @@ int convert(const OSString &filename)
     const uint height=hdr.height();
     const uint channels=hdr.channels();
 
-    float *source=nullptr;        
-    
+    float *source=nullptr;
+
     if(channels==4)
     {
         source=(float *)hdr.GetRGBA(IMAGE_FLOAT);
@@ -65,7 +65,7 @@ int convert(const OSString &filename)
         os_err<<OS_TEXT("Save to file failed: ")<<png_filename.c_str()<<std::endl;
         return 3;
     }
-    
+
     delete[] dest;
     os_err<<OS_TEXT("Save to file OK: ")<<png_filename.c_str()<<std::endl;
 
@@ -81,7 +81,7 @@ int os_main(int argc,os_char **argv)
         os_out<<"Example: HDR2PNG 1.hdr"<<std::endl;
         return 0;
     }
-    
+
     InitImageLibrary(nullptr);
 
     int result=convert(argv[1]);

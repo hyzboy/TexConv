@@ -1,4 +1,4 @@
-#include"TextureFileCreater.h"
+﻿#include"TextureFileCreater.h"
 #include"ImageLoader.h"
 #include<hgl/log/log.h>
 #include<hgl/color/ColorFormat.h>
@@ -50,7 +50,7 @@ public:
     }
 
 public:
- 
+
     uint32 Write() override
     {
         const uint total_bytes=(pixel_format->total_bits*image->pixel_total())>>3;
@@ -79,7 +79,7 @@ public:
 
             EndianSwap<uint32>(origin_rgba,image->pixel_total());
 
-            return TextureFileCreater::Write(origin_rgba,total_bytes);            
+            return TextureFileCreater::Write(origin_rgba,total_bytes);
         }
         else if(pixel_format->format==ColorFormat::BGRA4)
         {

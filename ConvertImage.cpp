@@ -1,4 +1,4 @@
-#include<hgl/log/log.h>
+﻿#include<hgl/log/log.h>
 #include"ImageLoader.h"
 #include"TextureFileCreater.h"
 #include"ImageConvertConfig.h"
@@ -9,7 +9,7 @@ bool ConvertImage(const OSString &filename,const OSString &new_filename,const Im
 
     if(!image.LoadFile(filename))
         return(false);
- 
+
     const uint channels=image.channels();
 
     if(channels<=0||channels>4)
@@ -23,7 +23,7 @@ bool ConvertImage(const OSString &filename,const OSString &new_filename,const Im
     uint height = image.height();
 
     AutoDelete<TextureFileCreater> tex_file_creater=CreateTFC(fmt,channels,cfg->provider);
-    
+
     if(!tex_file_creater->CreateTexFile(filename,new_filename,VK_IMAGE_VIEW_TYPE_2D))
     {
         GLogError(OS_TEXT("Create Texture failed."));

@@ -1,4 +1,4 @@
-#include "TextureFileCreater.h"
+﻿#include "TextureFileCreater.h"
 #include "ImageLoader.h"
 #include <hgl/log/log.h>
 #include <hgl/TypeFunc.h>
@@ -120,7 +120,7 @@ public:
             params.m_uastc = false;
             params.m_etc1s_quality_level = BASISU_QUALITY_MAX;
         }
-        
+
         params.m_compression_level = BASISU_DEFAULT_COMPRESSION_LEVEL;
         params.m_perceptual = true;  // Use perceptual color space
         params.m_mip_gen = false;    // We'll handle mipmaps ourselves

@@ -63,7 +63,7 @@ bool TextureFileCreater::CreateTexFile(const OSString &old_filename, const OSStr
     dos->WriteUint8(0);                                 //版本
     dos->WriteUint8(type);                              //类型
 
-	return(true);
+    return(true);
 }
 
 bool TextureFileCreater::WriteSize1D(const uint32 length)
@@ -126,15 +126,15 @@ bool TextureFileCreater::WritePixelFormat(const uint mip_level)
     }
     else
     {
-        if(!dos->WriteUint8(pixel_format->channels))return(false);						//颜色通道数
-        if(!dos->WriteUint8((uint8*)pixel_format->color, 4))return(false);				//颜色标记
-        if(!dos->WriteUint8(pixel_format->bits, 4))return(false);						//颜色位数
-        if(!dos->WriteUint8((uint8)pixel_format->type))return(false);					//数据类型
+        if(!dos->WriteUint8(pixel_format->channels))return(false);                        //颜色通道数
+        if(!dos->WriteUint8((uint8*)pixel_format->color, 4))return(false);                //颜色标记
+        if(!dos->WriteUint8(pixel_format->bits, 4))return(false);                        //颜色位数
+        if(!dos->WriteUint8((uint8)pixel_format->type))return(false);                    //数据类型
     }
 
     if(!dos->WriteUint8(mip_level))return(false);                                       //mipmaps级数
 
-	return(true);
+    return(true);
 }
 
 uint32 TextureFileCreater::Write(void *data,const uint total_bytes)

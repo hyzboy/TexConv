@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <Magick++.h>
 #include <hgl/log/Log.h>
@@ -20,7 +20,7 @@ using namespace hgl;
 // Define format constants compatible with DevIL
 #define IL_COLOUR_INDEX     0x1900
 #define IL_COLOR_INDEX      0x1900
-#define IL_ALPHA			0x1906
+#define IL_ALPHA            0x1906
 #define IL_RGB              0x1907
 #define IL_RGBA             0x1908
 #define IL_BGR              0x80E0
@@ -77,7 +77,7 @@ public:
     // Note: All Get* and To* methods allocate memory with 'new[]' that must be freed by caller with 'delete[]'
     void *ToRGB(ILuint type = IL_UNSIGNED_BYTE);
     void *ToGray(ILuint type = IL_UNSIGNED_BYTE);
-    
+
     void *GetR(ILuint type);
     void *GetRG(ILuint type) { return GetData(IL_LUMINANCE_ALPHA, type); }
     void *GetRGB(ILuint type) { return GetData(IL_RGB, type); }

@@ -1,4 +1,4 @@
-#ifndef HGL_GRAPH_BITMAP2D_INCLUDE
+﻿#ifndef HGL_GRAPH_BITMAP2D_INCLUDE
 #define HGL_GRAPH_BITMAP2D_INCLUDE
 
 #include<hgl/type/DataType.h>
@@ -268,7 +268,7 @@ namespace hgl
         class BitmapRGBA:public Bitmap
         {
             T *pixels;
-            
+
             RGBAOrder component_order;
 
         public:
@@ -329,7 +329,7 @@ namespace hgl
         using Bitmap##n##i  =Bitmap##t<int32>;  \
         using Bitmap##n##u  =Bitmap##t<uint32>; \
         using Bitmap##n##f  =Bitmap##t<float>;  \
-        using Bitmap##n##d  =Bitmap##t<double>; 
+        using Bitmap##n##d  =Bitmap##t<double>;
 
         DEF_BITMAP(1,R)
         DEF_BITMAP(2,RG)

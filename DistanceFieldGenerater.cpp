@@ -1,4 +1,4 @@
-#include<iostream>
+﻿#include<iostream>
 #include<hgl/type/DataType.h>
 #include<hgl/filesystem/FileSystem.h>
 #include"ImageLoader.h"
@@ -134,7 +134,7 @@ int os_main(int argc,os_char **argv)
         return 0;
     }
 
-    logger::InitLogger(OS_TEXT("DFGen"));    
+    logger::InitLogger(OS_TEXT("DFGen"));
 
     InitImageLibrary(nullptr);
 

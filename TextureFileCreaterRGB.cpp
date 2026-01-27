@@ -1,4 +1,4 @@
-#include"TextureFileCreater.h"
+﻿#include"TextureFileCreater.h"
 #include"ImageLoader.h"
 #include<hgl/log/log.h>
 #include<hgl/color/ColorFormat.h>
@@ -42,11 +42,11 @@ public:
     }
 
 public:
- 
+
     uint32 Write() override
     {
         const uint total_bytes=(pixel_format->total_bits*image->pixel_total())>>3;
-        
+
         LogInfo("Convert Image To: "+AnsiString::numberOf(image->width())+"x"+AnsiString::numberOf(image->height())+" "+AnsiString::numberOf(total_bytes)+" bytes.");
 
         if(pixel_format->format==ColorFormat::RGB32U

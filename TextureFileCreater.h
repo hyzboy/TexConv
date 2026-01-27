@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include"ImageLoader.h"
 #include"pixel_format.h"
@@ -36,7 +36,7 @@ public:
     TextureFileCreater(const PixelFormat *pf);
     virtual ~TextureFileCreater();
 
-	virtual bool CreateTexFile(const OSString &, const OSString &, const VkImageViewType &);
+    virtual bool CreateTexFile(const OSString &, const OSString &, const VkImageViewType &);
 
     virtual bool WriteSize1D(const uint32 length);
     virtual bool WriteSize2D(const uint32 width,const uint32 height);
@@ -47,7 +47,7 @@ public:
             bool WriteSizeCubeArray(const uint32 width,const uint32 height,const uint32 layers){return WriteSize2DArray(width,height,layers);}
 
     virtual bool WritePixelFormat(const uint miplevel);
-    
+
     virtual bool InitFormat(ImageLoader *)=0;
     virtual uint32 Write()=0;
 

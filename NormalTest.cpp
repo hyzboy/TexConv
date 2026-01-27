@@ -1,4 +1,4 @@
-#include<iostream>
+﻿#include<iostream>
 #include"ImageLoader.h"
 #include<hgl/type/DataType.h>
 #include<hgl/filesystem/FileSystem.h>
@@ -34,7 +34,7 @@ int main(int argc,char **argv)
         std::cout<<"open source file failed!"<<std::endl;
         return(1);
     }
-    
+
     uint8 *rgb=(uint8 *)rgb_image.GetRGB(IMAGE_UNSIGNED_BYTE);
 
     const uint pixels=rgb_image.pixel_total();

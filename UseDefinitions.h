@@ -1,4 +1,4 @@
-//==============================================================================
+﻿//==============================================================================
 // Copyright (c) 2007-2020    Advanced Micro Devices, Inc. All rights reserved.
 // Copyright (c) 2004-2006    ATI Technologies Inc.
 //
@@ -45,7 +45,7 @@
 //#define USE_CPU_PERFORMANCE_COUNTERS               // Enable to use performance monitoring with CPU high precision counters in place of GPU query performance counters
 #endif
 
-//#define TEST_CMP_CORE_DECODER                       //  Test CMP_Core Decoders using Compressonator SDK Decoders, 
+//#define TEST_CMP_CORE_DECODER                       //  Test CMP_Core Decoders using Compressonator SDK Decoders,
 #define USE_QTWEBKIT                                  //  Enable Qt Webengine interfaces for GUI welcome page
 //#define BC7_DEBUG_TO_RESULTS_TXT                    //  Send debug info to a results text file
 //#define DXT5_COMPDEBUGGER                           //  Remote connect data to Comp Debugger views
@@ -56,7 +56,7 @@
 //#define BC6H_DECODE_DEBUG                           //  Enables debug info on decoder
 //#define GT_COMPDEBUGGER                             //  Remote connect data to Comp Debugger views
 
-#ifndef ENABLE_MAKE_COMPATIBLE_API  
+#ifndef ENABLE_MAKE_COMPATIBLE_API
 #define ENABLE_MAKE_COMPATIBLE_API  //  Byte<->Float to make all source and dest compatible
 #endif
 
@@ -77,7 +77,7 @@
 #define USE_ETCPACK                                 // Use ETCPack for ETC2 else use CModel code!
 
 // todo: recommended to use default setting for now as the settings for different draco level may produce corrupted textures.
-// #define USE_MESH_DRACO_SETTING                   // Expose draco settings for draco mesh compression, 
+// #define USE_MESH_DRACO_SETTING                   // Expose draco settings for draco mesh compression,
                                                     // if disabled default setting will be used for mesh compression
 
 // #define USE_GLTF2_MIPSET                         // Enable Image Transcode & Compression support for GLTF files using TextureIO

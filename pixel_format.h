@@ -65,7 +65,7 @@ enum class ColorFormat
 enum class VulkanBaseType
 {
     NONE=0,
-    
+
     UINT,
     SINT,
     UNORM,

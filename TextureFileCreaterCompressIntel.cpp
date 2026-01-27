@@ -1,4 +1,4 @@
-#include"TextureFileCreater.h"
+﻿#include"TextureFileCreater.h"
 #include"ImageLoader.h"
 #include<hgl/log/log.h>
 #include"ISPCTextureCompressor/ispc_texcomp/ispc_texcomp.h"
@@ -24,7 +24,7 @@ public:
 
         channels=image->channels();
         type=image->type();
-        
+
         constexpr char fmt_name_list[][8]=
         {
             "BC1RGB",
@@ -62,7 +62,7 @@ public:
             LogError(OS_TEXT("unknow type: %d"), type);
             return(false);
         }
-        
+
         if(channels==1)
         {
             image->ConvertToLum(type);
@@ -201,7 +201,7 @@ public:
         msg += " ";
         msg += AnsiString::numberOf((uint)dst_size);
         msg += " bytes.";
-        
+
         LogInfo(msg.c_str());
 
         uint32 result = TextureFileCreater::Write(dst, (uint)dst_size);

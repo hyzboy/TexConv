@@ -8,7 +8,7 @@ namespace hgl
     constexpr const char *VulkanNumberTypeName[]=
     {
         "NONE",
-        
+
         "UINT",
         "SINT",
         "UNORM",

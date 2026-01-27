@@ -1,4 +1,4 @@
-#include"Image2D.h"
+﻿#include"Image2D.h"
 
 const uint GetStride(const enum class PixelDataType type)
 {
@@ -6,7 +6,7 @@ const uint GetStride(const enum class PixelDataType type)
 
     return stride[(size_t)type];
 }
-   
+
 Image2D::Image2D(const uint w,const uint h,const uint c,const PixelDataType &pdt,void *ptr)
 {
     width=w;
@@ -67,7 +67,7 @@ struct HalfImageImple:public HalfImage
 Image2D *Image2D::CreateHalfImage()
 {
     HalfImage *hi;
-    
+
     if(type==PixelDataType::U8 )hi=new HalfImageImple<uint8>;else
     if(type==PixelDataType::U16)hi=new HalfImageImple<uint16>;else
     if(type==PixelDataType::U32)hi=new HalfImageImple<uint32>;else
