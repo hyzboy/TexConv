@@ -163,7 +163,7 @@ int os_main(int argc,os_char **argv)
 
     os_out <<(use_alpha?OS_TEXT("use alpha data."):OS_TEXT("use luminance data."))<<std::endl;
 
-    const uint8 *op=(const uint8 *)(use_alpha?img.GetAlpha(IMAGE_UNSIGNED_BYTE):img.ToGray());
+    const uint8 *op=(const uint8 *)(use_alpha?img.GetAlpha(ImagePixelType::UInt8):img.ToGray());
 
     AutoDelete<df::Grid> grid1=new df::Grid(img.width(),img.height());
     AutoDelete<df::Grid> grid2=new df::Grid(img.width(),img.height());
@@ -220,7 +220,7 @@ int os_main(int argc,os_char **argv)
 
     os_out<<OS_TEXT("output: ")<<filename.c_str()<<std::endl;
 
-    SaveImageToFile(filename,img.width(),img.height(),1,IMAGE_UNSIGNED_BYTE,df_bitmap);
+    SaveImageToFile(filename,img.width(),img.height(),1,ImagePixelType::UInt8,df_bitmap);
 
     ShutdownImageLibrary();
     return(0);

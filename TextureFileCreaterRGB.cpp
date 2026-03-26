@@ -5,7 +5,7 @@
 
 class TextureFileCreaterRGB:public TextureFileCreater
 {
-    ILuint type;
+    ImagePixelType pixel_type;
 
 public:
 
@@ -21,16 +21,16 @@ public:
          ||pixel_format->format==ColorFormat::RGB32I
          ||pixel_format->format==ColorFormat::RGB32F)
         {
-            if(!ToILType(type,pixel_format->bits[0],pixel_format->type))
+            if(!ToImagePixelType(pixel_type,pixel_format->bits[0],pixel_format->type))
                 return(false);
         }
         else if(pixel_format->format==ColorFormat::RGB565)
         {
-            type=IL_UNSIGNED_BYTE;
+            pixel_type=ImagePixelType::UInt8;
         }
         else if(pixel_format->format==ColorFormat::B10GR11UF)
         {
-            type=IL_HALF;
+            pixel_type=ImagePixelType::Float16;
         }
         else
         {
@@ -38,7 +38,7 @@ public:
             return(false);
         }
 
-        return image->ConvertToRGB(type);
+        return image->ConvertToRGB(pixel_type);
     }
 
 public:
@@ -53,13 +53,13 @@ public:
          ||pixel_format->format==ColorFormat::RGB32I
          ||pixel_format->format==ColorFormat::RGB32F)
         {
-            void *origin_rgb=image->GetRGB(type);
+            void *origin_rgb=image->GetRGB(pixel_type);
 
             return TextureFileCreater::Write(origin_rgb,total_bytes);
         }
         else if(pixel_format->format==ColorFormat::RGB565)
         {
-            void *origin_rgb=image->GetRGB(IL_UNSIGNED_BYTE);
+            void *origin_rgb=image->GetRGB(ImagePixelType::UInt8);
 
             AutoDeleteArray<uint16> rgb565(image->pixel_total());
 
@@ -69,7 +69,7 @@ public:
         }
         else if(pixel_format->format==ColorFormat::B10GR11UF)
         {
-            void *origin_rgb=image->GetRGB(IL_HALF);
+            void *origin_rgb=image->GetRGB(ImagePixelType::Float16);
 
             AutoDeleteArray<uint32> b10gr11(image->pixel_total());
 

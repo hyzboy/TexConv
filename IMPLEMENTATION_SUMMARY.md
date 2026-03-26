@@ -89,14 +89,14 @@ uint width(), height(), depth(), channels()
 
 // Image manipulation
 bool Resize(uint, uint)
-void *ToRGB(ILuint type)
-void *ToGray(ILuint type)
+void *ToRGB(ImagePixelType pixel_type)
+void *ToGray(ImagePixelType pixel_type)
 
 // Channel extraction
-void *GetR/RG/RGB/RGBA/Lum/Alpha(ILuint type)
+void *GetR/RG/RGB/RGBA/Lum/Alpha(ImagePixelType pixel_type)
 
 // Format conversion
-bool ConvertToR/RG/RGB/RGBA(ILuint type)
+bool ConvertToR/RG/RGB/RGBA(ImagePixelType pixel_type)
 
 // Image saving
 bool SaveImageToFile(...)
@@ -106,15 +106,15 @@ bool SaveImageToFile(...)
 
 Both libraries use the same constant values:
 ```cpp
-IL_UNSIGNED_BYTE  = 0x1401  // 8-bit
-IL_UNSIGNED_SHORT = 0x1403  // 16-bit
-IL_FLOAT          = 0x1406  // 32-bit float
-IL_HALF           = 0x140B  // 16-bit float
+ImagePixelType::UInt8
+ImagePixelType::UInt16
+ImagePixelType::Float32
+ImagePixelType::Float16
 
-IL_RGB            = 0x1907
-IL_RGBA           = 0x1908
-IL_LUMINANCE      = 0x1909
-IL_ALPHA          = 0x1906
+ImageChannelLayout::RGB
+ImageChannelLayout::RGBA
+ImageChannelLayout::Gray
+ImageChannelLayout::Alpha
 ```
 
 ### Unicode Support

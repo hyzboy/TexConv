@@ -4,22 +4,22 @@
 
 using namespace hgl::filesystem;
 
-bool ToILType(ILuint &type,const uint8 bits,const VulkanBaseType cdt)
+bool ToImagePixelType(ImagePixelType &pixel_type,const uint8 bits,const VulkanBaseType cdt)
 {
-    constexpr ILuint target_type[3][(uint)VulkanBaseType::END_RANGE-1]=
+    constexpr ImagePixelType target_type[3][(uint)VulkanBaseType::END_RANGE-1]=
     {
                //UINT                SINT,       UNORM              SNORM       USCALE,SSCALE,  UFLOAT      SFLOAT
-        /*  8 */{IL_UNSIGNED_BYTE,   IL_BYTE,    IL_UNSIGNED_BYTE,  IL_BYTE,    0,0,            0,          0},
-        /* 16 */{IL_UNSIGNED_SHORT,  IL_SHORT,   IL_UNSIGNED_SHORT, IL_SHORT,   0,0,            IL_HALF,    IL_HALF},
-        /* 32 */{IL_UNSIGNED_INT,    IL_INT,     IL_UNSIGNED_INT,   IL_INT,     0,0,            IL_FLOAT,   IL_FLOAT}
+        /*  8 */{ImagePixelType::UInt8,  ImagePixelType::Int8,   ImagePixelType::UInt8,  ImagePixelType::Int8,   ImagePixelType{}, ImagePixelType{}, ImagePixelType{}, ImagePixelType{}},
+        /* 16 */{ImagePixelType::UInt16, ImagePixelType::Int16,  ImagePixelType::UInt16, ImagePixelType::Int16,  ImagePixelType{}, ImagePixelType{}, ImagePixelType::Float16, ImagePixelType::Float16},
+        /* 32 */{ImagePixelType::UInt32, ImagePixelType::Int32,  ImagePixelType::UInt32, ImagePixelType::Int32,  ImagePixelType{}, ImagePixelType{}, ImagePixelType::Float32, ImagePixelType::Float32}
     };
 
-    if(bits<=8  )type=target_type[0][(uint)cdt-1];else
-    if(bits<=16 )type=target_type[1][(uint)cdt-1];else
-    if(bits<=32 )type=target_type[2][(uint)cdt-1];else
+    if(bits<=8  )pixel_type=target_type[0][(uint)cdt-1];else
+    if(bits<=16 )pixel_type=target_type[1][(uint)cdt-1];else
+    if(bits<=32 )pixel_type=target_type[2][(uint)cdt-1];else
         return(false);
 
-    return(type);
+    return true;
 }
 
 TextureFileCreater::TextureFileCreater(const PixelFormat *pf)

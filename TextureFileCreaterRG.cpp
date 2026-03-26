@@ -4,7 +4,7 @@
 
 class TextureFileCreaterRG:public TextureFileCreater
 {
-    ILuint type;
+    ImagePixelType pixel_type;
 
 public:
 
@@ -16,10 +16,10 @@ public:
     {
         image=img;
 
-        if(!ToILType(type,pixel_format->bits[0],pixel_format->type))
+        if(!ToImagePixelType(pixel_type,pixel_format->bits[0],pixel_format->type))
             return(false);
 
-        return image->ConvertToRG(type);
+        return image->ConvertToRG(pixel_type);
     }
 
     uint32 Write() override
@@ -28,7 +28,7 @@ public:
 
         std::cout<<"Convert Image To: "<<image->width()<<"x"<<image->height()<<" "<<total_bytes<<" bytes."<<std::endl;
 
-        void *data=image->GetRG(type);
+        void *data=image->GetRG(pixel_type);
 
         //目前仅有R8UN,R16UN,R16F,R32U,R32I,R32F几种，都是8的整倍数，所以直接写
 

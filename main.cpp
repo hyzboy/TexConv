@@ -13,7 +13,9 @@ using namespace hgl;
 using namespace hgl::filesystem;
 using namespace hgl::util;
 
-bool sub_folder      =false;
+bool sub_folder     =false;
+bool force_grayscale=false;
+bool discard_alpha  =false;
 
 CompressionProvider  compression_privoder=CompressionProvider::Intel_ISPC;
 
@@ -58,6 +60,9 @@ protected:
 
         cfg->provider=compression_privoder;
 
+        cfg->force_grayscale=force_grayscale;
+        cfg->discard_alpha=discard_alpha;
+
         if(ConvertImage(fi.fullname,new_filename,cfg))
             ++convert_count;
     }
@@ -79,11 +84,12 @@ int os_main(int argc,os_char **argv)
     if(argc<=1)
     {
         std::cout<< "Command format:\n"
-                    "\tTexConv [/AMD|Intel] [/R:][/RG:][/RGB:][/RGBA:] [/ColorKey:rrggbb] [/s] [/mip] [/mono] [/discard_alpha] [/out:<new_name_without_ext>] <pathname or filename>\n"
+                    "\tTexConv [/AMD|Intel] [/R:][/RG:][/RGB:][/RGBA:] [/ColorKey:rrggbb] [/s] [/mip] [/grey] [/discard_alpha] [/out:<new_name_without_ext>] <pathname or filename>\n"
                     "\n"
                     "Params:\n"
                     "\t/s : proc sub-directory\n"
                     "\t/mip : generate mipmaps\n"
+                    "\t/grey: convert to grayscale\n"
                     "\t/out: : specify new output file base name (single file mode only, extension auto set)\n"
                     "\n";
 
@@ -99,6 +105,8 @@ int os_main(int argc,os_char **argv)
 
     if(cp.Contains(OS_TEXT("/s")))sub_folder=true;                     //检测是否处理子目录
     if(cp.Contains(OS_TEXT("/mip")))icc.gen_mipmaps=true;              //检测是否生成mipmaps
+    if(cp.Contains(OS_TEXT("/grey")))force_grayscale=true;              //检测是否强制转换为灰度图
+    if(cp.Contains(OS_TEXT("/discard_alpha")))discard_alpha=true;        //检测是否丢弃alpha通道
 
     if(cp.Contains(OS_TEXT("/AMD")))
     {

@@ -4,7 +4,7 @@
 
 class TextureFileCreaterR:public TextureFileCreater
 {
-    ILuint type;
+    ImagePixelType pixel_type;
 
 public:
 
@@ -16,10 +16,10 @@ public:
     {
         image=img;
 
-        if(!ToILType(type,pixel_format->bits[0],pixel_format->type))
+        if(!ToImagePixelType(pixel_type,pixel_format->bits[0],pixel_format->type))
             return(false);
 
-        return image->ConvertToR(type);
+        return image->ConvertToR(pixel_type);
     }
 
     uint32 Write() override
@@ -28,7 +28,7 @@ public:
 
         std::cout<<"Convert Image To: "<<image->width()<<"x"<<image->height()<<" "<<total_bytes<<" bytes."<<std::endl;
 
-        void *data=image->GetR(type);
+        void *data=image->GetR(pixel_type);
 
         if(!data)
             return(0);

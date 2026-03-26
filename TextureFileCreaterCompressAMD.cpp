@@ -31,7 +31,7 @@ public:
         image = img;
 
         channels=image->channels();
-        type=image->type();
+        type=(int)image->pixelType();
 
         constexpr CMP_FORMAT fmt_list[]=
         {
@@ -79,11 +79,11 @@ public:
 
 // std::cout<<"Compress Image to "<<target_fmt_name.c_str()<<" Format."<<std::endl;
 
-        if(type==IL_UNSIGNED_BYTE ){cf=CF_8bit; pixel_bytes=1;}else
-        if(type==IL_UNSIGNED_SHORT ){cf=CF_16bit; pixel_bytes=2;}else
-        if(type==IL_UNSIGNED_INT ){cf=CF_32bit; pixel_bytes=4;}else
-        if(type==IL_HALF ){cf=CF_Float16; pixel_bytes=2;}else
-        if(type==IL_FLOAT ){cf=CF_Float32; pixel_bytes=4;}else
+        if(type==(int)ImagePixelType::UInt8 ){cf=CF_8bit; pixel_bytes=1;}else
+        if(type==(int)ImagePixelType::UInt16 ){cf=CF_16bit; pixel_bytes=2;}else
+        if(type==(int)ImagePixelType::UInt32 ){cf=CF_32bit; pixel_bytes=4;}else
+        if(type==(int)ImagePixelType::Float16 ){cf=CF_Float16; pixel_bytes=2;}else
+        if(type==(int)ImagePixelType::Float32 ){cf=CF_Float32; pixel_bytes=4;}else
         {
             LogError(OS_TEXT("unknow type: %d"), type);
             return(false);
@@ -93,64 +93,64 @@ public:
         {
             tdt=TDT_R;
 
-            if(type==IL_UNSIGNED_BYTE )source_fmt=CMP_FORMAT_R_8;else
-            if(type==IL_UNSIGNED_SHORT )source_fmt=CMP_FORMAT_R_16;else
-            if(type==IL_HALF )source_fmt=CMP_FORMAT_R_16F;else
-            if(type==IL_FLOAT )source_fmt=CMP_FORMAT_R_32F;else
+            if(type==(int)ImagePixelType::UInt8 )source_fmt=CMP_FORMAT_R_8;else
+            if(type==(int)ImagePixelType::UInt16 )source_fmt=CMP_FORMAT_R_16;else
+            if(type==(int)ImagePixelType::Float16 )source_fmt=CMP_FORMAT_R_16F;else
+            if(type==(int)ImagePixelType::Float32 )source_fmt=CMP_FORMAT_R_32F;else
             {
                 LogError(OS_TEXT("channels1 unknow type: %d"), type);
                 return(false);
             }
 
-            image->ConvertToLum(type);
+            image->ConvertToLum((ImagePixelType)type);
         }
         else
         if(channels==2)
         {
             tdt=TDT_RG;
 
-            if(type==IL_UNSIGNED_BYTE )source_fmt=CMP_FORMAT_RG_8;else
-            if(type==IL_UNSIGNED_SHORT )source_fmt=CMP_FORMAT_RG_16;else
-            if(type==IL_HALF )source_fmt=CMP_FORMAT_RG_16F;else
-            if(type==IL_FLOAT )source_fmt=CMP_FORMAT_RG_32F;else
+            if(type==(int)ImagePixelType::UInt8 )source_fmt=CMP_FORMAT_RG_8;else
+            if(type==(int)ImagePixelType::UInt16 )source_fmt=CMP_FORMAT_RG_16;else
+            if(type==(int)ImagePixelType::Float16 )source_fmt=CMP_FORMAT_RG_16F;else
+            if(type==(int)ImagePixelType::Float32 )source_fmt=CMP_FORMAT_RG_32F;else
             {
                 LogError(OS_TEXT("channels2 unknow type: %d"), type);
                 return(false);
             }
 
-            image->ConvertToRG(type);
+            image->ConvertToRG((ImagePixelType)type);
         }
         else
         if(channels==3)
         {
             tdt=TDT_XRGB;
 
-            if(type==IL_UNSIGNED_BYTE )source_fmt=CMP_FORMAT_RGBA_8888;else
-            if(type==IL_UNSIGNED_SHORT )source_fmt=CMP_FORMAT_RGBA_16;else
-            if(type==IL_HALF )source_fmt=CMP_FORMAT_RGBA_16F;else
-            if(type==IL_FLOAT )source_fmt=CMP_FORMAT_RGBA_32F;else
+            if(type==(int)ImagePixelType::UInt8 )source_fmt=CMP_FORMAT_RGBA_8888;else
+            if(type==(int)ImagePixelType::UInt16 )source_fmt=CMP_FORMAT_RGBA_16;else
+            if(type==(int)ImagePixelType::Float16 )source_fmt=CMP_FORMAT_RGBA_16F;else
+            if(type==(int)ImagePixelType::Float32 )source_fmt=CMP_FORMAT_RGBA_32F;else
             {
                 LogError(OS_TEXT("channels3 unknow type: %d"), type);
                 return(false);
             }
 
-            image->ConvertToRGBA(type);
+            image->ConvertToRGBA((ImagePixelType)type);
         }
         else
         if(channels==4)
         {
             tdt=TDT_ARGB;
 
-            if(type==IL_UNSIGNED_BYTE )source_fmt=CMP_FORMAT_RGBA_8888;else
-            if(type==IL_UNSIGNED_SHORT )source_fmt=CMP_FORMAT_RGBA_16;else
-            if(type==IL_HALF )source_fmt=CMP_FORMAT_RGBA_16F;else
-            if(type==IL_FLOAT )source_fmt=CMP_FORMAT_RGBA_32F;else
+            if(type==(int)ImagePixelType::UInt8 )source_fmt=CMP_FORMAT_RGBA_8888;else
+            if(type==(int)ImagePixelType::UInt16 )source_fmt=CMP_FORMAT_RGBA_16;else
+            if(type==(int)ImagePixelType::Float16 )source_fmt=CMP_FORMAT_RGBA_16F;else
+            if(type==(int)ImagePixelType::Float32 )source_fmt=CMP_FORMAT_RGBA_32F;else
             {
                 LogError(OS_TEXT("channels4 unknow type: %d"), type);
                 return(false);
             }
 
-            image->ConvertToRGBA(type);
+            image->ConvertToRGBA((ImagePixelType)type);
         }
         else
         {
@@ -172,22 +172,22 @@ public:
 
         if(channels==1)
         {
-            source_data=image->GetLum(type);
+            source_data=image->GetLum((ImagePixelType)type);
         }
         else
         if(channels==2)
         {
-            source_data=image->GetRG(type);
+            source_data=image->GetRG((ImagePixelType)type);
         }
         else
         if(channels==3)
         {
-            source_data=image->GetRGBA(type);
+            source_data=image->GetRGBA((ImagePixelType)type);
         }
         else
         if(channels==4)
         {
-            source_data=image->GetRGBA(type);
+            source_data=image->GetRGBA((ImagePixelType)type);
         }
         else
         {

@@ -23,7 +23,7 @@ public:
         image = img;
 
         channels=image->channels();
-        type=image->type();
+        type=(int)image->pixelType();
 
         constexpr char fmt_name_list[][8]=
         {
@@ -53,11 +53,11 @@ public:
 
         LogInfo(msg.c_str());
 
-        if(type==IL_UNSIGNED_BYTE   ){pixel_bytes=1;}else
-        if(type==IL_UNSIGNED_SHORT  ){pixel_bytes=2;}else
-        if(type==IL_UNSIGNED_INT    ){pixel_bytes=4;}else
-        if(type==IL_HALF            ){pixel_bytes=2;}else
-        if(type==IL_FLOAT           ){pixel_bytes=4;}else
+        if(type==(int)ImagePixelType::UInt8   ){pixel_bytes=1;}else
+        if(type==(int)ImagePixelType::UInt16  ){pixel_bytes=2;}else
+        if(type==(int)ImagePixelType::UInt32  ){pixel_bytes=4;}else
+        if(type==(int)ImagePixelType::Float16 ){pixel_bytes=2;}else
+        if(type==(int)ImagePixelType::Float32 ){pixel_bytes=4;}else
         {
             LogError(OS_TEXT("unknow type: %d"), type);
             return(false);
@@ -65,23 +65,23 @@ public:
 
         if(channels==1)
         {
-            image->ConvertToLum(type);
+            image->ConvertToLum((ImagePixelType)type);
         }
         else
         if(channels==2)
         {
-            image->ConvertToRG(type);
+            image->ConvertToRG((ImagePixelType)type);
         }
         else
         if(channels==3)
         {
             // convert RGB -> RGBA for compressor convenience
-            image->ConvertToRGBA(type);
+            image->ConvertToRGBA((ImagePixelType)type);
         }
         else
         if(channels==4)
         {
-            image->ConvertToRGBA(type);
+            image->ConvertToRGBA((ImagePixelType)type);
         }
         else
         {
@@ -102,11 +102,11 @@ public:
         int src_channels = (channels>=3)?4:channels; // after ConvertToRGBA for 3/4
 
         if(src_channels==1)
-            source_data=image->GetLum(type);
+            source_data=image->GetLum((ImagePixelType)type);
         else if(src_channels==2)
-            source_data=image->GetRG(type);
+            source_data=image->GetRG((ImagePixelType)type);
         else // 3/4 -> GetRGBA
-            source_data=image->GetRGBA(type);
+            source_data=image->GetRGBA((ImagePixelType)type);
 
         if(!source_data)
         {

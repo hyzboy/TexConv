@@ -35,7 +35,7 @@ int main(int argc,char **argv)
         return(1);
     }
 
-    uint8 *rgb=(uint8 *)rgb_image.GetRGB(IMAGE_UNSIGNED_BYTE);
+    uint8 *rgb=(uint8 *)rgb_image.GetRGB(ImagePixelType::UInt8);
 
     const uint pixels=rgb_image.pixel_total();
 
@@ -51,7 +51,7 @@ int main(int argc,char **argv)
 
     filename+=OS_TEXT("_XY.png");
 
-    if(SaveImageToFile(filename,rgb_image.width(),rgb_image.height(),3,IMAGE_UNSIGNED_BYTE,rgb))
+    if(SaveImageToFile(filename,rgb_image.width(),rgb_image.height(),3,ImagePixelType::UInt8,rgb))
         std_cout<<OS_TEXT("Save To ")<<filename.c_str()<<OS_TEXT(" successed!")<<std::endl;
 
     ShutdownImageLibrary();

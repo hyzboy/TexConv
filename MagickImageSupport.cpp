@@ -10,56 +10,62 @@ using namespace hgl;
 
 namespace
 {
-    // Map ImageMagick storage type to our format constants
-    Magick::StorageType GetMagickStorageType(ILuint type)
+    Magick::StorageType GetMagickStorageType(ImagePixelType pixel_type)
     {
-        switch(type)
+        switch(pixel_type)
         {
-            case IL_UNSIGNED_BYTE:  return Magick::CharPixel;
-            case IL_UNSIGNED_SHORT: return Magick::ShortPixel;
-            case IL_FLOAT:          return Magick::FloatPixel;
-            case IL_HALF:           return Magick::ShortPixel; // Half needs special handling
+            case ImagePixelType::Int8:
+            case ImagePixelType::UInt8:   return Magick::CharPixel;
+            case ImagePixelType::Int16:
+            case ImagePixelType::UInt16:
+            case ImagePixelType::Float16: return Magick::ShortPixel;
+            case ImagePixelType::Int32:
+            case ImagePixelType::UInt32:  return Magick::LongPixel;
+            case ImagePixelType::Float32: return Magick::FloatPixel;
+            case ImagePixelType::Float64: return Magick::DoublePixel;
             default:                return Magick::CharPixel;
         }
     }
 
-    // Get channel map string for format
-    const char* GetChannelMap(ILuint format)
+    const char* GetChannelMap(ImageChannelLayout layout)
     {
-        switch(format)
+        switch(layout)
         {
-            case IL_RGB:            return "RGB";
-            case IL_RGBA:           return "RGBA";
-            case IL_LUMINANCE:      return "I";  // Intensity (grayscale)
-            case IL_LUMINANCE_ALPHA:return "IA";
-            case IL_ALPHA:          return "A";
+            case ImageChannelLayout::RGB:       return "RGB";
+            case ImageChannelLayout::RGBA:      return "RGBA";
+            case ImageChannelLayout::Gray:      return "I";
+            case ImageChannelLayout::GrayAlpha: return "IA";
+            case ImageChannelLayout::Alpha:     return "A";
             default:                return "RGB";
         }
     }
 
-    // Get number of channels for format
-    uint GetChannelCount(ILuint format)
+    uint GetChannelCount(ImageChannelLayout layout)
     {
-        switch(format)
+        switch(layout)
         {
-            case IL_RGB:            return 3;
-            case IL_RGBA:           return 4;
-            case IL_LUMINANCE:      return 1;
-            case IL_ALPHA:          return 1;
-            case IL_LUMINANCE_ALPHA:return 2;
+            case ImageChannelLayout::RGB:       return 3;
+            case ImageChannelLayout::RGBA:      return 4;
+            case ImageChannelLayout::Gray:      return 1;
+            case ImageChannelLayout::Alpha:     return 1;
+            case ImageChannelLayout::GrayAlpha: return 2;
             default:                return 3;
         }
     }
 
-    // Get bytes per pixel component
-    size_t GetBytesPerComponent(ILuint type)
+    size_t GetBytesPerComponent(ImagePixelType pixel_type)
     {
-        switch(type)
+        switch(pixel_type)
         {
-            case IL_UNSIGNED_BYTE:  return 1;
-            case IL_UNSIGNED_SHORT: return 2;
-            case IL_FLOAT:          return 4;
-            case IL_HALF:           return 2;
+            case ImagePixelType::Int8:
+            case ImagePixelType::UInt8:   return 1;
+            case ImagePixelType::Int16:
+            case ImagePixelType::UInt16:
+            case ImagePixelType::Float16: return 2;
+            case ImagePixelType::Int32:
+            case ImagePixelType::UInt32:
+            case ImagePixelType::Float32: return 4;
+            case ImagePixelType::Float64: return 8;
             default:                return 1;
         }
     }
@@ -164,8 +170,8 @@ MagickImage::MagickImage()
     , m_height(0)
     , m_depth(1)
     , m_channels(0)
-    , m_format(IL_RGB)
-    , m_type(IL_UNSIGNED_BYTE)
+    , m_layout(ImageChannelLayout::RGB)
+    , m_pixel_type(ImagePixelType::UInt8)
 {
 }
 
@@ -201,12 +207,12 @@ void MagickImage::Refresh()
         {
             if(m_image.alpha())
             {
-                m_format = IL_LUMINANCE_ALPHA;
+                m_layout = ImageChannelLayout::GrayAlpha;
                 m_channels = 2;
             }
             else
             {
-                m_format = IL_LUMINANCE;
+                m_layout = ImageChannelLayout::Gray;
                 m_channels = 1;
             }
         }
@@ -214,12 +220,12 @@ void MagickImage::Refresh()
         {
             if(m_image.alpha())
             {
-                m_format = IL_RGBA;
+                m_layout = ImageChannelLayout::RGBA;
                 m_channels = 4;
             }
             else
             {
-                m_format = IL_RGB;
+                m_layout = ImageChannelLayout::RGB;
                 m_channels = 3;
             }
         }
@@ -227,11 +233,11 @@ void MagickImage::Refresh()
         // Determine type based on depth
         size_t depth = m_image.depth();
         if(depth <= 8)
-            m_type = IL_UNSIGNED_BYTE;
+            m_pixel_type = ImagePixelType::UInt8;
         else if(depth <= 16)
-            m_type = IL_UNSIGNED_SHORT;
+            m_pixel_type = ImagePixelType::UInt16;
         else
-            m_type = IL_FLOAT;
+            m_pixel_type = ImagePixelType::Float32;
 
         LogInfo("Image info:");
         LogInfo("\t width: " + AnsiString::numberOf(m_width));
@@ -244,9 +250,9 @@ void MagickImage::Refresh()
     }
 }
 
-const ILuint MagickImage::bit() const
+const uint MagickImage::bit() const
 {
-    return m_channels * static_cast<uint>(GetBytesPerComponent(m_type)) * 8;
+    return m_channels * static_cast<uint>(GetBytesPerComponent(m_pixel_type)) * 8;
 }
 
 void MagickImage::Bind()
@@ -312,40 +318,38 @@ bool MagickImage::Resize(uint nw, uint nh)
     }
 }
 
-bool MagickImage::Convert(ILuint format, ILuint type)
+bool MagickImage::Convert(ImageChannelLayout layout, ImagePixelType pixel_type)
 {
-    if(m_format == format && m_type == type) return true;
+    if(m_layout == layout && m_pixel_type == pixel_type) return true;
 
     try
     {
-        // Convert image type
-        switch(format)
+        switch(layout)
         {
-            case IL_RGB:
+            case ImageChannelLayout::RGB:
                 m_image.type(Magick::TrueColorType);
                 m_image.alpha(false);
                 break;
-            case IL_RGBA:
+            case ImageChannelLayout::RGBA:
                 m_image.type(Magick::TrueColorAlphaType);
                 m_image.alpha(true);
                 break;
-            case IL_LUMINANCE:
+            case ImageChannelLayout::Gray:
                 m_image.type(Magick::GrayscaleType);
                 m_image.alpha(false);
                 break;
-            case IL_LUMINANCE_ALPHA:
+            case ImageChannelLayout::GrayAlpha:
                 m_image.type(Magick::GrayscaleAlphaType);
                 m_image.alpha(true);
                 break;
-            case IL_ALPHA:
-                // Extract only alpha channel
+            case ImageChannelLayout::Alpha:
                 m_image.alpha(true);
                 break;
         }
 
-        m_format = format;
-        m_type = type;
-        m_channels = GetChannelCount(format);
+        m_layout = layout;
+        m_pixel_type = pixel_type;
+        m_channels = GetChannelCount(layout);
 
         return true;
     }
@@ -356,21 +360,21 @@ bool MagickImage::Convert(ILuint format, ILuint type)
     }
 }
 
-void *MagickImage::GetData(ILuint format, ILuint type)
+void *MagickImage::GetData(ImageChannelLayout layout, ImagePixelType pixel_type)
 {
-    if(m_format != format || m_type != type)
+    if(m_layout != layout || m_pixel_type != pixel_type)
     {
-        if(!Convert(format, type))
+        if(!Convert(layout, pixel_type))
             return nullptr;
     }
 
     try
     {
-        const char* map = GetChannelMap(format);
-        Magick::StorageType storage = GetMagickStorageType(type);
-        uint channels = GetChannelCount(format);
+        const char* map = GetChannelMap(layout);
+        Magick::StorageType storage = GetMagickStorageType(pixel_type);
+        uint channels = GetChannelCount(layout);
 
-        size_t size = m_width * m_height * channels * GetBytesPerComponent(type);
+        size_t size = m_width * m_height * channels * GetBytesPerComponent(pixel_type);
         void *data = new uint8_t[size];
 
         m_image.write(0, 0, m_width, m_height, map, storage, data);
@@ -384,49 +388,49 @@ void *MagickImage::GetData(ILuint format, ILuint type)
     }
 }
 
-void *MagickImage::ToRGB(ILuint type)
+void *MagickImage::ToRGB(ImagePixelType pixel_type)
 {
-    if(m_format != IL_RGB)
-        Convert(IL_RGB, type);
+    if(m_layout != ImageChannelLayout::RGB)
+        Convert(ImageChannelLayout::RGB, pixel_type);
 
-    return GetData(IL_RGB, type);
+    return GetData(ImageChannelLayout::RGB, pixel_type);
 }
 
-void *MagickImage::ToGray(ILuint type)
+void *MagickImage::ToGray(ImagePixelType pixel_type)
 {
-    if(m_format != IL_LUMINANCE)
-        Convert(IL_LUMINANCE, type);
+    if(m_layout != ImageChannelLayout::Gray)
+        Convert(ImageChannelLayout::Gray, pixel_type);
 
-    return GetData(IL_LUMINANCE, type);
+    return GetData(ImageChannelLayout::Gray, pixel_type);
 }
 
-void *MagickImage::GetR(ILuint type)
+void *MagickImage::GetR(ImagePixelType pixel_type)
 {
-    if(m_format == IL_ALPHA)
-        return GetAlpha(type);
+    if(m_layout == ImageChannelLayout::Alpha)
+        return GetAlpha(pixel_type);
 
-    if(m_format == IL_LUMINANCE)
+    if(m_layout == ImageChannelLayout::Gray)
     {
-        if(m_type != type)
+        if(m_pixel_type != pixel_type)
         {
-            if(!Convert(m_format, type))
+            if(!Convert(m_layout, pixel_type))
                 return nullptr;
         }
-        return GetData(IL_LUMINANCE, type);
+        return GetData(ImageChannelLayout::Gray, pixel_type);
     }
 
     return nullptr;
 }
 
-void *MagickImage::GetAlpha(ILuint type)
+void *MagickImage::GetAlpha(ImagePixelType pixel_type)
 {
     try
     {
         if(!m_image.alpha())
             return nullptr;
 
-        Magick::StorageType storage = GetMagickStorageType(type);
-        size_t size = m_width * m_height * GetBytesPerComponent(type);
+        Magick::StorageType storage = GetMagickStorageType(pixel_type);
+        size_t size = m_width * m_height * GetBytesPerComponent(pixel_type);
         void *data = new uint8_t[size];
 
         m_image.write(0, 0, m_width, m_height, "A", storage, data);
@@ -450,9 +454,9 @@ void MixRGBA(T *rgba, T *alpha, int size)
     }
 }
 
-void *MagickImage::GetRGBA(ILuint type)
+void *MagickImage::GetRGBA(ImagePixelType pixel_type)
 {
-    void *data = GetData(IL_RGBA, type);
+    void *data = GetData(ImageChannelLayout::RGBA, pixel_type);
 
     if(!data)
         return nullptr;
@@ -461,15 +465,15 @@ void *MagickImage::GetRGBA(ILuint type)
     return data;
 }
 
-constexpr ILuint format_by_channel[] =
+constexpr ImageChannelLayout layout_by_channel[] =
 {
-    IL_LUMINANCE,
-    IL_LUMINANCE_ALPHA,
-    IL_RGB,
-    IL_RGBA,
+    ImageChannelLayout::Gray,
+    ImageChannelLayout::GrayAlpha,
+    ImageChannelLayout::RGB,
+    ImageChannelLayout::RGBA,
 };
 
-bool SaveImageToFile(const OSString &filename, ILuint w, ILuint h, const float scale, ILuint c, ILuint t, void *data)
+bool SaveImageToFile(const OSString &filename, uint w, uint h, const float scale, uint c, ImagePixelType pixel_type, void *data)
 {
     if(filename.IsEmpty()) return false;
     if(w <= 0 || h <= 0) return false;
@@ -478,8 +482,8 @@ bool SaveImageToFile(const OSString &filename, ILuint w, ILuint h, const float s
 
     try
     {
-        const char* map = GetChannelMap(format_by_channel[c - 1]);
-        Magick::StorageType storage = GetMagickStorageType(t);
+        const char* map = GetChannelMap(layout_by_channel[c - 1]);
+        Magick::StorageType storage = GetMagickStorageType(pixel_type);
 
         Magick::Image image;
         image.read(w, h, map, storage, data);

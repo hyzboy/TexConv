@@ -6,30 +6,27 @@
 
 using namespace hgl;
 
-// Define type constants compatible with DevIL
-#define IL_BYTE           0x1400
-#define IL_UNSIGNED_BYTE  0x1401
-#define IL_SHORT          0x1402
-#define IL_UNSIGNED_SHORT 0x1403
-#define IL_INT            0x1404
-#define IL_UNSIGNED_INT   0x1405
-#define IL_FLOAT          0x1406
-#define IL_DOUBLE         0x140A
-#define IL_HALF           0x140B
+enum class ImagePixelType : uint8
+{
+    Int8,
+    UInt8,
+    Int16,
+    UInt16,
+    Int32,
+    UInt32,
+    Float16,
+    Float32,
+    Float64,
+};
 
-// Define format constants compatible with DevIL
-#define IL_COLOUR_INDEX     0x1900
-#define IL_COLOR_INDEX      0x1900
-#define IL_ALPHA            0x1906
-#define IL_RGB              0x1907
-#define IL_RGBA             0x1908
-#define IL_BGR              0x80E0
-#define IL_BGRA             0x80E1
-#define IL_LUMINANCE        0x1909
-#define IL_LUMINANCE_ALPHA  0x190A
-
-// Type alias for compatibility
-typedef unsigned int ILuint;
+enum class ImageChannelLayout : uint8
+{
+    Alpha,
+    Gray,
+    GrayAlpha,
+    RGB,
+    RGBA,
+};
 
 class MagickImage
 {
@@ -41,22 +38,22 @@ private:
     uint m_height;
     uint m_depth;
     uint m_channels;
-    ILuint m_format;
-    ILuint m_type;
+    ImageChannelLayout m_layout;
+    ImagePixelType m_pixel_type;
 
     void Refresh();
-    bool Convert(ILuint format, ILuint type);
-    void *GetData(ILuint format, ILuint type);
+    bool Convert(ImageChannelLayout layout, ImagePixelType pixel_type);
+    void *GetData(ImageChannelLayout layout, ImagePixelType pixel_type);
 
 public:
-    const ILuint width()  const { return m_width; }
-    const ILuint height() const { return m_height; }
-    const ILuint depth()  const { return m_depth; }
-    const ILuint bit()    const;
-    const ILuint format() const { return m_format; }
-    const ILuint type()   const { return m_type; }
+    const uint width()  const { return m_width; }
+    const uint height() const { return m_height; }
+    const uint depth()  const { return m_depth; }
+    const uint bit()    const;
+    const ImageChannelLayout layout() const { return m_layout; }
+    const ImagePixelType pixelType()   const { return m_pixel_type; }
 
-    const ILuint pixel_total() const { return width() * height() * depth(); }
+    const uint pixel_total() const { return width() * height() * depth(); }
 
 public:
     const uint channels() const { return m_channels; }
@@ -75,31 +72,31 @@ public:
 
     // Pixel data accessors
     // Note: All Get* and To* methods allocate memory with 'new[]' that must be freed by caller with 'delete[]'
-    void *ToRGB(ILuint type = IL_UNSIGNED_BYTE);
-    void *ToGray(ILuint type = IL_UNSIGNED_BYTE);
+    void *ToRGB(ImagePixelType pixel_type = ImagePixelType::UInt8);
+    void *ToGray(ImagePixelType pixel_type = ImagePixelType::UInt8);
 
-    void *GetR(ILuint type);
-    void *GetRG(ILuint type) { return GetData(IL_LUMINANCE_ALPHA, type); }
-    void *GetRGB(ILuint type) { return GetData(IL_RGB, type); }
-    void *GetRGBA(ILuint type);
-    void *GetLum(ILuint type) { return GetData(IL_LUMINANCE, type); }
-    void *GetAlpha(ILuint type);
+    void *GetR(ImagePixelType pixel_type);
+    void *GetRG(ImagePixelType pixel_type) { return GetData(ImageChannelLayout::GrayAlpha, pixel_type); }
+    void *GetRGB(ImagePixelType pixel_type) { return GetData(ImageChannelLayout::RGB, pixel_type); }
+    void *GetRGBA(ImagePixelType pixel_type);
+    void *GetLum(ImagePixelType pixel_type) { return GetData(ImageChannelLayout::Gray, pixel_type); }
+    void *GetAlpha(ImagePixelType pixel_type);
 
-    bool ConvertToR(ILuint type) { return (m_format == IL_LUMINANCE ? Convert(IL_LUMINANCE, type) : Convert(IL_ALPHA, type)); }
-    bool ConvertToRG(ILuint type) { return Convert(IL_LUMINANCE_ALPHA, type); }
-    bool ConvertToRGB(ILuint type) { return Convert(IL_RGB, type); }
-    bool ConvertToRGBA(ILuint type) { return Convert(IL_RGBA, type); }
-    bool ConvertToLum(ILuint type) { return Convert(IL_LUMINANCE, type); }
+    bool ConvertToR(ImagePixelType pixel_type) { return (m_layout == ImageChannelLayout::Gray ? Convert(ImageChannelLayout::Gray, pixel_type) : Convert(ImageChannelLayout::Alpha, pixel_type)); }
+    bool ConvertToRG(ImagePixelType pixel_type) { return Convert(ImageChannelLayout::GrayAlpha, pixel_type); }
+    bool ConvertToRGB(ImagePixelType pixel_type) { return Convert(ImageChannelLayout::RGB, pixel_type); }
+    bool ConvertToRGBA(ImagePixelType pixel_type) { return Convert(ImageChannelLayout::RGBA, pixel_type); }
+    bool ConvertToLum(ImagePixelType pixel_type) { return Convert(ImageChannelLayout::Gray, pixel_type); }
 };
 
-bool SaveImageToFile(const OSString &filename, ILuint w, ILuint h, const float scale, ILuint c, ILuint t, void *data);
+bool SaveImageToFile(const OSString &filename, uint w, uint h, const float scale, uint c, ImagePixelType pixel_type, void *data);
 
-inline bool SaveImageToFile(const OSString &filename, ILuint w, ILuint h, ILuint c, ILuint t, void *data)
+inline bool SaveImageToFile(const OSString &filename, uint w, uint h, uint c, ImagePixelType pixel_type, void *data)
 {
-    return SaveImageToFile(filename, w, h, 1.0, c, t, data);
+    return SaveImageToFile(filename, w, h, 1.0f, c, pixel_type, data);
 }
 
-inline bool SaveImageToFile(const OSString &filename, ILuint w, ILuint h, ILuint c, void *data)
+inline bool SaveImageToFile(const OSString &filename, uint w, uint h, uint c, void *data)
 {
-    return SaveImageToFile(filename, w, h, 1.0, c, IL_UNSIGNED_BYTE, data);
+    return SaveImageToFile(filename, w, h, 1.0f, c, ImagePixelType::UInt8, data);
 }

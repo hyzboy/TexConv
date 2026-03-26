@@ -24,22 +24,22 @@ int convert(const OSString &filename)
 
     if(channels==4)
     {
-        source=(float *)hdr.GetRGBA(IMAGE_FLOAT);
+        source=(float *)hdr.GetRGBA(ImagePixelType::Float32);
     }
     else
     if(channels==3)
     {
-        source=(float *)hdr.GetRGB(IMAGE_FLOAT);
+        source=(float *)hdr.GetRGB(ImagePixelType::Float32);
     }
     else
     if(channels==2)
     {
-        source=(float *)hdr.GetRG(IMAGE_FLOAT);
+        source=(float *)hdr.GetRG(ImagePixelType::Float32);
     }
     else
     if(channels==1)
     {
-        source=(float *)hdr.GetR(IMAGE_FLOAT);
+        source=(float *)hdr.GetR(ImagePixelType::Float32);
     }
     else
     {
@@ -59,7 +59,7 @@ int convert(const OSString &filename)
 
     const OSString png_filename=ReplaceExtName<os_char>(filename,OS_TEXT("png"));
 
-    if(!SaveImageToFile(png_filename,width,height,channels,IMAGE_UNSIGNED_SHORT,dest))
+    if(!SaveImageToFile(png_filename,width,height,channels,ImagePixelType::UInt16,dest))
     {
         delete[] dest;
         os_err<<OS_TEXT("Save to file failed: ")<<png_filename.c_str()<<std::endl;

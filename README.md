@@ -178,10 +178,10 @@ Magick++-config --libs
 
 ### 像素数据类型支持
 
-- `IMAGE_UNSIGNED_BYTE` - 8位无符号整数
-- `IMAGE_UNSIGNED_SHORT` - 16位无符号整数
-- `IMAGE_FLOAT` - 32位浮点数
-- `IMAGE_HALF` - 16位半精度浮点数
+- `ImagePixelType::UInt8` - 8位无符号整数
+- `ImagePixelType::UInt16` - 16位无符号整数
+- `ImagePixelType::Float32` - 32位浮点数
+- `ImagePixelType::Float16` - 16位半精度浮点数
 
 ## 故障排除
 

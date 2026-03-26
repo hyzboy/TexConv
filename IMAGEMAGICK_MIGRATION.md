@@ -96,26 +96,26 @@ uint channels();
 bool Resize(uint width, uint height);
 
 // 格式转换
-void *ToRGB(ILuint type);
-void *ToGray(ILuint type);
+void *ToRGB(ImagePixelType pixel_type);
+void *ToGray(ImagePixelType pixel_type);
 
 // 通道提取
-void *GetR(ILuint type);
-void *GetRG(ILuint type);
-void *GetRGB(ILuint type);
-void *GetRGBA(ILuint type);
-void *GetLum(ILuint type);
-void *GetAlpha(ILuint type);
+void *GetR(ImagePixelType pixel_type);
+void *GetRG(ImagePixelType pixel_type);
+void *GetRGB(ImagePixelType pixel_type);
+void *GetRGBA(ImagePixelType pixel_type);
+void *GetLum(ImagePixelType pixel_type);
+void *GetAlpha(ImagePixelType pixel_type);
 
 // 通道转换
-bool ConvertToR(ILuint type);
-bool ConvertToRG(ILuint type);
-bool ConvertToRGB(ILuint type);
-bool ConvertToRGBA(ILuint type);
+bool ConvertToR(ImagePixelType pixel_type);
+bool ConvertToRG(ImagePixelType pixel_type);
+bool ConvertToRGB(ImagePixelType pixel_type);
+bool ConvertToRGBA(ImagePixelType pixel_type);
 
 // 图像保存
-bool SaveImageToFile(const OSString &filename, ILuint w, ILuint h, 
-                     ILuint channels, ILuint type, void *data);
+bool SaveImageToFile(const OSString &filename, uint w, uint h, 
+                     uint channels, ImagePixelType pixel_type, void *data);
 ```
 
 ### 初始化差异
@@ -150,16 +150,16 @@ ShutdownImageLibrary();
 两个库都使用相同的类型常量值：
 
 ```cpp
-IL_UNSIGNED_BYTE    // 8位无符号整数
-IL_UNSIGNED_SHORT   // 16位无符号整数  
-IL_FLOAT            // 32位浮点数
-IL_HALF             // 16位半精度浮点数
+ImagePixelType::UInt8     // 8位无符号整数
+ImagePixelType::UInt16    // 16位无符号整数
+ImagePixelType::Float32   // 32位浮点数
+ImagePixelType::Float16   // 16位半精度浮点数
 
-IL_RGB              // RGB格式
-IL_RGBA             // RGBA格式
-IL_LUMINANCE        // 灰度格式
-IL_ALPHA            // Alpha通道
-IL_LUMINANCE_ALPHA  // 灰度+Alpha
+ImageChannelLayout::RGB        // RGB格式
+ImageChannelLayout::RGBA       // RGBA格式
+ImageChannelLayout::Gray       // 灰度格式
+ImageChannelLayout::Alpha      // Alpha通道
+ImageChannelLayout::GrayAlpha  // 灰度+Alpha
 ```
 
 ## 性能比较
@@ -249,10 +249,10 @@ int main() {
     img.Resize(w / 2, h / 2);
     
     // 获取像素数据
-    void *rgb = img.GetRGB(IMAGE_UNSIGNED_BYTE);
+    void *rgb = img.GetRGB(ImagePixelType::UInt8);
     
     // 保存图像
-    SaveImageToFile("output.png", w/2, h/2, 3, IMAGE_UNSIGNED_BYTE, rgb);
+    SaveImageToFile("output.png", w/2, h/2, 3, ImagePixelType::UInt8, rgb);
     
     // 清理
     ShutdownImageLibrary();

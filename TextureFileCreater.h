@@ -9,7 +9,7 @@
 
 using namespace hgl;
 
-bool ToILType(ILuint &type,const uint8 bits,const VulkanBaseType cdt);
+bool ToImagePixelType(ImagePixelType &pixel_type,const uint8 bits,const VulkanBaseType cdt);
 
 class TextureFileCreater
 {

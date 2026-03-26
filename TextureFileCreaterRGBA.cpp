@@ -5,7 +5,7 @@
 
 class TextureFileCreaterRGBA:public TextureFileCreater
 {
-    ILuint type;
+    ImagePixelType pixel_type;
 
 public:
 
@@ -24,21 +24,21 @@ public:
          ||pixel_format->format==ColorFormat::RGBA32I
          ||pixel_format->format==ColorFormat::RGBA32F)
         {
-            if(!ToILType(type,pixel_format->bits[0],pixel_format->type))
+            if(!ToImagePixelType(pixel_type,pixel_format->bits[0],pixel_format->type))
                 return(false);
         }
         else if(pixel_format->format==ColorFormat::RGBA4
               ||pixel_format->format==ColorFormat::BGRA4)
         {
-            type=IL_UNSIGNED_BYTE;
+            pixel_type=ImagePixelType::UInt8;
         }
         else if(pixel_format->format==ColorFormat::A1RGB5)
         {
-            type=IL_UNSIGNED_BYTE;
+            pixel_type=ImagePixelType::UInt8;
         }
         else if(pixel_format->format==ColorFormat::A2BGR10)
         {
-            type=IL_UNSIGNED_SHORT;
+            pixel_type=ImagePixelType::UInt16;
         }
         else
         {
@@ -46,7 +46,7 @@ public:
             return(false);
         }
 
-        return image->ConvertToRGBA(type);
+        return image->ConvertToRGBA(pixel_type);
     }
 
 public:
@@ -69,13 +69,13 @@ public:
          ||pixel_format->format==ColorFormat::RGBA32I
          ||pixel_format->format==ColorFormat::RGBA32F)
         {
-            void *origin_rgba=image->GetRGBA(type);
+            void *origin_rgba=image->GetRGBA(pixel_type);
 
             return TextureFileCreater::Write(origin_rgba,total_bytes);
         }
         else if(pixel_format->format==ColorFormat::ABGR8)
         {
-            uint32 *origin_rgba=(uint32 *)(image->GetRGBA(type));
+            uint32 *origin_rgba=(uint32 *)(image->GetRGBA(pixel_type));
 
             EndianSwap<uint32>(origin_rgba,image->pixel_total());
 
@@ -83,7 +83,7 @@ public:
         }
         else if(pixel_format->format==ColorFormat::BGRA4)
         {
-            void *origin_rgba=image->GetRGBA(IL_UNSIGNED_BYTE);
+            void *origin_rgba=image->GetRGBA(ImagePixelType::UInt8);
 
             AutoDeleteArray<uint16> bgra4(image->pixel_total());
 
@@ -93,7 +93,7 @@ public:
         }
         else if(pixel_format->format==ColorFormat::RGBA4)
         {
-            void *origin_rgba=image->GetRGBA(IL_UNSIGNED_BYTE);
+            void *origin_rgba=image->GetRGBA(ImagePixelType::UInt8);
 
             AutoDeleteArray<uint16> rgba4(image->pixel_total());
 
@@ -103,7 +103,7 @@ public:
         }
         else if(pixel_format->format==ColorFormat::A1RGB5)
         {
-            void *origin_rgba=image->GetRGBA(IL_UNSIGNED_BYTE);
+            void *origin_rgba=image->GetRGBA(ImagePixelType::UInt8);
 
             AutoDeleteArray<uint16> a1_rgb5(image->pixel_total());
 
@@ -113,7 +113,7 @@ public:
         }
         else if(pixel_format->format==ColorFormat::A2BGR10)
         {
-            void *origin_rgba=image->GetRGBA(IL_UNSIGNED_SHORT);
+            void *origin_rgba=image->GetRGBA(ImagePixelType::UInt16);
 
             AutoDeleteArray<uint32> a2_bgr10(image->pixel_total());
 

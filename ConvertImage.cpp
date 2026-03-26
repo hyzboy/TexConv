@@ -10,6 +10,11 @@ bool ConvertImage(const OSString &filename,const OSString &new_filename,const Im
     if(!image.LoadFile(filename))
         return(false);
 
+    if(cfg->force_grayscale)
+    {
+        
+    }
+
     const uint channels=image.channels();
 
     if(channels<=0||channels>4)
