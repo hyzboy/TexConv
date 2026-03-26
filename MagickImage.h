@@ -56,7 +56,13 @@ public:
     const uint pixel_total() const { return width() * height() * depth(); }
 
 public:
+
     const uint channels() const { return m_channels; }
+
+    bool isGray() const { return m_layout==ImageChannelLayout::Gray; }
+    bool isGrayAlpha() const { return m_layout==ImageChannelLayout::GrayAlpha; }
+    bool isRGBA() const { return m_layout == ImageChannelLayout::RGBA; }
+    bool hasAlpha() const { return m_image.alpha(); }
 
 public:
     MagickImage();

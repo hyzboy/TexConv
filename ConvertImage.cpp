@@ -12,7 +12,27 @@ bool ConvertImage(const OSString &filename,const OSString &new_filename,const Im
 
     if(cfg->force_grayscale)
     {
-        
+        if(image.hasAlpha()||!cfg->discard_alpha)
+        {
+            image.ConvertToRG(image.pixelType());
+        }
+        else
+        {
+            image.ConvertToLum(image.pixelType());
+        }
+    }
+
+    if(cfg->discard_alpha)
+    {
+        if(image.isRGBA())
+        {
+            image.ConvertToRGB(image.pixelType());
+        }
+        else
+        if(image.isGrayAlpha())
+        {
+            image.ConvertToLum(image.pixelType());
+        }
     }
 
     const uint channels=image.channels();
