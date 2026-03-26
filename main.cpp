@@ -79,7 +79,7 @@ int os_main(int argc,os_char **argv)
     if(argc<=1)
     {
         std::cout<< "Command format:\n"
-                    "\tTexConv [/AMD|Intel] [/R:][/RG:][/RGB:][/RGBA:] [/ColorKey:rrggbb] [/s] [/mip] [/mono] [/out:<new_name_without_ext>] <pathname or filename>\n"
+                    "\tTexConv [/AMD|Intel] [/R:][/RG:][/RGB:][/RGBA:] [/ColorKey:rrggbb] [/s] [/mip] [/mono] [/discard_alpha] [/out:<new_name_without_ext>] <pathname or filename>\n"
                     "\n"
                     "Params:\n"
                     "\t/s : proc sub-directory\n"
