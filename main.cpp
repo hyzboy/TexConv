@@ -74,12 +74,12 @@ public:
 
 int os_main(int argc,os_char **argv)
 {
-    std::cout<<"Image to Texture Convert tools 1.5"<<std::endl<<std::endl;
+    std::cout<<"Image to Texture Convert tools 1.51"<<std::endl<<std::endl;
 
     if(argc<=1)
     {
         std::cout<< "Command format:\n"
-                    "\tTexConv [/AMD|Intel] [/R:][/RG:][/RGB:][/RGBA:] [/ColorKey:rrggbb] [/s] [/mip] [/out:<new_name_without_ext>] <pathname or filename>\n"
+                    "\tTexConv [/AMD|Intel] [/R:][/RG:][/RGB:][/RGBA:] [/ColorKey:rrggbb] [/s] [/mip] [/mono] [/out:<new_name_without_ext>] <pathname or filename>\n"
                     "\n"
                     "Params:\n"
                     "\t/s : proc sub-directory\n"
@@ -157,7 +157,7 @@ int os_main(int argc,os_char **argv)
             GLogInfo(OS_TEXT("/out: only works in single file mode. Ignored for directory enumeration."));
         }
 
-        double start_time=GetMicroTime();
+        double start_time=GetTimeSec();
         double end_time;
 
         EnumFileConfig efc(input_path.c_str());
@@ -169,7 +169,7 @@ int os_main(int argc,os_char **argv)
 
         eci.Enum(&efc);
 
-        end_time=GetMicroTime();
+        end_time=GetTimeSec();
 
         const double time_gap=(end_time-start_time)/1000000;
 

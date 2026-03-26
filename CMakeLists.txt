@@ -10,18 +10,18 @@ option(USE_IMAGEMAGICK "Use ImageMagick instead of DevIL for image processing" O
 if(USE_IMAGEMAGICK)
     # Find ImageMagick with Magick++ support
     find_package(ImageMagick COMPONENTS Magick++ REQUIRED)
-    
+
     if(NOT ImageMagick_FOUND)
         message(FATAL_ERROR "ImageMagick not found. Please install ImageMagick with Magick++ support or set USE_IMAGEMAGICK=OFF to use DevIL.")
     endif()
-    
+
     add_definitions(-DUSE_IMAGEMAGICK)
     include_directories(${ImageMagick_INCLUDE_DIRS})
-    
+
     # Set image library sources and libs for ImageMagick
     SET(IMAGE_LIBRARY_SOURCES MagickImage.h MagickImageSupport.cpp)
     SET(IMAGE_LIBS ${ImageMagick_LIBRARIES})
-    
+
     message(STATUS "Using ImageMagick for image processing")
     message(STATUS "ImageMagick include dirs: ${ImageMagick_INCLUDE_DIRS}")
     message(STATUS "ImageMagick libraries: ${ImageMagick_LIBRARIES}")
@@ -43,7 +43,7 @@ else()
             SET(DEVIL_LIBRARY_PATH "${DEVIL_SDK_DIR}/lib/x64/unicode/Release")
             SET(COM_SYSTEM x64)
         endif()
-     
+
         SET(HGL_DEVIL_LIB   ${DEVIL_LIBRARY_PATH}/DevIL.lib
                             ${DEVIL_LIBRARY_PATH}/ILU.lib
                             ${DEVIL_LIBRARY_PATH}/ILUT.lib)
@@ -54,11 +54,11 @@ else()
         find_library(ILUT_LIB NAMES ILUT)
         SET(HGL_DEVIL_LIB ${IL_LIB} ${ILU_LIB} ${ILUT_LIB})
     endif()
-    
+
     # Set image library sources and libs for DevIL
     SET(IMAGE_LIBRARY_SOURCES ILImage.h ILImageSupport.cpp)
     SET(IMAGE_LIBS ${HGL_DEVIL_LIB})
-    
+
     message(STATUS "Using DevIL for image processing")
 endif()
 
@@ -77,15 +77,15 @@ if(WIN32)
         HINTS "C:\\Compressonator_4.5.52"
         PATH_SUFFIXES Include include
     )
-    
+
     include_directories(${COMPRESSONATOR_ROOT}/Include)
-    link_directories(${COMPRESSONATOR_ROOT}/lib/bin/${COM_SYSTEM})
-    
+    link_directories(${COMPRESSONATOR_ROOT}/lib/bin/x64)
+
     # 使用生成器表达式根据配置类型选择库文件
     # 默认使用MD/MDd（DLL运行时），这是Visual Studio的默认设置
     # 如果项目使用MT/MTd，需要在CMakeLists.txt顶部设置：
     # set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-    
+
     # 简化方案：检测是否设置了静态运行时库
     if(CMAKE_MSVC_RUNTIME_LIBRARY AND CMAKE_MSVC_RUNTIME_LIBRARY MATCHES "MultiThreaded[^D]")
         # 使用静态运行时库 (MT/MTd)
@@ -98,8 +98,8 @@ if(WIN32)
         SET(AMD_COM_LIB_RELEASE "Compressonator_MD.lib")
         message(STATUS "Using DLL runtime: MD/MDd")
     endif()
-    
-    SET(AMD_COM_LIB 
+
+    SET(AMD_COM_LIB
         $<$<CONFIG:Debug>:${AMD_COM_LIB_DEBUG}>
         $<$<NOT:$<CONFIG:Debug>>:${AMD_COM_LIB_RELEASE}>
     )
@@ -123,7 +123,7 @@ SET(INTEL_TC_LIBRARY_COMMON
     $<$<CONFIG:Debug>:${ISPC_TC_LIBRARY_PATH_DEBUG}/kernel_sse2.obj>
     $<$<CONFIG:Debug>:${ISPC_TC_LIBRARY_PATH_DEBUG}/kernel_sse4.obj>
     $<$<CONFIG:Debug>:${ISPC_TC_LIBRARY_PATH_DEBUG}/kernel_astc.obj>
-    
+
     $<$<NOT:$<CONFIG:Debug>>:${ISPC_TC_LIBRARY_PATH_RELEASE}/kernel.obj>
     $<$<NOT:$<CONFIG:Debug>>:${ISPC_TC_LIBRARY_PATH_RELEASE}/kernel_avx.obj>
     $<$<NOT:$<CONFIG:Debug>>:${ISPC_TC_LIBRARY_PATH_RELEASE}/kernel_avx2.obj>
@@ -175,6 +175,8 @@ if(WIN32)
 else()
 	set(TEX_CONV_LIBRARY ${TEX_CONV_LIBRARY} GLM)
 endif(WIN32)
+
+include_directories(${Vulkan_INCLUDE_DIR})
 
 add_executable(TexConv ${TEX_CONV_SOURCE} ${INTEL_TC_SOURCE} main.cpp ConvertImage.cpp)
 target_link_libraries(TexConv PRIVATE ${TEX_CONV_LIBRARY})
