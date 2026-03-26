@@ -146,15 +146,7 @@ m_image.resize(Magick::Geometry(width, height));
 
 # Build
 mkdir build && cd build
-cmake -DUSE_IMAGEMAGICK=ON ..
-cmake --build . --config Release
-```
-
-### Using DevIL (Legacy)
-
-```bash
-mkdir build && cd build
-cmake -DUSE_IMAGEMAGICK=OFF ..
+cmake ..
 cmake --build . --config Release
 ```
 

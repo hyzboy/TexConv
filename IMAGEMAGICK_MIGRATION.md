@@ -54,8 +54,8 @@ rm -rf build
 mkdir build
 cd build
 
-# 配置使用 ImageMagick
-cmake -DUSE_IMAGEMAGICK=ON ..
+# 配置
+cmake ..
 
 # 构建
 cmake --build . --config Release
@@ -223,16 +223,6 @@ Failed to load: unable to read image data
 2. 使用宽字符字符串（wchar_t, std::wstring）
 3. 文件路径正确转换为窄字符串传递给 ImageMagick
 
-## 切换回 DevIL
-
-如果需要临时切换回 DevIL：
-
-```bash
-cd build
-cmake -DUSE_IMAGEMAGICK=OFF ..
-cmake --build . --config Release
-```
-
 ## 代码示例
 
 ### 使用 ImageLoader 抽象
@@ -241,7 +231,7 @@ cmake --build . --config Release
 #include "ImageLoader.h"
 
 int main() {
-    // 初始化（自动选择 ImageMagick 或 DevIL）
+    // 初始化 ImageMagick
     InitImageLibrary(nullptr);
     
     // 加载图像
@@ -273,7 +263,6 @@ int main() {
 ### 直接使用 MagickImage
 
 ```cpp
-#ifdef USE_IMAGEMAGICK
 #include "MagickImage.h"
 
 int main() {

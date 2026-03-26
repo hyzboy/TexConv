@@ -11,11 +11,11 @@ TexConv 是一个高性能的图像和纹理转换工具，支持将各种图像
 - 支持距离场生成
 - 支持 HDR/EXR 到 PNG 转换
 
-## 图像处理库支持
+## 图像处理库
 
-本项目支持两种图像处理库：
+本项目使用 ImageMagick 作为唯一图像处理后端。
 
-### ImageMagick (推荐)
+### ImageMagick
 
 ImageMagick 是一个活跃维护的图像处理库，提供：
 - ✅ 更活跃的库维护
@@ -24,13 +24,9 @@ ImageMagick 是一个活跃维护的图像处理库，提供：
 - ✅ 更多的图像格式支持
 - ✅ 高质量的 Lanczos 缩放算法
 
-### DevIL (遗留支持)
-
-DevIL 1.8.0 是传统的图像处理库，保留用于向后兼容。
-
 ## 构建说明
 
-### 使用 ImageMagick（推荐）
+### 使用 ImageMagick
 
 ```bash
 # 1. 安装 ImageMagick 开发库
@@ -51,16 +47,7 @@ brew install imagemagick
 # 2. 构建项目
 mkdir build
 cd build
-cmake -DUSE_IMAGEMAGICK=ON ..
-cmake --build .
-```
-
-### 使用 DevIL（遗留）
-
-```bash
-mkdir build
-cd build
-cmake -DUSE_IMAGEMAGICK=OFF ..
+cmake ..
 cmake --build .
 ```
 
@@ -132,7 +119,6 @@ DFGen input.png alpha
 
 ## CMake 选项
 
-- `USE_IMAGEMAGICK` - 使用 ImageMagick 而不是 DevIL（默认：ON）
 - `CMAKE_BUILD_TYPE` - 构建类型（Debug/Release）
 - `HGL_BITS` - 目标架构位数（32/64）
 
@@ -143,7 +129,7 @@ DFGen input.png alpha
 - CMake 3.28+
 - C++17 或更高版本编译器
 - CMCore, CMPlatform, CMUtil 库
-- 图像库（ImageMagick 或 DevIL）
+- ImageMagick
 
 ### 可选依赖
 
@@ -161,10 +147,6 @@ DFGen input.png alpha
    - "Install development headers and libraries for C and C++"
    - "Add application directory to your system path"
 3. 重启命令提示符或 PowerShell 以使环境变量生效
-
-### DevIL SDK
-
-DevIL Windows SDK 应放置在项目根目录的 `DevIL Windows SDK` 文件夹中。
 
 ## Linux/macOS 说明
 
@@ -220,13 +202,6 @@ CMake Error: ImageMagick not found
 1. 清理构建目录：`rm -rf build && mkdir build`
 2. 确保所有依赖库都已正确安装
 3. 检查 CMake 配置输出中的库路径
-
-### 向后兼容
-
-如果需要使用 DevIL：
-```bash
-cmake -DUSE_IMAGEMAGICK=OFF ..
-```
 
 ## 许可证
 
