@@ -26,7 +26,7 @@ public:
 
 public:
 
-    bool InitFormat(ImageLoader* img) override
+    bool InitFormat(MagickImage* img) override
     {
         image = img;
 
@@ -102,7 +102,7 @@ public:
                 return(false);
             }
 
-            image->ConvertToLum((ImagePixelType)type);
+            image->ConvertToGray((ImagePixelType)type);
         }
         else
         if(channels==2)
@@ -172,7 +172,7 @@ public:
 
         if(channels==1)
         {
-            source_data=image->GetLum((ImagePixelType)type);
+            source_data=image->GetGray((ImagePixelType)type);
         }
         else
         if(channels==2)

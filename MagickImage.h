@@ -85,14 +85,14 @@ public:
     void *GetRG(ImagePixelType pixel_type) { return GetData(ImageChannelLayout::GrayAlpha, pixel_type); }
     void *GetRGB(ImagePixelType pixel_type) { return GetData(ImageChannelLayout::RGB, pixel_type); }
     void *GetRGBA(ImagePixelType pixel_type);
-    void *GetLum(ImagePixelType pixel_type) { return GetData(ImageChannelLayout::Gray, pixel_type); }
+    void *GetGray(ImagePixelType pixel_type) { return GetData(ImageChannelLayout::Gray, pixel_type); }
     void *GetAlpha(ImagePixelType pixel_type);
 
     bool ConvertToR(ImagePixelType pixel_type) { return (m_layout == ImageChannelLayout::Gray ? Convert(ImageChannelLayout::Gray, pixel_type) : Convert(ImageChannelLayout::Alpha, pixel_type)); }
     bool ConvertToRG(ImagePixelType pixel_type) { return Convert(ImageChannelLayout::GrayAlpha, pixel_type); }
     bool ConvertToRGB(ImagePixelType pixel_type) { return Convert(ImageChannelLayout::RGB, pixel_type); }
     bool ConvertToRGBA(ImagePixelType pixel_type) { return Convert(ImageChannelLayout::RGBA, pixel_type); }
-    bool ConvertToLum(ImagePixelType pixel_type) { return Convert(ImageChannelLayout::Gray, pixel_type); }
+    bool ConvertToGray(ImagePixelType pixel_type) { return Convert(ImageChannelLayout::Gray, pixel_type); }
 };
 
 bool SaveImageToFile(const OSString &filename, uint w, uint h, const float scale, uint c, ImagePixelType pixel_type, void *data);

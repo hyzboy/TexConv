@@ -2,8 +2,6 @@
 
 #include "MagickImage.h"
 
-using ImageLoader = MagickImage;
-
 inline void InitImageLibrary(const char* path = nullptr)
 {
     Magick::InitializeMagick(path);

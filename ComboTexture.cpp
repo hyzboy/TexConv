@@ -221,8 +221,8 @@ int os_main(int argc,os_char **argv)
         SaveRGBAFile(   argv[1],
                         w,h,0.5,
                         u,v,
-                        (uint8 *)metallic.GetLum(ImagePixelType::UInt8),
-                        (uint8 *)roughness.GetLum(ImagePixelType::UInt8),
+                        (uint8 *)metallic.GetGray(ImagePixelType::UInt8),
+                        (uint8 *)roughness.GetGray(ImagePixelType::UInt8),
                         OS_TEXT("CbCrMR"));
     }
     else

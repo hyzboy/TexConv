@@ -12,7 +12,7 @@ public:
 
 public:
 
-    bool InitFormat(ImageLoader *img) override
+    bool InitFormat(MagickImage *img) override
     {
         image=img;
 

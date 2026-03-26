@@ -18,7 +18,7 @@ public:
 
 public:
 
-    bool InitFormat(ImageLoader* img) override
+    bool InitFormat(MagickImage* img) override
     {
         image = img;
 
@@ -65,7 +65,7 @@ public:
 
         if(channels==1)
         {
-            image->ConvertToLum((ImagePixelType)type);
+            image->ConvertToGray((ImagePixelType)type);
         }
         else
         if(channels==2)
@@ -102,7 +102,7 @@ public:
         int src_channels = (channels>=3)?4:channels; // after ConvertToRGBA for 3/4
 
         if(src_channels==1)
-            source_data=image->GetLum((ImagePixelType)type);
+            source_data=image->GetGray((ImagePixelType)type);
         else if(src_channels==2)
             source_data=image->GetRG((ImagePixelType)type);
         else // 3/4 -> GetRGBA

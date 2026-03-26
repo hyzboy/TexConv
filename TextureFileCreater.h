@@ -19,7 +19,7 @@ protected:
 
 protected:
 
-    ImageLoader *image;
+    MagickImage *image;
     const PixelFormat *pixel_format;
 
 protected:
@@ -48,7 +48,7 @@ public:
 
     virtual bool WritePixelFormat(const uint miplevel);
 
-    virtual bool InitFormat(ImageLoader *)=0;
+    virtual bool InitFormat(MagickImage *)=0;
     virtual uint32 Write()=0;
 
     virtual void Close();

@@ -5,7 +5,7 @@
 
 bool ConvertImage(const OSString &filename,const OSString &new_filename,const ImageConvertConfig *cfg)
 {
-    ImageLoader image;
+    MagickImage image;
 
     if(!image.LoadFile(filename))
         return(false);
@@ -18,7 +18,7 @@ bool ConvertImage(const OSString &filename,const OSString &new_filename,const Im
         }
         else
         {
-            image.ConvertToLum(image.pixelType());
+            image.ConvertToGray(image.pixelType());
         }
     }
 
@@ -31,7 +31,7 @@ bool ConvertImage(const OSString &filename,const OSString &new_filename,const Im
         else
         if(image.isGrayAlpha())
         {
-            image.ConvertToLum(image.pixelType());
+            image.ConvertToGray(image.pixelType());
         }
     }
 
