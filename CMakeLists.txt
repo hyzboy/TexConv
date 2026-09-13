@@ -4,6 +4,11 @@ project(TexConv)
 
 add_definitions(-DUNICODE -D_UNICODE)
 
+# 附加工具（CubeMapConv/ComboTexture/DFGen/HDR2PNG）仍是旧的 ImageLoader API
+# （另有 DevIL 残留、logger::InitLogger 已删），当前源码树编译不过，
+# 故默认只构建 TexConv；移植到 MagickImage 后再打开此开关。
+option(TEXCONV_BUILD_EXTRA_TOOLS "构建附加工具（CubeMapConv/ComboTexture/DFGen/HDR2PNG）" OFF)
+
 find_package(ImageMagick COMPONENTS Magick++ REQUIRED)
 
 if(NOT ImageMagick_FOUND)
@@ -101,6 +106,25 @@ SET(INTEL_TC_SOURCE ${ISPC_TC_HEADER_PATH}/ispc_texcomp.cpp
 
 SOURCE_GROUP("Intel ISPC Texture Compression" FILES ${INTEL_TC_SOURCE})
 
+# ---------------------------------------------------------------------------
+# Intel ISPCTextureCompressor 的 kernel*.obj 必须用 ispc 编译器生成
+# （上游仓库的 ISPC/win 编译器与 x64/*/kernel*.obj 都未入库），这里自动探测：
+#   有预编译产物 → 启用 Intel 编码器（/Intel 可用）
+#   没有        → 关闭 Intel 编码器，只保留 AMD Compressonator（main.cpp 默认即 AMD）
+# 需要 Intel 编码器时：用 ispc 生成 kernel*.obj 放回
+#   ISPCTextureCompressor/ISPC Texture Compressor/x64/{Debug,Release}/
+# 后重新 configure 即可。
+# ---------------------------------------------------------------------------
+if(EXISTS "${ISPC_TC_LIBRARY_PATH_DEBUG}/kernel.obj" OR EXISTS "${ISPC_TC_LIBRARY_PATH_RELEASE}/kernel.obj")
+    message(STATUS "TexConv: ISPCTextureCompressor kernels found -> Intel ISPC encoder enabled")
+    add_definitions(-DTEXCONV_ENABLE_INTEL_ISPC=1)
+else()
+    message(STATUS "TexConv: ISPCTextureCompressor kernels NOT found -> Intel ISPC encoder disabled (AMD Compressonator only)")
+    set(INTEL_TC_LIBRARY "")
+    set(INTEL_TC_SOURCE "")
+    add_definitions(-DTEXCONV_ENABLE_INTEL_ISPC=0)
+endif()
+
 # Image library source files
 
 SET(PIXEL_FORMAT_SOURCE pixel_format.cpp
@@ -126,22 +150,57 @@ SOURCE_GROUP("CMD Param parse" FILES ${PARAM_PARSE_SOURCE})
 SET(TEX_CONV_SOURCE ${IMAGE_LIBRARY_SOURCES} ${PIXEL_FORMAT_SOURCE} ${TEXTURE_FILE_CREATER_SOURCE} ${PARAM_PARSE_SOURCE})
 SET(TEX_CONV_LIBRARY CMCore CMPlatform CMUtil ${IMAGE_LIBS} ${INTEL_TC_LIBRARY} ${AMD_COM_LIB})
 
-if(WIN32)
-	set(TEX_CONV_LIBRARY ${TEX_CONV_LIBRARY} glm::glm)
-else()
-	set(TEX_CONV_LIBRARY ${TEX_CONV_LIBRARY} GLM)
-endif(WIN32)
+# ---------------------------------------------------------------------------
+# GLM
+#   本工程可独立配置（CMake-GUI 直接指向本目录），此时没有根工程的 include(math)，
+#   而 glm::glm 带命名空间 —— CMake 对带 `::` 的名字按"必须存在的 target"处理，
+#   找不到就直接报错（CMCore 这类不带 `::` 的只会被当成库名，所以只有 glm 会先跳出来）。
+#   这里按工程统一策略（CMCMakeModule/math.cmake）解析：
+#     1) 从根工程配置进来时，父作用域已定好 HGL_MATH_LIB，直接用（不重复建 target）；
+#     2) 独立配置时优先用 Vulkan SDK 自带的 GLM（与主工程一致，避免多一份头文件）；
+#     3) 否则 find_package(glm CONFIG)（vcpkg：vcpkg install glm:x64-windows）。
+#   独立配置还要自己补 GLM_FORCE_* 宏：它们决定 glm 类型的布局
+#   （尤其 GLM_FORCE_DEFAULT_ALIGNED_GENTYPES），必须与 CMCore 等库编译时一致。
+# ---------------------------------------------------------------------------
+if(NOT DEFINED HGL_MATH_LIB)
+    add_compile_definitions(GLM_FORCE_RADIANS)
+    add_compile_definitions(GLM_FORCE_DEPTH_ZERO_TO_ONE)
+    add_compile_definitions(GLM_ENABLE_EXPERIMENTAL)
+    add_compile_definitions(GLM_FORCE_DEFAULT_ALIGNED_GENTYPES)
+    if(WIN32)
+        add_compile_definitions(GLM_FORCE_AVX2)
+    endif()
+
+    if(NOT TARGET glm::glm)
+        if(WIN32 AND DEFINED ENV{VULKAN_SDK} AND EXISTS "$ENV{VULKAN_SDK}/Include/glm/glm.hpp")
+            # Vulkan SDK 自带 GLM（header-only）
+            add_library(glm::glm INTERFACE IMPORTED)
+            set_target_properties(glm::glm PROPERTIES
+                INTERFACE_INCLUDE_DIRECTORIES "$ENV{VULKAN_SDK}/Include")
+            message(STATUS "TexConv: GLM from Vulkan SDK ($ENV{VULKAN_SDK}/Include)")
+        else()
+            find_package(glm CONFIG REQUIRED)
+            message(STATUS "TexConv: GLM from find_package (${glm_DIR})")
+        endif()
+    endif()
+
+    set(HGL_MATH_LIB glm::glm)
+endif()
+
+SET(TEX_CONV_LIBRARY ${TEX_CONV_LIBRARY} ${HGL_MATH_LIB})
 
 include_directories(${Vulkan_INCLUDE_DIR})
 
 add_executable(TexConv ${TEX_CONV_SOURCE} ${INTEL_TC_SOURCE} main.cpp ConvertImage.cpp)
 target_link_libraries(TexConv PRIVATE ${TEX_CONV_LIBRARY})
 
-add_executable(CubeMapConv ${TEX_CONV_SOURCE} CubeMapConvert.cpp)
-target_link_libraries(CubeMapConv PRIVATE ${TEX_CONV_LIBRARY})
+if(TEXCONV_BUILD_EXTRA_TOOLS)
 
-add_executable(HDR2PNG HDR2PNG.cpp ${IMAGE_LIBRARY_SOURCES})
-target_link_libraries(HDR2PNG PRIVATE CMCore CMPlatform CMUtil ${IMAGE_LIBS})
+    add_executable(CubeMapConv ${TEX_CONV_SOURCE} CubeMapConvert.cpp)
+    target_link_libraries(CubeMapConv PRIVATE ${TEX_CONV_LIBRARY})
+
+    add_executable(HDR2PNG HDR2PNG.cpp ${IMAGE_LIBRARY_SOURCES})
+    target_link_libraries(HDR2PNG PRIVATE CMCore CMPlatform CMUtil ${IMAGE_LIBS})
 
 IF(CM_BUILD_GUI_TOOLS)
     set(IDENTIFIER "com.hyzgame.texconv")
@@ -149,22 +208,27 @@ IF(CM_BUILD_GUI_TOOLS)
     target_link_libraries(TexConv PRIVATE Qt${CM_QT_MAJOR_VERSION}::Core Qt${CM_QT_MAJOR_VERSION}::Gui Qt${CM_QT_MAJOR_VERSION}::Widgets)
 ENDIF(CM_BUILD_GUI_TOOLS)
 
-add_executable(ComboTexture ComboTexture.cpp ${IMAGE_LIBRARY_SOURCES})
-target_link_libraries(ComboTexture PRIVATE CMCore CMPlatform CMUtil ${IMAGE_LIBS})
+    add_executable(ComboTexture ComboTexture.cpp ${IMAGE_LIBRARY_SOURCES})
+    target_link_libraries(ComboTexture PRIVATE CMCore CMPlatform CMUtil ${IMAGE_LIBS})
 
-#add_executable(NormalTest NormalTest.cpp SpheremapNormal.cpp ${IMAGE_LIBRARY_SOURCES})
-#target_link_libraries(NormalTest PRIVATE CMCore CMPlatform CMUtil ${IMAGE_LIBS})
+    #add_executable(NormalTest NormalTest.cpp SpheremapNormal.cpp ${IMAGE_LIBRARY_SOURCES})
+    #target_link_libraries(NormalTest PRIVATE CMCore CMPlatform CMUtil ${IMAGE_LIBS})
 
-add_executable(DFGen DistanceFieldGenerater.cpp ${IMAGE_LIBRARY_SOURCES})
-target_link_libraries(DFGen PRIVATE CMCore CMPlatform CMUtil ${IMAGE_LIBS})
+    add_executable(DFGen DistanceFieldGenerater.cpp ${IMAGE_LIBRARY_SOURCES})
+    target_link_libraries(DFGen PRIVATE CMCore CMPlatform CMUtil ${IMAGE_LIBS})
+
+endif(TEXCONV_BUILD_EXTRA_TOOLS)
 
 macro(texture_tool_project project_name)
     set_property(TARGET ${project_name} PROPERTY FOLDER "CM/Tools/Texture")
 endmacro()
 
 texture_tool_project(TexConv)
-texture_tool_project(CubeMapConv)
-texture_tool_project(ComboTexture)
-texture_tool_project(DFGen)
-#texture_tool_project(IMTest)
-texture_tool_project(HDR2PNG)
+
+if(TEXCONV_BUILD_EXTRA_TOOLS)
+    texture_tool_project(CubeMapConv)
+    texture_tool_project(ComboTexture)
+    texture_tool_project(DFGen)
+    #texture_tool_project(IMTest)
+    texture_tool_project(HDR2PNG)
+endif(TEXCONV_BUILD_EXTRA_TOOLS)

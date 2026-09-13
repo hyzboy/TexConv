@@ -1,9 +1,17 @@
 ﻿#include"TextureFileCreater.h"
 #include"ImageLoader.h"
 #include<hgl/log/log.h>
-#include"ISPCTextureCompressor/ispc_texcomp/ispc_texcomp.h"
 #include<cstring>
 #include<cstdlib>
+
+// Intel ISPCTextureCompressor 的 kernel*.obj 需由 ispc 编译器生成，上游未入库；
+// TexConv 的 CMakeLists 会自动探测这些产物，缺失时关闭本编码器
+// （TEXCONV_ENABLE_INTEL_ISPC=0，改用 AMD Compressonator）。
+#if defined(TEXCONV_ENABLE_INTEL_ISPC) && TEXCONV_ENABLE_INTEL_ISPC
+#include"ISPCTextureCompressor/ispc_texcomp/ispc_texcomp.h"
+#endif
+
+#if defined(TEXCONV_ENABLE_INTEL_ISPC) && TEXCONV_ENABLE_INTEL_ISPC
 
 class TextureFileCreaterCompressIntel:public TextureFileCreater
 {
@@ -216,3 +224,16 @@ TextureFileCreater *CreateTextureFileCreaterCompressIntel(const PixelFormat *pf)
 {
     return(new TextureFileCreaterCompressIntel(pf));
 }
+
+#else   // 未编译 Intel ISPC 编码器：保留工厂符号，调用即明确失败（fail-fast，不静默降级）
+
+TextureFileCreater *CreateTextureFileCreaterCompressIntel(const PixelFormat *pf)
+{
+    (void)pf;
+
+    GLogError(OS_TEXT("Intel ISPC texture compressor is not available in this build "
+                      "(ISPCTextureCompressor kernel objects missing). Use /AMD."));
+    return(nullptr);
+}
+
+#endif  // TEXCONV_ENABLE_INTEL_ISPC
