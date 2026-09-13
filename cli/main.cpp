@@ -90,7 +90,7 @@ int wmain(int argc, wchar_t **argv)
     if(argc <= 1)
     {
         printf( "Command format:\n"
-                "\tTexConv [/AMD|Intel] [/R:][/RG:][/RGB:][/RGBA:] [/normal] [/ColorKey:rrggbb] [/s] [/mip] [/gray] [/discard_alpha] [/out:<new_name_without_ext>] <pathname or filename>\n"
+                "\tTexConv [/AMD|Intel] [/R:][/RG:][/RGB:][/RGBA:] [/normal] [/ColorKey:rrggbb] [/s] [/mip] [/gray] [/discard_alpha] [/DF[:threshold]] [/out:<new_name_without_ext>] <pathname or filename>\n"
                 "\n"
                 "Params:\n"
                 "\t/R: /RG: /RGB: /RGBA: : target compressed format for 1/2/3/4-channel source (e.g. /RGB:BC5)\n"
@@ -98,6 +98,9 @@ int wmain(int argc, wchar_t **argv)
                 "\t/s : proc sub-directory\n"
                 "\t/mip : generate mipmaps\n"
                 "\t/gray: convert to grayscale\n"
+                "\t/DF[:threshold] : generate distance field then save\n"
+                "\t                    (1-channel: from gray; RGBA/GrayAlpha: from alpha;\n"
+                "\t                     result is a single-channel texture, default slot R8)\n"
                 "\t/out: : specify new output file base name (single file mode only, extension auto set)\n"
                 "\n");
 
@@ -115,6 +118,17 @@ int wmain(int argc, wchar_t **argv)
     params.force_grayscale = cp.Contains(L"/gray");
     params.discard_alpha   = cp.Contains(L"/discard_alpha");
     params.normal_map      = cp.Contains(L"/normal");
+
+    // 距离场模式:/DF 开启;/DF:threshold 指定内外判定阈值(默认 128)
+    params.df_mode = cp.Contains(L"/DF");
+
+    if(params.df_mode)
+    {
+        const wchar_t *dft = nullptr;
+
+        if(cp.GetString(L"/DF:", &dft) && dft && *dft)
+            params.df_threshold = int(wcstol(dft, nullptr, 10));
+    }
 
     // 压缩后端(默认 AMD;指定的后端不可用 → fail-fast,对齐旧版 /Intel)
     const char *provider = nullptr;
@@ -206,6 +220,8 @@ int wmain(int argc, wchar_t **argv)
             nm = "BC5";
         else if(params.slot_format[i])
             nm = TexFormat_Get(params.slot_format[i])->name;
+        else if(i == 0 && params.df_mode)
+            nm = "R8";      // DF 模式 1 通道默认 R8(见 tex_core.h/DEPLOY 说明)
         else
             nm = slot_defs[i].def;
 

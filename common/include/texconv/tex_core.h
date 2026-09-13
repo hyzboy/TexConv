@@ -50,6 +50,12 @@ typedef struct TexJobParams
 
     int            use_color_key;
     uint8_t        color_key[3];    ///< RGB,use_color_key 时生效
+
+    int            df_mode;         ///< 距离场模式:单通道源对灰度生成;
+                                    ///< 带 Alpha 的源(RGBA/GrayAlpha)对 Alpha 生成;
+                                    ///< 生成后图像替换为单通道 8-bit 距离场,
+                                    ///  后续按 1 通道源继续(默认槽位 BC4)
+    int            df_threshold;    ///< 距离场内外判定阈值(0-255,<=0 取默认 128)
 } TexJobParams;
 
 /// 快速读取源图元数据(不产生转换)。成功后 channels 可用于 GUI 预过滤格式。

@@ -7,6 +7,7 @@
 
 #include "internal.h"
 #include "texconv/tex_bitpack.h"
+#include "texconv/tex_distance_field.h"
 
 #include <algorithm>
 #include <cstring>
@@ -324,6 +325,64 @@ namespace texcore
             TexImage_GetInfo(ctx.img, nullptr, nullptr, nullptr, &layout, &pt);
         }
 
+        // 3.5 距离场模式:单通道源对灰度生成;带 Alpha 的源(RGBA/GrayAlpha)对
+        //     Alpha 生成。生成后图像替换为单通道 8-bit 距离场,按 1 通道源继续。
+        if(params->df_mode)
+        {
+            int df_layout = 0;
+
+            if(layout == TEX_LAYOUT_Gray)
+                df_layout = TEX_LAYOUT_Gray;
+            else if(layout == TEX_LAYOUT_RGBA || layout == TEX_LAYOUT_GrayAlpha)
+                df_layout = TEX_LAYOUT_Alpha;
+            else
+            {
+                CoreLog(TEX_LOG_ERROR,
+                        "distance field requires a 1-channel texture, or alpha channel (RGBA/GrayAlpha). "
+                        "Use /discard_alpha for RGB sources without alpha.");
+                TexImage_Free(ctx.img);
+                return TEX_ERR_UNSUPPORTED;
+            }
+
+            uint32_t df_w = 0, df_h = 0;
+            TexImage_GetInfo(ctx.img, &df_w, &df_h, nullptr, nullptr, nullptr);
+
+            std::vector<uint8_t> df_src(size_t(df_w) * df_h);
+            std::vector<uint8_t> df_dst(size_t(df_w) * df_h);
+
+            if(TexImage_GetData(ctx.img, df_src.data(), df_src.size(),
+                                df_layout, TEX_PT_UInt8) != TEX_OK)
+            {
+                CoreLog(TEX_LOG_ERROR, "distance field: failed to get source channel data.");
+                TexImage_Free(ctx.img);
+                return TEX_ERR_INTERNAL;
+            }
+
+            const uint8_t threshold = params->df_threshold > 0 && params->df_threshold <= 255
+                                    ? uint8_t(params->df_threshold) : uint8_t(128);
+
+            TexDF_Generate(df_src.data(), df_dst.data(), df_w, df_h,
+                           threshold, 0, 0);     // scale/bias 取默认(3/128,对齐旧 DFGen)
+
+            TexImage df_img = nullptr;
+
+            if(TexImage_CreateFromData(&df_img, df_w, df_h, 1, TEX_PT_UInt8, df_dst.data()) != TEX_OK)
+            {
+                CoreLog(TEX_LOG_ERROR, "distance field: failed to create image from result.");
+                TexImage_Free(ctx.img);
+                return TEX_ERR_INTERNAL;
+            }
+
+            CoreLog(TEX_LOG_INFO, "distance field generated from "
+                                  + std::string(df_layout == TEX_LAYOUT_Gray ? "gray" : "alpha")
+                                  + " channel, threshold " + std::to_string(threshold) + ".");
+
+            TexImage_Free(ctx.img);
+            ctx.img = df_img;
+
+            TexImage_GetInfo(ctx.img, nullptr, nullptr, nullptr, &layout, &pt);
+        }
+
         ctx.channels = TexLayoutChannels(layout);
 
         if(ctx.channels <= 0 || ctx.channels > 4)
@@ -350,10 +409,17 @@ namespace texcore
         {
             const int idx = ctx.channels - 1;
 
+            // DF 模式下 1 通道默认 R8:AMD 的 BC4 灰度源路径存在已知问题
+            //(CMP 返回 0 字节,见基线 g8_default),未压缩 R8 处处可用
+            const char *slot_default = default_slot_name[idx];
+
+            if(idx == 0 && params->df_mode)
+                slot_default = "R8";
+
             const char *slot_name = params->normal_map
                                   ? "BC5"
                                   : (params->slot_format[idx] ? params->slot_format[idx]
-                                                              : default_slot_name[idx]);
+                                                              : slot_default);
 
             ctx.fmt = TexFormat_Get(slot_name);
 
