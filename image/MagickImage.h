@@ -71,6 +71,9 @@ public:
 
     bool LoadFile(const OSString &);
 
+    /// 由原始像素数据创建图像(数据布局与 Get* 输出一致,首行为顶部)
+    bool CreateFromData(uint w, uint h, uint channels, ImagePixelType pixel_type, const void *data);
+
     void Bind();
     void Copy(MagickImage *);
 

@@ -61,6 +61,15 @@ TEXCONV_API size_t TexImage_GetBufferSize(TexImage img, int layout, int pixel_ty
 TEXCONV_API int  TexImage_GetData(TexImage img, void *buf, size_t buf_size,
                                   int layout, int pixel_type);
 
+/// 由原始像素数据创建图像句柄(等价 TexImage_Load 的"内存版")。
+/// 数据布局与 TexImage_GetData 输出一致:width*height*channels 个像素,
+/// 每像素按 pixel_type 大小连续存放,首行为顶部行。
+/// 成功后 *out 需以 TexImage_Free 释放。
+TEXCONV_API int  TexImage_CreateFromData(TexImage *out,
+                                         uint32_t width, uint32_t height,
+                                         int channels, int pixel_type,
+                                         const void *data);
+
 /// 保存像素数据为图像文件(迁自旧版 SaveImageToFile)。
 /// scale 为输出前对数据的重采样比例(与旧版语义一致,1.0f=不缩放)。
 TEXCONV_API int  TexImage_SaveImage(const wchar_t *path,

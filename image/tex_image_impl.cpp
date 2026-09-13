@@ -248,6 +248,27 @@ extern "C"
         return TEX_OK;
     }
 
+    int TexImage_CreateFromData(TexImage *out,
+                                uint32_t width, uint32_t height,
+                                int channels, int pixel_type,
+                                const void *data)
+    {
+        if(!out || width == 0 || height == 0 || !data)
+            return TEX_ERR_PARAM;
+
+        MagickImage *img = new MagickImage;
+
+        if(!img->CreateFromData(width, height, channels,
+                                ToHglPixelType(pixel_type), data))
+        {
+            delete img;
+            return TEX_ERR_INTERNAL;
+        }
+
+        *out = (TexImage)img;
+        return TEX_OK;
+    }
+
     int TexImage_SaveImage(const wchar_t *path,
                            uint32_t width, uint32_t height, float scale,
                            int channels, int pixel_type, const void *data)

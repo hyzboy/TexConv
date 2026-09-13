@@ -147,7 +147,8 @@ void MagickImage::Refresh()
         // Determine format based on image type
         Magick::ImageType imgType = m_image.type();
 
-        if(imgType == Magick::GrayscaleType || imgType == Magick::GrayscaleAlphaType)
+        if(imgType == Magick::GrayscaleType || imgType == Magick::GrayscaleAlphaType
+         ||imgType == Magick::BilevelType)
         {
             if(m_image.alpha())
             {
@@ -234,6 +235,46 @@ bool MagickImage::LoadFile(const OSString &filename)
     catch(Magick::Exception &error)
     {
         LogError(OS_TEXT("Failed to load: ") + ToOSString(error.what()));
+        return false;
+    }
+}
+
+bool MagickImage::CreateFromData(uint w, uint h, uint channels, ImagePixelType pixel_type, const void *data)
+{
+    if(w == 0 || h == 0 || channels < 1 || channels > 4 || !data)
+        return false;
+
+    try
+    {
+        constexpr ImageChannelLayout layout_by_channel[] =
+        {
+            ImageChannelLayout::Gray,
+            ImageChannelLayout::GrayAlpha,
+            ImageChannelLayout::RGB,
+            ImageChannelLayout::RGBA,
+        };
+
+        const char *map            = GetChannelMap(layout_by_channel[channels - 1]);
+        Magick::StorageType storage = GetMagickStorageType(pixel_type);
+
+        m_image.read(w, h, map, storage, const_cast<void *>(data));
+
+        // 按请求通道数强制图像类型:1 通道数据经 Magick 分类可能变成
+        // BilevelType(如 0/255 图案),不做会导致 Refresh 误判为 RGB
+        switch(channels)
+        {
+            case 1: m_image.type(Magick::GrayscaleType);        break;
+            case 2: m_image.type(Magick::GrayscaleAlphaType);   break;
+            case 3: m_image.type(Magick::TrueColorType);        break;
+            case 4: m_image.type(Magick::TrueColorAlphaType);   break;
+        }
+
+        Refresh();
+        return true;
+    }
+    catch(Magick::Exception &error)
+    {
+        LogError(OS_TEXT("CreateFromData failed: ") + ToOSString(error.what()));
         return false;
     }
 }
