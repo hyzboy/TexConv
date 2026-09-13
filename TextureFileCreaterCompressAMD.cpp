@@ -2,20 +2,22 @@
 #include"ImageLoader.h"
 #include<hgl/log/log.h>
 #include"Compressonator.h"
-#include <cstring>
-#include <cstdlib>
+#include<cstring>
+#include<cstdlib>
 
+/**
+ * AMD Compressonator 压缩编码器。
+ *
+ * 用传统 API（CMP_Texture + CMP_ConvertTexture，编码器编在库里，依赖 CMP_InitializeBCLibrary）。
+ * 不用 CMP_MipSet + CMP_ProcessTexture：后者属 SDK 的 compute/插件体系，插件文件缺失时
+ * 返回 CMP_ERR_PLUGIN_FILE_NOT_FOUND(15)，而失败时 MipSetOut 里的数据是"已按目标格式申请、
+ * 从未写入"的内存——旧实现忽略返回值直接落盘，产出的 .Tex2D 载荷就是进程内存垃圾。
+ */
 class TextureFileCreaterCompressAMD:public TextureFileCreater
 {
-    MipSet MipSetIn;
-    MipSet MipSetOut;
-    KernelOptions kernel_options;
-
     int channels;
     int type;
     uint pixel_bytes;
-    CMP_ChannelFormat cf;
-    CMP_TextureDataType tdt;
     CMP_FORMAT source_fmt;
     CMP_FORMAT target_fmt;
     std::string target_fmt_name;
@@ -77,13 +79,11 @@ public:
             LogInfo(msg.c_str());
         }
 
-// std::cout<<"Compress Image to "<<target_fmt_name.c_str()<<" Format."<<std::endl;
-
-        if(type==(int)ImagePixelType::UInt8 ){cf=CF_8bit; pixel_bytes=1;}else
-        if(type==(int)ImagePixelType::UInt16 ){cf=CF_16bit; pixel_bytes=2;}else
-        if(type==(int)ImagePixelType::UInt32 ){cf=CF_32bit; pixel_bytes=4;}else
-        if(type==(int)ImagePixelType::Float16 ){cf=CF_Float16; pixel_bytes=2;}else
-        if(type==(int)ImagePixelType::Float32 ){cf=CF_Float32; pixel_bytes=4;}else
+        if(type==(int)ImagePixelType::UInt8 ){pixel_bytes=1;}else
+        if(type==(int)ImagePixelType::UInt16 ){pixel_bytes=2;}else
+        if(type==(int)ImagePixelType::UInt32 ){pixel_bytes=4;}else
+        if(type==(int)ImagePixelType::Float16 ){pixel_bytes=2;}else
+        if(type==(int)ImagePixelType::Float32 ){pixel_bytes=4;}else
         {
             LogError(OS_TEXT("unknow type: %d"), type);
             return(false);
@@ -91,8 +91,6 @@ public:
 
         if(channels==1)
         {
-            tdt=TDT_R;
-
             if(type==(int)ImagePixelType::UInt8 )source_fmt=CMP_FORMAT_R_8;else
             if(type==(int)ImagePixelType::UInt16 )source_fmt=CMP_FORMAT_R_16;else
             if(type==(int)ImagePixelType::Float16 )source_fmt=CMP_FORMAT_R_16F;else
@@ -107,8 +105,6 @@ public:
         else
         if(channels==2)
         {
-            tdt=TDT_RG;
-
             if(type==(int)ImagePixelType::UInt8 )source_fmt=CMP_FORMAT_RG_8;else
             if(type==(int)ImagePixelType::UInt16 )source_fmt=CMP_FORMAT_RG_16;else
             if(type==(int)ImagePixelType::Float16 )source_fmt=CMP_FORMAT_RG_16F;else
@@ -123,8 +119,6 @@ public:
         else
         if(channels==3)
         {
-            tdt=TDT_XRGB;
-
             if(type==(int)ImagePixelType::UInt8 )source_fmt=CMP_FORMAT_RGBA_8888;else
             if(type==(int)ImagePixelType::UInt16 )source_fmt=CMP_FORMAT_RGBA_16;else
             if(type==(int)ImagePixelType::Float16 )source_fmt=CMP_FORMAT_RGBA_16F;else
@@ -139,8 +133,6 @@ public:
         else
         if(channels==4)
         {
-            tdt=TDT_ARGB;
-
             if(type==(int)ImagePixelType::UInt8 )source_fmt=CMP_FORMAT_RGBA_8888;else
             if(type==(int)ImagePixelType::UInt16 )source_fmt=CMP_FORMAT_RGBA_16;else
             if(type==(int)ImagePixelType::Float16 )source_fmt=CMP_FORMAT_RGBA_16F;else
@@ -161,152 +153,96 @@ public:
         return(true);
     }
 
-    void InitMipSetIn()
+    uint32 Write() override
     {
         const int width=image->width();
         const int height=image->height();
 
-        mem_zero(MipSetIn);
+        // 3/4 通道都按 RGBA 取（InitFormat 已 ConvertToRGBA）
+        const int src_channels=(channels>=3)?4:channels;
 
         void *source_data=nullptr;
 
-        if(channels==1)
-        {
+        if(src_channels==1)
             source_data=image->GetGray((ImagePixelType)type);
-        }
         else
-        if(channels==2)
-        {
+        if(src_channels==2)
             source_data=image->GetRG((ImagePixelType)type);
-        }
         else
-        if(channels==3)
-        {
             source_data=image->GetRGBA((ImagePixelType)type);
-        }
-        else
-        if(channels==4)
+
+        if(!source_data)
         {
-            source_data=image->GetRGBA((ImagePixelType)type);
+            LogError(OS_TEXT("Failed to get image data for compression"));
+            return(0);
         }
-        else
+
+        CMP_Texture src_tex;
+        mem_zero(src_tex);
+
+        src_tex.dwSize      =sizeof(CMP_Texture);
+        src_tex.dwWidth     =width;
+        src_tex.dwHeight    =height;
+        src_tex.dwPitch     =width*pixel_bytes*src_channels;
+        src_tex.format      =source_fmt;
+        src_tex.dwDataSize  =src_tex.dwPitch*height;
+        src_tex.pData       =(CMP_BYTE *)source_data;
+
+        CMP_Texture dst_tex;
+        mem_zero(dst_tex);
+
+        dst_tex.dwSize      =sizeof(CMP_Texture);
+        dst_tex.dwWidth     =width;
+        dst_tex.dwHeight    =height;
+        dst_tex.format      =target_fmt;
+        dst_tex.dwDataSize  =CMP_CalculateBufferSize(&dst_tex);
+        dst_tex.pData       =(CMP_BYTE *)malloc(dst_tex.dwDataSize);
+
+        if(!dst_tex.pData)
         {
-            LogError(OS_TEXT("unknow channels: %d"), channels);
-            return;
+            LogError(OS_TEXT("Failed to allocate destination buffer for compression"));
+            delete [] (uint8_t *)source_data;
+            return(0);
         }
 
-        // Create MipSet using SDK API
-        if(CMP_CreateMipSet(&MipSetIn, width, height,1, cf, TT_2D) != CMP_OK)
+        CMP_CompressOptions options;
+        mem_zero(options);
+
+        options.dwSize      =sizeof(CMP_CompressOptions);
+        options.fquality    =1.0f;
+        options.dwnumThreads=(target_fmt==CMP_FORMAT_BC4)?1:8;      // BC4单线程
+
+        const CMP_ERROR cmp_result=CMP_ConvertTexture(&src_tex,&dst_tex,&options,nullptr);
+
+        // 编码失败必须报错返回：否则 dst_tex 里是"已按目标格式申请、从未写入"的内存，落盘即垃圾
+        if(cmp_result!=CMP_OK)
         {
-            LogError(OS_TEXT("CMP_ERR_MEM_ALLOC_FOR_MIPSET (CreateMipSet)"));
-            return;
+            LogError(OS_TEXT("CMP_ConvertTexture failed, error code: %d"),(int)cmp_result);
+            free(dst_tex.pData);
+            delete [] (uint8_t *)source_data;
+            return(0);
         }
-
-        // Get pointer to top-level mip
-        CMP_MipLevel *cmp_mip_level = nullptr;
-        CMP_GetMipLevel(&cmp_mip_level, &MipSetIn,0,0);
-
-        if(!cmp_mip_level)
-        {
-            LogError(OS_TEXT("CMP_ERR_MEM_ALLOC_FOR_MIPSET (GetMipLevel)"));
-            return;
-        }
-
-        // Compute pitch and size and allocate data buffer for this mip level
-        CMP_DWORD dwPitch;
-        if(channels<3)
-            dwPitch = pixel_bytes * channels * width;
-        else
-            dwPitch = pixel_bytes *4 * width;
-
-        CMP_DWORD dwSize = dwPitch * height;
-
-        // allocate buffer with malloc so CMP_FreeMipSet can free it
-        CMP_BYTE* pData = (CMP_BYTE*)std::malloc(dwSize);
-        if(!pData)
-        {
-            LogError(OS_TEXT("CMP_ERR_MEM_ALLOC_FOR_MIPSET (alloc data)"));
-            return;
-        }
-
-        memcpy(pData, source_data, dwSize);
-
-        cmp_mip_level->m_nWidth = width;
-        cmp_mip_level->m_nHeight = height;
-        cmp_mip_level->m_dwLinearSize = dwSize;
-        cmp_mip_level->m_pbData = pData;
-
-        MipSetIn.m_nMipLevels =1;
-        MipSetIn.m_format = source_fmt;
-
-        // ensure MipSetIn dwWidth/dwHeight set for downstream use
-        MipSetIn.dwWidth = width;
-        MipSetIn.dwHeight = height;
-        MipSetIn.pData = pData;
-        MipSetIn.dwDataSize = dwSize;
-    }
-
-    void InitOption()
-    {
-        mem_zero(kernel_options);
-
-        kernel_options.height = image->height();
-        kernel_options.width = image->width();
-        kernel_options.fquality =1.0f;
-        kernel_options.format = target_fmt;
-        kernel_options.srcformat = source_fmt; // 补充
-        kernel_options.encodeWith = CMP_HPC;
-        kernel_options.threads = (target_fmt == CMP_FORMAT_BC4) ?1 :8; // BC4单线程
-        kernel_options.getPerfStats = false;
-        kernel_options.getDeviceInfo= false;
-
-        // Log consistent message style with Intel compressor
-        AnsiString msg = "Compress Image To: ";
-        msg += AnsiString::numberOf(image->width());
-        msg += "x";
-        msg += AnsiString::numberOf(image->height());
-        msg += " ";
-        msg += target_fmt_name.c_str();
-        msg += " format";
-        LogInfo(msg.c_str());
-    }
-
-    static bool CMP_API CMP_Feedback_Proc(CMP_FLOAT fProgress, CMP_DWORD_PTR pUser1, CMP_DWORD_PTR pUser2)
-    {
-        putchar('.');
-        return(false);
-    }
-
-    uint32 Write() override
-    {
-        InitOption();
-        InitMipSetIn();
-
-        mem_zero(MipSetOut);
-
-        CMP_ProcessTexture(&MipSetIn,&MipSetOut,kernel_options,&TextureFileCreaterCompressAMD::CMP_Feedback_Proc);
 
         // Log final compressed size similar to Intel
         {
             AnsiString msg = "Compress Image To: ";
-            msg += AnsiString::numberOf(image->width());
+            msg += AnsiString::numberOf(width);
             msg += "x";
-            msg += AnsiString::numberOf(image->height());
+            msg += AnsiString::numberOf(height);
             msg += " ";
-            msg += AnsiString::numberOf((uint)MipSetOut.dwDataSize);
+            msg += AnsiString::numberOf((uint)dst_tex.dwDataSize);
             msg += " bytes.";
             LogInfo(msg.c_str());
         }
 
-        uint32 result=TextureFileCreater::Write(MipSetOut.pData,MipSetOut.dwDataSize);
+        const uint32 result=TextureFileCreater::Write(dst_tex.pData,dst_tex.dwDataSize);
 
-        // Free allocated mipsets using SDK API
-        CMP_FreeMipSet(&MipSetOut);
-        CMP_FreeMipSet(&MipSetIn);
+        free(dst_tex.pData);
+        delete [] (uint8_t *)source_data;
 
         return result;
     }
-};//class TextureFileCreaterCompress:public TextureFileCreater
+};//class TextureFileCreaterCompressAMD:public TextureFileCreater
 
 TextureFileCreater *CreateTextureFileCreaterCompressAMD(const PixelFormat *pf)
 {
