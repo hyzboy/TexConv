@@ -24,6 +24,18 @@ void ParseParamFormat(ImageConvertConfig *icc,const CmdParse &cmd)
     icc->pixel_fmt[2]=ParseParamFormat(cmd,OS_TEXT("/RGB:"),    GetPixelFormat(ColorFormat::BC7));
     icc->pixel_fmt[3]=ParseParamFormat(cmd,OS_TEXT("/RGBA:"),   GetPixelFormat(ColorFormat::BC7));
 
+    // /normal：法线贴图按双通道存（BC5）——X/Y 进 R/G，Z 由 shader 用
+    // z=sqrt(1-x²-y²) 还原（同 UE/Unity 的做法；见 ShaderLibrary/ntb/*.glsl）。
+    // 好处不是体积（BC5 与 BC7 同为 16 字节/块），而是去掉 Z 通道的量化误差、
+    // 且两通道各按 BC4 精度编码，法线更平滑。源图几通道都一样处理。
+    if(cmd.Contains(OS_TEXT("/normal")))
+    {
+        const PixelFormat *bc5=GetPixelFormat(ColorFormat::BC5);
+
+        for(uint i=0;i<4;i++)
+            icc->pixel_fmt[i]=bc5;
+    }
+
     for(uint i=0;i<4;i++)
     {
         std::cout<<(i+1)<<": "<<icc->pixel_fmt[i]->name<<std::endl;

@@ -58,11 +58,6 @@ protected:
 
         OSString new_filename=ReplaceExtension<os_char>(fi.fullname,OS_TEXT("Tex2D"));
 
-        cfg->provider=compression_privoder;
-
-        cfg->force_grayscale=force_grayscale;
-        cfg->discard_alpha=discard_alpha;
-
         if(ConvertImage(fi.fullname,new_filename,cfg))
             ++convert_count;
     }
@@ -84,9 +79,11 @@ int os_main(int argc,os_char **argv)
     if(argc<=1)
     {
         std::cout<< "Command format:\n"
-                    "\tTexConv [/AMD|Intel] [/R:][/RG:][/RGB:][/RGBA:] [/ColorKey:rrggbb] [/s] [/mip] [/gray] [/discard_alpha] [/out:<new_name_without_ext>] <pathname or filename>\n"
+                    "\tTexConv [/AMD|Intel] [/R:][/RG:][/RGB:][/RGBA:] [/normal] [/ColorKey:rrggbb] [/s] [/mip] [/gray] [/discard_alpha] [/out:<new_name_without_ext>] <pathname or filename>\n"
                     "\n"
                     "Params:\n"
+                    "\t/R: /RG: /RGB: /RGBA: : target compressed format for 1/2/3/4-channel source (e.g. /RGB:BC5)\n"
+                    "\t/normal : normal map mode - always store as 2-channel BC5 (XY); Z is rebuilt in the shader\n"
                     "\t/s : proc sub-directory\n"
                     "\t/mip : generate mipmaps\n"
                     "\t/gray: convert to grayscale\n"
@@ -124,13 +121,28 @@ int os_main(int argc,os_char **argv)
 
     if(compression_privoder==CompressionProvider::Intel_ISPC)
     {
+#if defined(TEXCONV_ENABLE_INTEL_ISPC) && TEXCONV_ENABLE_INTEL_ISPC
         GLogInfo("Using Intel ISPC Texture Compressor");
+#else
+        // 本次构建未包含 Intel ISPC 编码器（ISPCTextureCompressor kernel*.obj 缺失）
+        // 显式请求 /Intel 时直接失败，不静默改用 AMD，避免"以为用了 Intel 编码器"
+        GLogError(OS_TEXT("Intel ISPC texture compressor is not available in this build "
+                          "(ISPCTextureCompressor kernel objects missing). Use /AMD."));
+        return(1);
+#endif
     }
     else
     {
         GLogInfo("Using AMD Compressonator Texture Compressor");
         CMP_InitializeBCLibrary();
     }
+
+    // 这些配置项在这里统一赋值：单文件模式直接调 ConvertImage(&icc)，不经过
+    // EnumConvertImage::ProcFile。以前把 provider 只写在 ProcFile 里，于是单文件模式下
+    // /Intel、/gray、/discard_alpha 全被忽略（icc 构造时 mem_zero，provider 默认 = AMD）。
+    icc.provider        =compression_privoder;
+    icc.force_grayscale =force_grayscale;
+    icc.discard_alpha   =discard_alpha;
 
     ParseParamColorKey(&icc,cp);
     ParseParamFormat(&icc,cp);                                         //检测推荐格式
