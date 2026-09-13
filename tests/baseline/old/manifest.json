@@ -1,0 +1,407 @@
+{
+ "exe": "E:\\ULRE\\build\\out\\Windows_64_Release\\TexConv.exe",
+ "cases": {
+  "g8_default": {
+   "exit_code": 0,
+   "outputs": {
+    "g8.Tex2D": {
+     "size": 40,
+     "sha256": "f7a244759e79de2df1280f9520520cc8c3cbc2ffc5475afa4542b02c1e3d50ba"
+    }
+   },
+   "log_tail": ": BC7\n4: BC7\n[#2] \nFile: E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\g8.png\n[#3] Image info:\n[#4] \t width: 64\n[#5] \t height: 64\n[#6] \t channels: 1\n[#7] Convert <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\g8.png> to <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\g8.Tex2D>.\n[#8] Compress Image to: 64x64 BC4 format.\n[#9] Compress Image To: 64x64 0 bytes.\n[#10] pixel total length: 8 bytes.\n"
+  },
+  "ga8_default": {
+   "exit_code": 0,
+   "outputs": {
+    "ga8.Tex2D": {
+     "size": 4128,
+     "sha256": "596468acac8f9d9e2d7a68d630a6a471b934ae3690c176f5ac1bafc7b1365e29"
+    }
+   },
+   "log_tail": "BC7\n[#2] \nFile: E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\ga8.png\n[#3] Image info:\n[#4] \t width: 64\n[#5] \t height: 64\n[#6] \t channels: 2\n[#7] Convert <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\ga8.png> to <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\ga8.Tex2D>.\n[#8] Compress Image to: 64x64 BC5 format.\n[#9] Compress Image To: 64x64 4096 bytes.\n[#10] pixel total length: 4096 bytes.\n"
+  },
+  "rgb8_default": {
+   "exit_code": 0,
+   "outputs": {
+    "rgb8.Tex2D": {
+     "size": 4128,
+     "sha256": "02f8abc983aa63e28dfe7c9fd9d4561ca40aa4e7abc1f57729601f75a0b6ef37"
+    }
+   },
+   "log_tail": "\n[#2] \nFile: E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb8.png\n[#3] Image info:\n[#4] \t width: 64\n[#5] \t height: 64\n[#6] \t channels: 3\n[#7] Convert <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb8.png> to <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb8.Tex2D>.\n[#8] Compress Image to: 64x64 BC7 format.\n[#9] Compress Image To: 64x64 4096 bytes.\n[#10] pixel total length: 4096 bytes.\n"
+  },
+  "rgba8png_default": {
+   "exit_code": 0,
+   "outputs": {},
+   "log_tail": "ile: E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgba8.png\n[#3] Image info:\n[#4] \t width: 64\n[#5] \t height: 64\n[#6] \t channels: 4\n[#7] Convert <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgba8.png> to <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgba8.Tex2D>.\n[#8] Compress Image to: 64x64 BC7 format.\n[#9][TextureFileCreaterCompressAMD.cpp:220] CMP_ConvertTexture failed, error code: 4\n"
+  },
+  "rgba8tga_default": {
+   "exit_code": 0,
+   "outputs": {
+    "rgba8.Tex2D": {
+     "size": 4128,
+     "sha256": "0db8e828df1530273ab7cec584a7d19673b8352472cac387d3ba4d232471ded9"
+    }
+   },
+   "log_tail": "2] \nFile: E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgba8.tga\n[#3] Image info:\n[#4] \t width: 64\n[#5] \t height: 64\n[#6] \t channels: 4\n[#7] Convert <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgba8.tga> to <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgba8.Tex2D>.\n[#8] Compress Image to: 64x64 BC7 format.\n[#9] Compress Image To: 64x64 4096 bytes.\n[#10] pixel total length: 4096 bytes.\n"
+  },
+  "rgb16_default": {
+   "exit_code": 0,
+   "outputs": {},
+   "log_tail": "ile: E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb16.png\n[#3] Image info:\n[#4] \t width: 64\n[#5] \t height: 64\n[#6] \t channels: 3\n[#7] Convert <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb16.png> to <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb16.Tex2D>.\n[#8] Compress Image to: 64x64 BC7 format.\n[#9][TextureFileCreaterCompressAMD.cpp:220] CMP_ConvertTexture failed, error code: 4\n"
+  },
+  "exr_default": {
+   "exit_code": 0,
+   "outputs": {},
+   "log_tail": ": E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgbf32.exr\n[#3] Image info:\n[#4] \t width: 32\n[#5] \t height: 32\n[#6] \t channels: 3\n[#7] Convert <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgbf32.exr> to <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgbf32.Tex2D>.\n[#8] Compress Image to: 32x32 BC7 format.\n[#9][TextureFileCreaterCompressAMD.cpp:220] CMP_ConvertTexture failed, error code: 4\n"
+  },
+  "hdr_default": {
+   "exit_code": 0,
+   "outputs": {},
+   "log_tail": "#2] \nFile: E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb.hdr\n[#3] Image info:\n[#4] \t width: 32\n[#5] \t height: 32\n[#6] \t channels: 3\n[#7] Convert <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb.hdr> to <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb.Tex2D>.\n[#8] Compress Image to: 32x32 BC7 format.\n[#9][TextureFileCreaterCompressAMD.cpp:220] CMP_ConvertTexture failed, error code: 4\n"
+  },
+  "grid2x2_default": {
+   "exit_code": 0,
+   "outputs": {
+    "Grid2x2.Tex2D": {
+     "size": 65568,
+     "sha256": "8ea351f6f141c00fd34532a5d76c8ae3263752d3975eee28f7f92c8448198bcf"
+    }
+   },
+   "log_tail": "] Using AMD Compressonator Texture Compressor\n1: BC4\n2: BC5\n3: BC7\n4: BC7\n[#2] \nFile: E:\\ULRE\\res\\image\\Grid2x2.png\n[#3] Image info:\n[#4] \t width: 256\n[#5] \t height: 256\n[#6] \t channels: 3\n[#7] Convert <E:\\ULRE\\res\\image\\Grid2x2.png> to <E:\\ULRE\\res\\image\\Grid2x2.Tex2D>.\n[#8] Compress Image to: 256x256 BC7 format.\n[#9] Compress Image To: 256x256 65536 bytes.\n[#10] pixel total length: 65536 bytes.\n"
+  },
+  "lena32_default": {
+   "exit_code": 0,
+   "outputs": {
+    "Lena32.Tex2D": {
+     "size": 1056,
+     "sha256": "11d93148bdcfdffce7a28abc0e73dd3ff3be87e2af9b247c9bf05a50f54b2271"
+    }
+   },
+   "log_tail": "efault\n\n[#1] Using AMD Compressonator Texture Compressor\n1: BC4\n2: BC5\n3: BC7\n4: BC7\n[#2] \nFile: E:\\ULRE\\res\\image\\Lena32.tga\n[#3] Image info:\n[#4] \t width: 32\n[#5] \t height: 32\n[#6] \t channels: 3\n[#7] Convert <E:\\ULRE\\res\\image\\Lena32.tga> to <E:\\ULRE\\res\\image\\Lena32.Tex2D>.\n[#8] Compress Image to: 32x32 BC7 format.\n[#9] Compress Image To: 32x32 1024 bytes.\n[#10] pixel total length: 1024 bytes.\n"
+  },
+  "g8_r8": {
+   "exit_code": 0,
+   "outputs": {
+    "g8.Tex2D": {
+     "size": 4128,
+     "sha256": "19709edc07c6caeb3feebcd4b62e00a24b57bf9664760a0d3fe5ead2fa83f9c8"
+    }
+   },
+   "log_tail": "essonator Texture Compressor\n1: R8\n2: BC5\n3: BC7\n4: BC7\n[#2] \nFile: E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\g8.png\n[#3] Image info:\n[#4] \t width: 64\n[#5] \t height: 64\n[#6] \t channels: 1\n[#7] Convert <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\g8.png> to <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\g8.Tex2D>.\nConvert Image To: 64x64 4096 bytes.\n[#8] pixel total length: 4096 bytes.\n"
+  },
+  "g8_r16f": {
+   "exit_code": 0,
+   "outputs": {
+    "g8.Tex2D": {
+     "size": 8224,
+     "sha256": "2090818684800a60232b21049adb3f2b9acb1f4b21496ed4451dee701d388304"
+    }
+   },
+   "log_tail": "sonator Texture Compressor\n1: R16F\n2: BC5\n3: BC7\n4: BC7\n[#2] \nFile: E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\g8.png\n[#3] Image info:\n[#4] \t width: 64\n[#5] \t height: 64\n[#6] \t channels: 1\n[#7] Convert <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\g8.png> to <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\g8.Tex2D>.\nConvert Image To: 64x64 8192 bytes.\n[#8] pixel total length: 8192 bytes.\n"
+  },
+  "g8_r32f": {
+   "exit_code": 0,
+   "outputs": {
+    "g8.Tex2D": {
+     "size": 16416,
+     "sha256": "d178368ad33048e3f6ae10ea1442a1bd7c5756fd31c1f11f45a7c83582d2527b"
+    }
+   },
+   "log_tail": "nator Texture Compressor\n1: R32F\n2: BC5\n3: BC7\n4: BC7\n[#2] \nFile: E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\g8.png\n[#3] Image info:\n[#4] \t width: 64\n[#5] \t height: 64\n[#6] \t channels: 1\n[#7] Convert <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\g8.png> to <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\g8.Tex2D>.\nConvert Image To: 64x64 16384 bytes.\n[#8] pixel total length: 16384 bytes.\n"
+  },
+  "ga8_rg8": {
+   "exit_code": 0,
+   "outputs": {
+    "ga8.Tex2D": {
+     "size": 8224,
+     "sha256": "0d4aa66bae8397d8d4b9ff197d391db7eecc3f0e73c56539ec18858921b3b017"
+    }
+   },
+   "log_tail": "nator Texture Compressor\n1: BC4\n2: RG8\n3: BC7\n4: BC7\n[#2] \nFile: E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\ga8.png\n[#3] Image info:\n[#4] \t width: 64\n[#5] \t height: 64\n[#6] \t channels: 2\n[#7] Convert <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\ga8.png> to <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\ga8.Tex2D>.\nConvert Image To: 64x64 8192 bytes.\n[#8] pixel total length: 8192 bytes.\n"
+  },
+  "ga8_rg16f": {
+   "exit_code": 0,
+   "outputs": {
+    "ga8.Tex2D": {
+     "size": 16416,
+     "sha256": "875fd183b43391571c28e9c2bcfabb83e576cf8e0a615d61a21781790c7976d8"
+    }
+   },
+   "log_tail": "r Texture Compressor\n1: BC4\n2: RG16F\n3: BC7\n4: BC7\n[#2] \nFile: E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\ga8.png\n[#3] Image info:\n[#4] \t width: 64\n[#5] \t height: 64\n[#6] \t channels: 2\n[#7] Convert <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\ga8.png> to <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\ga8.Tex2D>.\nConvert Image To: 64x64 16384 bytes.\n[#8] pixel total length: 16384 bytes.\n"
+  },
+  "rgb8_bc1rgba": {
+   "exit_code": 0,
+   "outputs": {
+    "rgb8.Tex2D": {
+     "size": 2080,
+     "sha256": "825a93405ae94d743c3a1379f78a5db3bb5fd8efc6336c8870048c2581e03276"
+    }
+   },
+   "log_tail": "] \nFile: E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb8.png\n[#3] Image info:\n[#4] \t width: 64\n[#5] \t height: 64\n[#6] \t channels: 3\n[#7] Convert <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb8.png> to <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb8.Tex2D>.\n[#8] Compress Image to: 64x64 BC1RGBA format.\n[#9] Compress Image To: 64x64 2048 bytes.\n[#10] pixel total length: 2048 bytes.\n"
+  },
+  "rgb8_bc4": {
+   "exit_code": 0,
+   "outputs": {
+    "rgb8.Tex2D": {
+     "size": 40,
+     "sha256": "f7a244759e79de2df1280f9520520cc8c3cbc2ffc5475afa4542b02c1e3d50ba"
+    }
+   },
+   "log_tail": "4: BC7\n[#2] \nFile: E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb8.png\n[#3] Image info:\n[#4] \t width: 64\n[#5] \t height: 64\n[#6] \t channels: 3\n[#7] Convert <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb8.png> to <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb8.Tex2D>.\n[#8] Compress Image to: 64x64 BC4 format.\n[#9] Compress Image To: 64x64 0 bytes.\n[#10] pixel total length: 8 bytes.\n"
+  },
+  "rgb8_rgb32f": {
+   "exit_code": 0,
+   "outputs": {
+    "rgb8.Tex2D": {
+     "size": 49184,
+     "sha256": "52c6277e0d147c1b14b09a0bb58cbeadc24b7b7a8ec9ab70098895ea06876f96"
+    }
+   },
+   "log_tail": " Compressor\n1: BC4\n2: BC5\n3: RGB32F\n4: BC7\n[#2] \nFile: E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb8.png\n[#3] Image info:\n[#4] \t width: 64\n[#5] \t height: 64\n[#6] \t channels: 3\n[#7] Convert <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb8.png> to <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb8.Tex2D>.\n[#8] Convert Image To: 64x64 49152 bytes.\n[#9] pixel total length: 49152 bytes.\n"
+  },
+  "rgb8_rgb565": {
+   "exit_code": 0,
+   "outputs": {
+    "rgb8.Tex2D": {
+     "size": 8224,
+     "sha256": "cc75c20aa2af59b042c169ddccc076b9f2c29fcc81b2e7d268dc55d75fad76ba"
+    }
+   },
+   "log_tail": "re Compressor\n1: BC4\n2: BC5\n3: RGB565\n4: BC7\n[#2] \nFile: E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb8.png\n[#3] Image info:\n[#4] \t width: 64\n[#5] \t height: 64\n[#6] \t channels: 3\n[#7] Convert <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb8.png> to <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb8.Tex2D>.\n[#8] Convert Image To: 64x64 8192 bytes.\n[#9] pixel total length: 8192 bytes.\n"
+  },
+  "rgb8_b10gr11": {
+   "exit_code": 0,
+   "outputs": {
+    "rgb8.Tex2D": {
+     "size": 16416,
+     "sha256": "a98a705d207b0d9528e154d9a943a6782a56cd31f980d194248e49277d36d2cb"
+    }
+   },
+   "log_tail": "mpressor\n1: BC4\n2: BC5\n3: B10GR11UF\n4: BC7\n[#2] \nFile: E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb8.png\n[#3] Image info:\n[#4] \t width: 64\n[#5] \t height: 64\n[#6] \t channels: 3\n[#7] Convert <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb8.png> to <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb8.Tex2D>.\n[#8] Convert Image To: 64x64 16384 bytes.\n[#9] pixel total length: 16384 bytes.\n"
+  },
+  "rgb8_bc7": {
+   "exit_code": 0,
+   "outputs": {
+    "rgb8.Tex2D": {
+     "size": 4128,
+     "sha256": "02f8abc983aa63e28dfe7c9fd9d4561ca40aa4e7abc1f57729601f75a0b6ef37"
+    }
+   },
+   "log_tail": "\n[#2] \nFile: E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb8.png\n[#3] Image info:\n[#4] \t width: 64\n[#5] \t height: 64\n[#6] \t channels: 3\n[#7] Convert <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb8.png> to <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb8.Tex2D>.\n[#8] Compress Image to: 64x64 BC7 format.\n[#9] Compress Image To: 64x64 4096 bytes.\n[#10] pixel total length: 4096 bytes.\n"
+  },
+  "rgba8_rgba8": {
+   "exit_code": 0,
+   "outputs": {
+    "rgba8.Tex2D": {
+     "size": 16416,
+     "sha256": "393b25b1297ac716ff523992a53f423c4d10466f3a09b21fc7ba43c32fc4a05b"
+    }
+   },
+   "log_tail": "ompressor\n1: BC4\n2: BC5\n3: BC7\n4: RGBA8\n[#2] \nFile: E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgba8.png\n[#3] Image info:\n[#4] \t width: 64\n[#5] \t height: 64\n[#6] \t channels: 4\n[#7] Convert <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgba8.png> to <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgba8.Tex2D>.\n[#8] Convert Image To: 64x64 16384 bytes.\n[#9] pixel total length: 16384 bytes.\n"
+  },
+  "rgba8_rgba16f": {
+   "exit_code": 0,
+   "outputs": {
+    "rgba8.Tex2D": {
+     "size": 32800,
+     "sha256": "4ad8557a28d88524b59201406f43a4813f82d5eddf61108ca73094fa2ab7a3d4"
+    }
+   },
+   "log_tail": "pressor\n1: BC4\n2: BC5\n3: BC7\n4: RGBA16F\n[#2] \nFile: E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgba8.png\n[#3] Image info:\n[#4] \t width: 64\n[#5] \t height: 64\n[#6] \t channels: 4\n[#7] Convert <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgba8.png> to <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgba8.Tex2D>.\n[#8] Convert Image To: 64x64 32768 bytes.\n[#9] pixel total length: 32768 bytes.\n"
+  },
+  "rgba8_rgba4": {
+   "exit_code": 0,
+   "outputs": {
+    "rgba8.Tex2D": {
+     "size": 8224,
+     "sha256": "e76a558f484526a1d2c1cc3c0bd05f6df51d960334f877cfb970f71b852a880c"
+    }
+   },
+   "log_tail": " Compressor\n1: BC4\n2: BC5\n3: BC7\n4: RGBA4\n[#2] \nFile: E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgba8.png\n[#3] Image info:\n[#4] \t width: 64\n[#5] \t height: 64\n[#6] \t channels: 4\n[#7] Convert <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgba8.png> to <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgba8.Tex2D>.\n[#8] Convert Image To: 64x64 8192 bytes.\n[#9] pixel total length: 8192 bytes.\n"
+  },
+  "rgba8_bgra4": {
+   "exit_code": 0,
+   "outputs": {
+    "rgba8.Tex2D": {
+     "size": 8224,
+     "sha256": "0d768bf6134f5eb06cd6eedc0efa404321e2b7afbb7f3933961b0a562017363a"
+    }
+   },
+   "log_tail": " Compressor\n1: BC4\n2: BC5\n3: BC7\n4: BGRA4\n[#2] \nFile: E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgba8.png\n[#3] Image info:\n[#4] \t width: 64\n[#5] \t height: 64\n[#6] \t channels: 4\n[#7] Convert <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgba8.png> to <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgba8.Tex2D>.\n[#8] Convert Image To: 64x64 8192 bytes.\n[#9] pixel total length: 8192 bytes.\n"
+  },
+  "rgba8_a1rgb5": {
+   "exit_code": 0,
+   "outputs": {
+    "rgba8.Tex2D": {
+     "size": 8224,
+     "sha256": "80540ad50784be31c7b24d5fed049d41a2198c563510042e9693968d219c172f"
+    }
+   },
+   "log_tail": "Compressor\n1: BC4\n2: BC5\n3: BC7\n4: A1RGB5\n[#2] \nFile: E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgba8.png\n[#3] Image info:\n[#4] \t width: 64\n[#5] \t height: 64\n[#6] \t channels: 4\n[#7] Convert <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgba8.png> to <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgba8.Tex2D>.\n[#8] Convert Image To: 64x64 8192 bytes.\n[#9] pixel total length: 8192 bytes.\n"
+  },
+  "rgba8_a2bgr10": {
+   "exit_code": 0,
+   "outputs": {
+    "rgba8.Tex2D": {
+     "size": 16416,
+     "sha256": "8506932d7922a706e4eb3ff93c044770d2cb27ececdb295e1b9d27b22c9fca43"
+    }
+   },
+   "log_tail": "pressor\n1: BC4\n2: BC5\n3: BC7\n4: A2BGR10\n[#2] \nFile: E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgba8.png\n[#3] Image info:\n[#4] \t width: 64\n[#5] \t height: 64\n[#6] \t channels: 4\n[#7] Convert <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgba8.png> to <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgba8.Tex2D>.\n[#8] Convert Image To: 64x64 16384 bytes.\n[#9] pixel total length: 16384 bytes.\n"
+  },
+  "rgba8_bc3": {
+   "exit_code": 0,
+   "outputs": {},
+   "log_tail": "ile: E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgba8.png\n[#3] Image info:\n[#4] \t width: 64\n[#5] \t height: 64\n[#6] \t channels: 4\n[#7] Convert <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgba8.png> to <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgba8.Tex2D>.\n[#8] Compress Image to: 64x64 BC3 format.\n[#9][TextureFileCreaterCompressAMD.cpp:220] CMP_ConvertTexture failed, error code: 4\n"
+  },
+  "rgb8_mip": {
+   "exit_code": 0,
+   "outputs": {
+    "rgb8.Tex2D": {
+     "size": 5488,
+     "sha256": "319cd8d17a2940515ee1580eeca5340452e25492977429630024a2ea6796b6ca"
+    }
+   },
+   "log_tail": "ne\\inputs\\rgb8.Tex2D>.\n[#8] Compress Image to: 64x64 BC7 format.\n[#9] Compress Image To: 64x64 4096 bytes.\n[#10] Resized to: 32x32\n[#11] Compress Image To: 32x32 1024 bytes.\n[#12] Resized to: 16x16\n[#13] Compress Image To: 16x16 256 bytes.\n[#14] Resized to: 8x8\n[#15] Compress Image To: 8x8 64 bytes.\n[#16] Resized to: 4x4\n[#17] Compress Image To: 4x4 16 bytes.\n[#18] pixel total length: 5456 bytes.\n"
+  },
+  "rgba8_rgba8_mip": {
+   "exit_code": 0,
+   "outputs": {
+    "rgba8.Tex2D": {
+     "size": 21880,
+     "sha256": "3653eba6c5889403d7455d9e5a0857654ce5e98aa5a8f6b6e211e0c002199063"
+    }
+   },
+   "log_tail": "ed to: 32x32\n[#10] Convert Image To: 32x32 4096 bytes.\n[#11] Resized to: 16x16\n[#12] Convert Image To: 16x16 1024 bytes.\n[#13] Resized to: 8x8\n[#14] Convert Image To: 8x8 256 bytes.\n[#15] Resized to: 4x4\n[#16] Convert Image To: 4x4 64 bytes.\n[#17] Resized to: 2x2\n[#18] Convert Image To: 2x2 16 bytes.\n[#19] Resized to: 1x1\n[#20] Convert Image To: 1x1 4 bytes.\n[#21] pixel total length: 21848 bytes.\n"
+  },
+  "rgb8_rgb32f_mip": {
+   "exit_code": 0,
+   "outputs": {
+    "rgb8.Tex2D": {
+     "size": 65564,
+     "sha256": "e6405e426a6beb112a94de22b72cc4cad04040fba84b97f689ddbdfff4768b21"
+    }
+   },
+   "log_tail": "to: 32x32\n[#10] Convert Image To: 32x32 12288 bytes.\n[#11] Resized to: 16x16\n[#12] Convert Image To: 16x16 3072 bytes.\n[#13] Resized to: 8x8\n[#14] Convert Image To: 8x8 768 bytes.\n[#15] Resized to: 4x4\n[#16] Convert Image To: 4x4 192 bytes.\n[#17] Resized to: 2x2\n[#18] Convert Image To: 2x2 48 bytes.\n[#19] Resized to: 1x1\n[#20] Convert Image To: 1x1 12 bytes.\n[#21] pixel total length: 65532 bytes.\n"
+  },
+  "g8_r8_mip": {
+   "exit_code": 0,
+   "outputs": {
+    "g8.Tex2D": {
+     "size": 5504,
+     "sha256": "f7c31efc8ce9055eee12cc6bb22166cc7872c4c2e2098c9f5519efa803f11162"
+    }
+   },
+   "log_tail": "rt Image To: 64x64 4096 bytes.\n[#8] Resized to: 32x32\nConvert Image To: 32x32 1024 bytes.\n[#9] Resized to: 16x16\nConvert Image To: 16x16 256 bytes.\n[#10] Resized to: 8x8\nConvert Image To: 8x8 64 bytes.\n[#11] Resized to: 4x4\nConvert Image To: 4x4 16 bytes.\n[#12] Resized to: 2x2\nConvert Image To: 2x2 4 bytes.\n[#13] Resized to: 1x1\nConvert Image To: 1x1 1 bytes.\n[#14] pixel total length: 5472 bytes.\n"
+  },
+  "rgb8_out": {
+   "exit_code": 0,
+   "outputs": {
+    "custom_name.Tex2D": {
+     "size": 4128,
+     "sha256": "02f8abc983aa63e28dfe7c9fd9d4561ca40aa4e7abc1f57729601f75a0b6ef37"
+    }
+   },
+   "log_tail": "re Compressor\n1: BC4\n2: BC5\n3: BC7\n4: BC7\n[#2] \nFile: E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb8.png\n[#3] Image info:\n[#4] \t width: 64\n[#5] \t height: 64\n[#6] \t channels: 3\n[#7] Convert <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb8.png> to <custom_name.Tex2D>.\n[#8] Compress Image to: 64x64 BC7 format.\n[#9] Compress Image To: 64x64 4096 bytes.\n[#10] pixel total length: 4096 bytes.\n"
+  },
+  "rgb8_colorkey": {
+   "exit_code": 0,
+   "outputs": {
+    "rgb8.Tex2D": {
+     "size": 4128,
+     "sha256": "02f8abc983aa63e28dfe7c9fd9d4561ca40aa4e7abc1f57729601f75a0b6ef37"
+    }
+   },
+   "log_tail": "\n[#2] \nFile: E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb8.png\n[#3] Image info:\n[#4] \t width: 64\n[#5] \t height: 64\n[#6] \t channels: 3\n[#7] Convert <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb8.png> to <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb8.Tex2D>.\n[#8] Compress Image to: 64x64 BC7 format.\n[#9] Compress Image To: 64x64 4096 bytes.\n[#10] pixel total length: 4096 bytes.\n"
+  },
+  "rgb8_gray": {
+   "exit_code": 3221226505,
+   "outputs": {
+    "rgb8.Tex2D": {
+     "size": 32,
+     "sha256": "a2da82fdef587bc621411bea083fa203d0f248bfd3628ec71a92bc0a1f66d106"
+    }
+   },
+   "log_tail": "ay\n\n[#1] Using AMD Compressonator Texture Compressor\n1: BC4\n2: BC5\n3: BC7\n4: BC7\n[#2] \nFile: E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb8.png\n[#3] Image info:\n[#4] \t width: 64\n[#5] \t height: 64\n[#6] \t channels: 3\n[#7] Convert <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb8.png> to <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb8.Tex2D>.\n[#8] Compress Image to: 64x64 BC5 format.\n"
+  },
+  "rgba8_discard": {
+   "exit_code": 0,
+   "outputs": {},
+   "log_tail": "ile: E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgba8.png\n[#3] Image info:\n[#4] \t width: 64\n[#5] \t height: 64\n[#6] \t channels: 4\n[#7] Convert <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgba8.png> to <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgba8.Tex2D>.\n[#8] Compress Image to: 64x64 BC7 format.\n[#9][TextureFileCreaterCompressAMD.cpp:220] CMP_ConvertTexture failed, error code: 4\n"
+  },
+  "rgb8_normal": {
+   "exit_code": 0,
+   "outputs": {
+    "rgb8.Tex2D": {
+     "size": 4128,
+     "sha256": "5e050bfc8425ade5747958ab66b5733de55659637edc2813b18adaaa651d807a"
+    }
+   },
+   "log_tail": "\n[#2] \nFile: E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb8.png\n[#3] Image info:\n[#4] \t width: 64\n[#5] \t height: 64\n[#6] \t channels: 3\n[#7] Convert <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb8.png> to <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb8.Tex2D>.\n[#8] Compress Image to: 64x64 BC5 format.\n[#9] Compress Image To: 64x64 4096 bytes.\n[#10] pixel total length: 4096 bytes.\n"
+  },
+  "rgb8_amd": {
+   "exit_code": 0,
+   "outputs": {
+    "rgb8.Tex2D": {
+     "size": 4128,
+     "sha256": "02f8abc983aa63e28dfe7c9fd9d4561ca40aa4e7abc1f57729601f75a0b6ef37"
+    }
+   },
+   "log_tail": "\n[#2] \nFile: E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb8.png\n[#3] Image info:\n[#4] \t width: 64\n[#5] \t height: 64\n[#6] \t channels: 3\n[#7] Convert <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb8.png> to <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb8.Tex2D>.\n[#8] Compress Image to: 64x64 BC7 format.\n[#9] Compress Image To: 64x64 4096 bytes.\n[#10] pixel total length: 4096 bytes.\n"
+  },
+  "ga8_gray": {
+   "exit_code": 0,
+   "outputs": {
+    "ga8.Tex2D": {
+     "size": 40,
+     "sha256": "f7a244759e79de2df1280f9520520cc8c3cbc2ffc5475afa4542b02c1e3d50ba"
+    }
+   },
+   "log_tail": "C7\n4: BC7\n[#2] \nFile: E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\ga8.png\n[#3] Image info:\n[#4] \t width: 64\n[#5] \t height: 64\n[#6] \t channels: 2\n[#7] Convert <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\ga8.png> to <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\ga8.Tex2D>.\n[#8] Compress Image to: 64x64 BC4 format.\n[#9] Compress Image To: 64x64 0 bytes.\n[#10] pixel total length: 8 bytes.\n"
+  },
+  "intel_ispc": {
+   "exit_code": 0,
+   "outputs": {
+    "rgb8.Tex2D": {
+     "size": 4128,
+     "sha256": "df2a22ce06b24f83663b64c0d58d0a0d2adc9f8ab5039e42616b475cd6072e31"
+    }
+   },
+   "log_tail": "\n[#2] \nFile: E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb8.png\n[#3] Image info:\n[#4] \t width: 64\n[#5] \t height: 64\n[#6] \t channels: 3\n[#7] Convert <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb8.png> to <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb8.Tex2D>.\n[#8] Compress Image to: 64x64 BC7 format.\n[#9] Compress Image To: 64x64 4096 bytes.\n[#10] pixel total length: 4096 bytes.\n"
+  },
+  "neg_corrupt": {
+   "exit_code": 0,
+   "outputs": {},
+   "log_tail": "1\nCurrent program: E:\\ULRE\\build\\out\\Windows_64_Release\\TexConv.exe\nCurrent path: E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\old\\work\\neg_corrupt\n\n[#1] Using AMD Compressonator Texture Compressor\n1: BC4\n2: BC5\n3: BC7\n4: BC7\n[#2][MagickImageSupport.cpp:292] Failed to load: TexConv.exe: improper image header `E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\corrupt.png' @ error/png.c/ReadPNGImage/3953\n"
+  },
+  "neg_rgb8_rgba8tgt": {
+   "exit_code": 0,
+   "outputs": {
+    "rgb8.Tex2D": {
+     "size": 32,
+     "sha256": "b3ed0e4a89cf993524e2a13c5325d3d4273c664a5aa2d5d061010a9c4b6a1eb3"
+    }
+   },
+   "log_tail": "BC7\n[#2] \nFile: E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb8.png\n[#3] Image info:\n[#4] \t width: 64\n[#5] \t height: 64\n[#6] \t channels: 3\n[#7] Convert <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb8.png> to <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\inputs\\rgb8.Tex2D>.\n[#8][TextureFileCreaterRGB.cpp:37] Don't support this RGB format\n[#9][ConvertImage.cpp:90] Init texture format failed.\n"
+  },
+  "dir_mode_s": {
+   "exit_code": 0,
+   "outputs": {
+    "rgb8.Tex2D": {
+     "size": 4128,
+     "sha256": "02f8abc983aa63e28dfe7c9fd9d4561ca40aa4e7abc1f57729601f75a0b6ef37"
+    },
+    "g8.Tex2D": {
+     "size": 40,
+     "sha256": "f7a244759e79de2df1280f9520520cc8c3cbc2ffc5475afa4542b02c1e3d50ba"
+    },
+    "preset_untouched": {
+     "size": 6
+    }
+   },
+   "log_tail": "0] Image info:\n[#21] \t width: 64\n[#22] \t height: 64\n[#23] \t channels: 1\n[#24] Convert <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\old\\work\\srctree\\sub\\g8.png> to <E:\\ULRE\\src\\Tools\\TexConv\\tests\\baseline\\old\\work\\srctree\\sub\\g8.Tex2D>.\n[#25] Compress Image to: 64x64 BC4 format.\n[#26] Compress Image To: 64x64 0 bytes.\n[#27] pixel total length: 8 bytes.\n[#28] Total converted 2 textures for 0 seconds.\n"
+  }
+ }
+}
