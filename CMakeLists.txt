@@ -4,10 +4,91 @@ project(TexConv)
 
 add_definitions(-DUNICODE -D_UNICODE)
 
-# 附加工具（CubeMapConv/ComboTexture/DFGen/HDR2PNG）仍是旧的 ImageLoader API
-# （另有 DevIL 残留、logger::InitLogger 已删），当前源码树编译不过，
-# 故默认只构建 TexConv；移植到 MagickImage 后再打开此开关。
-option(TEXCONV_BUILD_EXTRA_TOOLS "构建附加工具（CubeMapConv/ComboTexture/DFGen/HDR2PNG）" OFF)
+# 调试支持:Release 也生成 PDB(不影响产物行为)
+if(MSVC)
+    add_compile_options(/Zi)
+    add_link_options($<$<CONFIG:Release>:/DEBUG>)
+endif()
+
+# ---------------------------------------------------------------------------
+# 独立配置支持(2026-09 重构后重新可用):
+#
+#   重构后 hgl 仅链入 TexImage.dll,独立配置只需引用根工程"预编译"的 hgl 静态库,
+#   不再需要构建整个 ULRE。从根工程配置进来时(CMCore target 已存在)以下全部跳过。
+#
+#   用法(在 TexConv 目录下):
+#     cmake -B build -S . -G "Visual Studio 18 2026" -A x64 ^
+#           -DCMAKE_TOOLCHAIN_FILE=E:/vcpkg/scripts/buildsystems/vcpkg.cmake
+#     cmake --build build --config Release
+#   产物输出到 build/out/Windows_64_{Debug,Release}(与根工程同一约定)。
+#   生成 TexConv.sln,内含 TexCommon/TexImage/TexEncAMD/TexEncIntel/TexConvCore/TexConv
+#   六个工程(按 CM/Tools/Texture 分组),可整体构建与调试。
+#
+#   前提:根工程已至少构建过一次(存在 build/out 下的 hgl 静态库)。
+# ---------------------------------------------------------------------------
+if(NOT TARGET CMCore)
+    set(TEXCONV_STANDALONE ON)
+
+    # C++ 标准与根工程一致(compiler.cmake 的约定)
+    set(CMAKE_CXX_STANDARD 20)
+    set(CMAKE_CXX_STANDARD_REQUIRED ON)
+    set(CMAKE_CXX_EXTENSIONS OFF)
+
+    # 运行时库与预编译 hgl 静态库一致(MT/MTd),否则 LNK2038
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+
+    # GLM 类型布局宏(必须与预编译 CMCore 等库编译时一致)
+    add_compile_definitions(GLM_FORCE_RADIANS
+                            GLM_FORCE_DEPTH_ZERO_TO_ONE
+                            GLM_ENABLE_EXPERIMENTAL
+                            GLM_FORCE_DEFAULT_ALIGNED_GENTYPES)
+    if(WIN32)
+        add_compile_definitions(GLM_FORCE_AVX2)
+    endif()
+
+    set(ULRE_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../..")
+
+    # 输出目录与根工程同一约定(build/out/Windows_64_{Debug,Release})
+    include("${ULRE_ROOT}/CMCMakeModule/system_bit.cmake")
+    include("${ULRE_ROOT}/CMCMakeModule/output_path.cmake")
+
+    # absl(vcpkg;CMCore 公开头文件直接包含 absl 头)
+    if(NOT DEFINED absl_DIR AND EXISTS "E:/vcpkg/installed/x64-windows/share/absl")
+        set(absl_DIR "E:/vcpkg/installed/x64-windows/share/absl")
+    endif()
+    find_package(absl CONFIG REQUIRED)
+
+    # 引用根工程预编译的 hgl 静态库
+    set(HGL_OUT_DEBUG   "${ULRE_ROOT}/build/out/${CMAKE_SYSTEM_NAME}_${HGL_BITS}_Debug")
+    set(HGL_OUT_RELEASE "${ULRE_ROOT}/build/out/${CMAKE_SYSTEM_NAME}_${HGL_BITS}_Release")
+
+    foreach(_lib CMCoreType CMPlatform CMUtil CMCore)
+        add_library(${_lib} STATIC IMPORTED)
+        set_target_properties(${_lib} PROPERTIES
+            IMPORTED_LOCATION                 "${HGL_OUT_RELEASE}/${_lib}.lib"
+            IMPORTED_LOCATION_DEBUG           "${HGL_OUT_DEBUG}/${_lib}.lib"
+            IMPORTED_LOCATION_RELEASE         "${HGL_OUT_RELEASE}/${_lib}.lib"
+            IMPORTED_LOCATION_RELWITHDEBINFO  "${HGL_OUT_RELEASE}/${_lib}.lib"
+            IMPORTED_LOCATION_MINSIZEREL      "${HGL_OUT_RELEASE}/${_lib}.lib"
+        )
+    endforeach()
+
+    # 对齐根工程 CMCore target 的公开依赖
+    target_link_libraries(CMCore INTERFACE
+        CMCoreType CMPlatform
+        absl::btree absl::flat_hash_map absl::node_hash_map)
+
+    # hgl 头文件路径
+    include_directories(
+        "${ULRE_ROOT}/inc"
+        "${ULRE_ROOT}/CMCoreType/inc"
+        "${ULRE_ROOT}/CMMath/inc"
+        "${ULRE_ROOT}/CMCore/inc"
+        "${ULRE_ROOT}/CMUtil/inc"
+    )
+
+    message(STATUS "TexConv: standalone configure (hgl libs from ${HGL_OUT_RELEASE})")
+endif()
 
 find_package(ImageMagick COMPONENTS Magick++ REQUIRED)
 
@@ -15,9 +96,6 @@ if(NOT ImageMagick_FOUND)
     message(FATAL_ERROR "ImageMagick not found. Please install ImageMagick with Magick++ support.")
 endif()
 
-include_directories(${ImageMagick_INCLUDE_DIRS})
-
-SET(IMAGE_LIBRARY_SOURCES MagickImage.h MagickImageSupport.cpp)
 SET(IMAGE_LIBS ${ImageMagick_LIBRARIES})
 
 message(STATUS "Using ImageMagick for image processing")
@@ -26,36 +104,21 @@ message(STATUS "ImageMagick libraries: ${ImageMagick_LIBRARIES}")
 
 if(WIN32)
 
-    if(MSVC)
-        # 为AMD Compressonator库准备所有可能的后缀
-        # 注意：实际链接时，只有项目配置匹配的库才会被使用
-        set(LIB_SUFFIX_LIST "MD" "MDd" "MT" "MTd")
-        message(STATUS "Will support all runtime library variants: ${LIB_SUFFIX_LIST}")
-    endif()
-
     # Find Compressonator include directory
     find_path(COMPRESSONATOR_ROOT
         NAMES include/compressonator.h
-        HINTS "C:\\Compressonator_4.5.52"
+        HINTS "C:/Compressonator_4.5.52"
         PATH_SUFFIXES Include include
     )
 
     include_directories(${COMPRESSONATOR_ROOT}/Include)
-    link_directories(${COMPRESSONATOR_ROOT}/lib/bin/x64)
 
-    # 使用生成器表达式根据配置类型选择库文件
-    # 默认使用MD/MDd（DLL运行时），这是Visual Studio的默认设置
-    # 如果项目使用MT/MTd，需要在CMakeLists.txt顶部设置：
-    # set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-
-    # 简化方案：检测是否设置了静态运行时库
+    # 按运行时库变体选择 Compressonator 导入库
     if(CMAKE_MSVC_RUNTIME_LIBRARY AND CMAKE_MSVC_RUNTIME_LIBRARY MATCHES "MultiThreaded[^D]")
-        # 使用静态运行时库 (MT/MTd)
         SET(AMD_COM_LIB_DEBUG "Compressonator_MTd.lib")
         SET(AMD_COM_LIB_RELEASE "Compressonator_MT.lib")
         message(STATUS "Using static runtime: MT/MTd")
     else()
-        # 使用DLL运行时库 (MD/MDd) - 默认
         SET(AMD_COM_LIB_DEBUG "Compressonator_MDd.lib")
         SET(AMD_COM_LIB_RELEASE "Compressonator_MD.lib")
         message(STATUS "Using DLL runtime: MD/MDd")
@@ -71,164 +134,46 @@ if(WIN32)
 
 endif(WIN32)
 
-SET(ISPC_TC_HEADER_PATH "${CMAKE_CURRENT_SOURCE_DIR}/ISPCTextureCompressor/ispc_texcomp")
+# ---------------------------------------------------------------------------
+# TexConv 模块化架构:
+#   TexCommon    公共 C 接口头 / 格式表(静态库)
+#   TexImage     图像核心(ImageMagick++;hgl 仅链入此 DLL)
+#   TexEncAMD    AMD Compressonator 编码器插件
+#   TexEncIntel  Intel ISPC 编码器插件(kernel*.obj 缺失时自动跳过构建)
+#   TexConvCore  编排核心:流水线 / .Tex2D 容器 / 插件管理(运行时加载编码器)
+#   TexConv      CLI 外壳
+# 必须在 Compressonator 探测之后 add_subdirectory,子目录才能取到
+# COMPRESSONATOR_ROOT / AMD_COM_LIB。
+# ---------------------------------------------------------------------------
+add_subdirectory(common)
+add_subdirectory(image)
+add_subdirectory(enc_amd)
+add_subdirectory(enc_intel)
+add_subdirectory(core)
+add_subdirectory(cli)
+add_subdirectory(tests)
 
-# 使用生成器表达式支持多配置生成器（如Visual Studio）
-SET(ISPC_TC_LIBRARY_PATH_DEBUG "${CMAKE_CURRENT_SOURCE_DIR}/ISPCTextureCompressor/ISPC Texture Compressor/x64/Debug")
-SET(ISPC_TC_LIBRARY_PATH_RELEASE "${CMAKE_CURRENT_SOURCE_DIR}/ISPCTextureCompressor/ISPC Texture Compressor/x64/Release")
-
-# Debug和Release共有的库文件
-SET(INTEL_TC_LIBRARY_COMMON
-    $<$<CONFIG:Debug>:${ISPC_TC_LIBRARY_PATH_DEBUG}/kernel.obj>
-    $<$<CONFIG:Debug>:${ISPC_TC_LIBRARY_PATH_DEBUG}/kernel_avx.obj>
-    $<$<CONFIG:Debug>:${ISPC_TC_LIBRARY_PATH_DEBUG}/kernel_avx2.obj>
-    $<$<CONFIG:Debug>:${ISPC_TC_LIBRARY_PATH_DEBUG}/kernel_sse2.obj>
-    $<$<CONFIG:Debug>:${ISPC_TC_LIBRARY_PATH_DEBUG}/kernel_sse4.obj>
-    $<$<CONFIG:Debug>:${ISPC_TC_LIBRARY_PATH_DEBUG}/kernel_astc.obj>
-
-    $<$<NOT:$<CONFIG:Debug>>:${ISPC_TC_LIBRARY_PATH_RELEASE}/kernel.obj>
-    $<$<NOT:$<CONFIG:Debug>>:${ISPC_TC_LIBRARY_PATH_RELEASE}/kernel_avx.obj>
-    $<$<NOT:$<CONFIG:Debug>>:${ISPC_TC_LIBRARY_PATH_RELEASE}/kernel_avx2.obj>
-    $<$<NOT:$<CONFIG:Debug>>:${ISPC_TC_LIBRARY_PATH_RELEASE}/kernel_sse2.obj>
-    $<$<NOT:$<CONFIG:Debug>>:${ISPC_TC_LIBRARY_PATH_RELEASE}/kernel_sse4.obj>
-    $<$<NOT:$<CONFIG:Debug>>:${ISPC_TC_LIBRARY_PATH_RELEASE}/kernel_astc.obj>
-    $<$<NOT:$<CONFIG:Debug>>:${ISPC_TC_LIBRARY_PATH_RELEASE}/kernel_astc_avx.obj>
-    $<$<NOT:$<CONFIG:Debug>>:${ISPC_TC_LIBRARY_PATH_RELEASE}/kernel_astc_avx2.obj>
-    $<$<NOT:$<CONFIG:Debug>>:${ISPC_TC_LIBRARY_PATH_RELEASE}/kernel_astc_sse2.obj>
-    $<$<NOT:$<CONFIG:Debug>>:${ISPC_TC_LIBRARY_PATH_RELEASE}/kernel_astc_sse4.obj>
-)
-
-SET(INTEL_TC_LIBRARY ${INTEL_TC_LIBRARY_COMMON})
-
-SET(INTEL_TC_SOURCE ${ISPC_TC_HEADER_PATH}/ispc_texcomp.cpp
-					${ISPC_TC_HEADER_PATH}/ispc_texcomp.h
-					${ISPC_TC_HEADER_PATH}/ispc_texcomp_astc.cpp)
-
-SOURCE_GROUP("Intel ISPC Texture Compression" FILES ${INTEL_TC_SOURCE})
+# 旧单体实现(附加工具/独立配置支持)已移除;
+# HDR2PNG/ComboTexture/DFGen 等附加工具源码保留在根目录,待基于 TexImage.dll 复活。
 
 # ---------------------------------------------------------------------------
-# Intel ISPCTextureCompressor 的 kernel*.obj 必须用 ispc 编译器生成
-# （上游仓库的 ISPC/win 编译器与 x64/*/kernel*.obj 都未入库），这里自动探测：
-#   有预编译产物 → 启用 Intel 编码器（/Intel 可用）
-#   没有        → 关闭 Intel 编码器，只保留 AMD Compressonator（main.cpp 默认即 AMD）
-# 需要 Intel 编码器时：用 ispc 生成 kernel*.obj 放回
-#   ISPCTextureCompressor/ISPC Texture Compressor/x64/{Debug,Release}/
-# 后重新 configure 即可。
+# VS 解决方案分组:六个工程同组(根解决方案与独立 TexConv.sln 均生效),
+# 独立配置时 TexConv 设为启动工程。
 # ---------------------------------------------------------------------------
-if(EXISTS "${ISPC_TC_LIBRARY_PATH_DEBUG}/kernel.obj" OR EXISTS "${ISPC_TC_LIBRARY_PATH_RELEASE}/kernel.obj")
-    message(STATUS "TexConv: ISPCTextureCompressor kernels found -> Intel ISPC encoder enabled")
-    add_definitions(-DTEXCONV_ENABLE_INTEL_ISPC=1)
-else()
-    message(STATUS "TexConv: ISPCTextureCompressor kernels NOT found -> Intel ISPC encoder disabled (AMD Compressonator only)")
-    set(INTEL_TC_LIBRARY "")
-    set(INTEL_TC_SOURCE "")
-    add_definitions(-DTEXCONV_ENABLE_INTEL_ISPC=0)
-endif()
+set(TEXCONV_FOLDER "CM/Tools/Texture")
 
-# Image library source files
-
-SET(PIXEL_FORMAT_SOURCE pixel_format.cpp
-                        pixel_format.h
-                        ImageConvertConfig.h)
-
-SET(TEXTURE_FILE_CREATER_SOURCE TextureFileCreater.h
-                                TextureFileCreater.cpp
-                                TextureFileCreaterR.cpp
-                                TextureFileCreaterRG.cpp
-                                TextureFileCreaterRGB.cpp
-                                TextureFileCreaterRGBA.cpp
-                                TextureFileCreaterCompressAMD.cpp
-                                TextureFileCreaterCompressIntel.cpp)
-
-SET(PARAM_PARSE_SOURCE ParamParse.h ParamParse.cpp)
-
-SOURCE_GROUP("Image File" FILES ${IMAGE_LIBRARY_SOURCES})
-SOURCE_GROUP("Pixel Format" FILES ${PIXEL_FORMAT_SOURCE})
-SOURCE_GROUP("Texture File Creater" FILES ${TEXTURE_FILE_CREATER_SOURCE})
-SOURCE_GROUP("CMD Param parse" FILES ${PARAM_PARSE_SOURCE})
-
-SET(TEX_CONV_SOURCE ${IMAGE_LIBRARY_SOURCES} ${PIXEL_FORMAT_SOURCE} ${TEXTURE_FILE_CREATER_SOURCE} ${PARAM_PARSE_SOURCE})
-SET(TEX_CONV_LIBRARY CMCore CMPlatform CMUtil ${IMAGE_LIBS} ${INTEL_TC_LIBRARY} ${AMD_COM_LIB})
-
-# ---------------------------------------------------------------------------
-# GLM
-#   本工程可独立配置（CMake-GUI 直接指向本目录），此时没有根工程的 include(math)，
-#   而 glm::glm 带命名空间 —— CMake 对带 `::` 的名字按"必须存在的 target"处理，
-#   找不到就直接报错（CMCore 这类不带 `::` 的只会被当成库名，所以只有 glm 会先跳出来）。
-#   这里按工程统一策略（CMCMakeModule/math.cmake）解析：
-#     1) 从根工程配置进来时，父作用域已定好 HGL_MATH_LIB，直接用（不重复建 target）；
-#     2) 独立配置时优先用 Vulkan SDK 自带的 GLM（与主工程一致，避免多一份头文件）；
-#     3) 否则 find_package(glm CONFIG)（vcpkg：vcpkg install glm:x64-windows）。
-#   独立配置还要自己补 GLM_FORCE_* 宏：它们决定 glm 类型的布局
-#   （尤其 GLM_FORCE_DEFAULT_ALIGNED_GENTYPES），必须与 CMCore 等库编译时一致。
-# ---------------------------------------------------------------------------
-if(NOT DEFINED HGL_MATH_LIB)
-    add_compile_definitions(GLM_FORCE_RADIANS)
-    add_compile_definitions(GLM_FORCE_DEPTH_ZERO_TO_ONE)
-    add_compile_definitions(GLM_ENABLE_EXPERIMENTAL)
-    add_compile_definitions(GLM_FORCE_DEFAULT_ALIGNED_GENTYPES)
-    if(WIN32)
-        add_compile_definitions(GLM_FORCE_AVX2)
+foreach(_t TexCommon TexImage TexEncAMD TexEncIntel TexConvCore TexConv)
+    if(TARGET ${_t})
+        set_target_properties(${_t} PROPERTIES FOLDER "${TEXCONV_FOLDER}")
     endif()
+endforeach()
 
-    if(NOT TARGET glm::glm)
-        if(WIN32 AND DEFINED ENV{VULKAN_SDK} AND EXISTS "$ENV{VULKAN_SDK}/Include/glm/glm.hpp")
-            # Vulkan SDK 自带 GLM（header-only）
-            add_library(glm::glm INTERFACE IMPORTED)
-            set_target_properties(glm::glm PROPERTIES
-                INTERFACE_INCLUDE_DIRECTORIES "$ENV{VULKAN_SDK}/Include")
-            message(STATUS "TexConv: GLM from Vulkan SDK ($ENV{VULKAN_SDK}/Include)")
-        else()
-            find_package(glm CONFIG REQUIRED)
-            message(STATUS "TexConv: GLM from find_package (${glm_DIR})")
-        endif()
+foreach(_t unit_image unit_encoders unit_core)
+    if(TARGET ${_t})
+        set_target_properties(${_t} PROPERTIES FOLDER "${TEXCONV_FOLDER}/Tests")
     endif()
+endforeach()
 
-    set(HGL_MATH_LIB glm::glm)
+if(TEXCONV_STANDALONE)
+    set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT TexConv)
 endif()
-
-SET(TEX_CONV_LIBRARY ${TEX_CONV_LIBRARY} ${HGL_MATH_LIB})
-
-include_directories(${Vulkan_INCLUDE_DIR})
-
-add_executable(TexConv ${TEX_CONV_SOURCE} ${INTEL_TC_SOURCE} main.cpp ConvertImage.cpp)
-target_link_libraries(TexConv PRIVATE ${TEX_CONV_LIBRARY})
-
-if(TEXCONV_BUILD_EXTRA_TOOLS)
-
-    add_executable(CubeMapConv ${TEX_CONV_SOURCE} CubeMapConvert.cpp)
-    target_link_libraries(CubeMapConv PRIVATE ${TEX_CONV_LIBRARY})
-
-    add_executable(HDR2PNG HDR2PNG.cpp ${IMAGE_LIBRARY_SOURCES})
-    target_link_libraries(HDR2PNG PRIVATE CMCore CMPlatform CMUtil ${IMAGE_LIBS})
-
-IF(CM_BUILD_GUI_TOOLS)
-    set(IDENTIFIER "com.hyzgame.texconv")
-
-    target_link_libraries(TexConv PRIVATE Qt${CM_QT_MAJOR_VERSION}::Core Qt${CM_QT_MAJOR_VERSION}::Gui Qt${CM_QT_MAJOR_VERSION}::Widgets)
-ENDIF(CM_BUILD_GUI_TOOLS)
-
-    add_executable(ComboTexture ComboTexture.cpp ${IMAGE_LIBRARY_SOURCES})
-    target_link_libraries(ComboTexture PRIVATE CMCore CMPlatform CMUtil ${IMAGE_LIBS})
-
-    #add_executable(NormalTest NormalTest.cpp SpheremapNormal.cpp ${IMAGE_LIBRARY_SOURCES})
-    #target_link_libraries(NormalTest PRIVATE CMCore CMPlatform CMUtil ${IMAGE_LIBS})
-
-    add_executable(DFGen DistanceFieldGenerater.cpp ${IMAGE_LIBRARY_SOURCES})
-    target_link_libraries(DFGen PRIVATE CMCore CMPlatform CMUtil ${IMAGE_LIBS})
-
-endif(TEXCONV_BUILD_EXTRA_TOOLS)
-
-macro(texture_tool_project project_name)
-    set_property(TARGET ${project_name} PROPERTY FOLDER "CM/Tools/Texture")
-endmacro()
-
-texture_tool_project(TexConv)
-
-if(TEXCONV_BUILD_EXTRA_TOOLS)
-    texture_tool_project(CubeMapConv)
-    texture_tool_project(ComboTexture)
-    texture_tool_project(DFGen)
-    #texture_tool_project(IMTest)
-    texture_tool_project(HDR2PNG)
-endif(TEXCONV_BUILD_EXTRA_TOOLS)
