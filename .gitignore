@@ -9,3 +9,8 @@
 /IntelTextureCompression/kernel_ispc_sse4.h
 /IntelTextureCompression/kernel_ispc_sse4.obj
 /build
+
+# 测试临时产物
+tests/__pycache__/
+tests/_compare_work/
+/ispc-trunk-windows.zip
