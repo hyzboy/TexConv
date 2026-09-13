@@ -100,5 +100,10 @@ python regression.py compare --exe <新exe> --against baseline/old/manifest.json
 - 3 通道源配 RGBA8/R8 等不兼容目标:转换失败并残留 32 字节头文件(旧 InitFormat 行为)。
 - 旧版 `/gray`+3 通道源会崩溃(AMD 编码器路径),新版已不崩溃且产物正确。
 - `/ColorKey:` 仅解析不生效(旧版即如此,为 GUI 预留)。
+- 距离场(`/DF`):算法迁自旧 DFGen(双网格两遍扫描 SDF,输出 = (到暗部距离-到亮部距离)*3+128);
+  修正了旧实现 uint32 偏移的回绕缺陷(改有符号)。单通道源对灰度生成,
+  RGBA/GrayAlpha 源对 Alpha 生成,RGB 无 Alpha 报错;生成后按 1 通道继续,
+  默认槽位 R8(AMD 的 BC4 灰度源路径有已知 0 字节问题,可用 /Intel+/R:BC4 规避)。
+  GUI 侧通过 `TexJobParams.df_mode/df_threshold` 配置。
 - 退出码:任一转换失败返回 1(旧版恒 0,此为唯一有意的行为改进)。
 - `res/image/TexConv.exe` 为人工维护副本:更新时构建后手动复制,并在 res 子模块单独提交。

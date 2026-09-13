@@ -20,3 +20,10 @@ add_executable(unit_core EXCLUDE_FROM_ALL
 
 target_compile_definitions(unit_core PRIVATE TEXCONV_SHARED_USE)
 target_link_libraries(unit_core PRIVATE TexCommon TexConvCore)
+
+add_executable(unit_df EXCLUDE_FROM_ALL
+    unit_df.cpp
+)
+
+target_compile_definitions(unit_df PRIVATE TEXCONV_SHARED_USE)
+target_link_libraries(unit_df PRIVATE TexCommon TexImage)

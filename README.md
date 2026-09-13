@@ -89,6 +89,11 @@ TexConv /out:output_name image.png
 # 使用 AMD Compressonator
 TexConv /AMD image.png
 
+# 距离场:单通道纹理按灰度生成,RGBA 纹理按 Alpha 生成(结果为单通道纹理)
+TexConv /DF image.png
+TexConv /DF:160 image.png          # 自定义内外判定阈值(默认 128)
+TexConv /DF /R:R8 /mip image.png   # 未压缩 R8 + mipmap
+
 # 使用 Intel ISPC
 TexConv /Intel image.png
 
