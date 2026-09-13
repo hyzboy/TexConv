@@ -51,7 +51,25 @@ cmake ..
 cmake --build .
 ```
 
+
+## 模块化架构(2026-09 重构)
+
+自 2026-09 起 TexConv 拆分为模块化架构,CLI 仅是薄外壳,转换能力全部来自 DLL:
+
+| 模块 | 职责 |
+|------|------|
+| TexCommon(静态库) | 公共 C 接口头 + 像素格式表 |
+| TexImage.dll | ImageMagick++ 图像加载/预处理 |
+| TexEncAMD.dll / TexEncIntel.dll | 块压缩编码器插件(运行时加载) |
+| TexConvCore.dll | 转换流水线 / .Tex2D 容器 / 插件管理 |
+| TexConv.exe | CLI 外壳 |
+
+Qt GUI 等未来外壳只需链接 `common/include/texconv/tex_core.h` 暴露的 C API
+(逐文件格式配置、进度回调、取消、产物读回等)。
+构建、部署与回归验证见 **DEPLOY.md**;命令行用法保持不变(见下文)。
+
 ## 使用示例
+
 
 ### TexConv - 纹理转换
 
