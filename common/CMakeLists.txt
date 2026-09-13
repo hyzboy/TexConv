@@ -3,6 +3,7 @@
 
 add_library(TexCommon STATIC
     src/format_table.cpp
+    src/distance_field.cpp
 )
 
 target_include_directories(TexCommon PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
