@@ -46,6 +46,7 @@ public:
         ColMip,         // 生成 Mipmap:行内 checkbox
         ColTarget,      // 目标格式(选中行变 ComboBox)
         ColResult,      // 转换结果
+        ColPath,        // 完整路径
         ColCount
     };
 

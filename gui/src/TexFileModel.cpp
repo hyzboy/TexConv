@@ -160,6 +160,7 @@ QVariant TexFileModel::data(const QModelIndex &index, int role) const
                 case ColTarget:     return item.state == NotImage ? QStringLiteral("-")
                                                                   : item.target_format;
                 case ColResult:     return item.result_text;
+                case ColPath:       return item.path;
             }
             break;
         }
@@ -229,6 +230,7 @@ QVariant TexFileModel::headerData(int section, Qt::Orientation orientation, int 
         case ColMip:        return QStringLiteral("Mipmap");
         case ColTarget:     return QStringLiteral("目标格式");
         case ColResult:     return QStringLiteral("结果");
+        case ColPath:       return QStringLiteral("完整路径");
     }
 
     return QVariant();
