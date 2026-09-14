@@ -3,10 +3,23 @@
 
 #include "internal.h"
 
+#include <filesystem>
+
 namespace texcore
 {
     bool ContainerOpen(const std::wstring &path, FILE *&out)
     {
+        // 父目录不存在时自动创建(内核 fopen 不会建目录)
+        const std::filesystem::path fs_path(path);
+
+        const std::filesystem::path parent = fs_path.parent_path();
+
+        if(!parent.empty() && !std::filesystem::exists(parent))
+        {
+            std::error_code ec;
+            std::filesystem::create_directories(parent, ec);
+        }
+
         FILE *f = nullptr;
         if(_wfopen_s(&f, path.c_str(), L"wb") != 0 || !f)
             return false;

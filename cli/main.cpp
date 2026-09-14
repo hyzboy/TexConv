@@ -307,12 +307,26 @@ static int run_cube(const std::vector<std::wstring> &inputs,
         ++group_index;
 
         // 输出名:/out: 优先(单组);否则公共前缀 + .TexCube
+        // (公共前缀为空——如 px/nx/py 各自独立命名——退用目录名)
         std::wstring output;
 
         if(out_base && *out_base && groups.size() == 1)
             output = out_base;
         else
-            output = g.dir + L"\\" + cube_common_prefix(g.paths);
+        {
+            std::wstring base = cube_common_prefix(g.paths);
+
+            if(base.empty())
+            {
+                base = g.dir;
+                const size_t sep = base.find_last_of(L"/\\");
+                if(sep != std::wstring::npos)base = base.substr(sep + 1);
+            }
+
+            if(base.empty())base = L"cubemap";
+
+            output = g.dir + L"\\" + base;
+        }
 
         output += L".TexCube";
 

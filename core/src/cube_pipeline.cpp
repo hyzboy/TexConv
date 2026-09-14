@@ -240,6 +240,7 @@ namespace texcore
         {
             for(int face = 0; face < 6; face++)
             {
+                fprintf(stderr, "[dbg] level %d face %d: encoding\n", level, face);
                 std::vector<uint8_t> payload;
 
                 uint32_t bytes = 0;

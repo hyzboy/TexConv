@@ -500,17 +500,18 @@ int TexFileModel::AddPaths(const QStringList &paths)
     {
         if(g.count == 6)
         {
-            const QString prefix = CubeCommonPrefix(g.face);
+            // 公共前缀(如 px/nx/py 各自独立命名时为空)→ 退用目录名作为基名
+            QString base = CubeCommonPrefix(g.face);
 
-            if(prefix.isEmpty())
-            {
-                for(const QString &f : g.all)add_single(f);
-                continue;
-            }
+            if(base.isEmpty())
+                base = QDir(g.dir).dirName();
+
+            if(base.isEmpty())
+                base = QStringLiteral("cubemap");
 
             Item item;
             item.is_cube = true;
-            item.path    = QDir(g.dir).filePath(prefix);
+            item.path    = QDir(g.dir).filePath(base);
 
             for(int i = 0; i < 6; i++)
                 item.face_paths[i] = g.face[i];
