@@ -83,46 +83,18 @@ void MainWindow::BuildUi()
 
     root_layout->addLayout(toolbar);
 
-    // ---- 转换选项行 ----
+    // ---- 批次级设置行(全部转换选项均为逐文件,见右键菜单) ----
     auto options = new QHBoxLayout;
 
-    mip_check_    = new QCheckBox(QStringLiteral("Mipmap"), this);
-    mip_check_->setToolTip(QStringLiteral("生成 mipmap 链(压缩格式 4×4 下限,少 2 级)"));
-    gray_check_   = new QCheckBox(QStringLiteral("灰度"), this);
-    gray_check_->setToolTip(QStringLiteral("强制转灰度(/gray)"));
-    discard_check_ = new QCheckBox(QStringLiteral("丢弃Alpha"), this);
-    discard_check_->setToolTip(QStringLiteral("丢弃 alpha 通道(/discard_alpha)"));
-    auto mode_hint = new QLabel(QStringLiteral("法线/距离场:选中行右键批量设置(添加时按文件名自动识别法线)"), this);
-
-    auto provider_label = new QLabel(QStringLiteral("后端:"), this);
-    provider_combo_ = new QComboBox(this);
-    provider_combo_->addItem(QStringLiteral("默认"), QString());        // data = short_name,空=默认
-
-    {
-        TexProviderInfo infos[8];
-        const int n = TexCore_EnumProviders(infos, 8);
-
-        for(int i = 0; i < n; i++)
-            provider_combo_->addItem(QString::fromLatin1(infos[i].short_name),
-                                     QString::fromLatin1(infos[i].short_name));
-    }
-
-    provider_combo_->setToolTip(QStringLiteral("块压缩编码后端(来自 texenc*.dll 插件)"));
+    auto mode_hint = new QLabel(QStringLiteral("全部选项逐文件配置:选中行右键批量设置(法线按文件名自动识别)"), this);
 
     auto outdir_label = new QLabel(QStringLiteral("输出:"), this);
     outdir_edit_ = new QLineEdit(this);
     outdir_edit_->setPlaceholderText(QStringLiteral("(留空 = 与源图同目录)"));
     outdir_btn_ = new QPushButton(QStringLiteral("浏览..."), this);
 
-    options->addWidget(mip_check_);
-    options->addWidget(gray_check_);
-    options->addWidget(discard_check_);
-    options->addSpacing(8);
     options->addWidget(mode_hint);
-    options->addSpacing(8);
-    options->addWidget(provider_label);
-    options->addWidget(provider_combo_);
-    options->addSpacing(8);
+    options->addSpacing(12);
     options->addWidget(outdir_label);
     options->addWidget(outdir_edit_, 1);
     options->addWidget(outdir_btn_);
@@ -148,7 +120,7 @@ void MainWindow::BuildUi()
     table_->horizontalHeader()->resizeSection(TexFileModel::ColSize, 90);
     table_->horizontalHeader()->resizeSection(TexFileModel::ColChannels, 50);
     table_->horizontalHeader()->resizeSection(TexFileModel::ColPixelType, 80);
-    table_->horizontalHeader()->resizeSection(TexFileModel::ColMode, 90);
+    table_->horizontalHeader()->resizeSection(TexFileModel::ColFlags, 150);
     table_->horizontalHeader()->resizeSection(TexFileModel::ColTarget, 110);
     table_->verticalHeader()->setDefaultSectionSize(24);
     table_->setDragDropMode(QAbstractItemView::NoDragDrop);
@@ -220,21 +192,15 @@ void MainWindow::ApplyCommandLineOptions(const QStringList &args)
 {
     for(const QString &a : args)
     {
-        if(a == QStringLiteral("--mip"))          mip_check_->setChecked(true);
-        else if(a == QStringLiteral("--gray"))    gray_check_->setChecked(true);
-        else if(a == QStringLiteral("--discard")) discard_check_->setChecked(true);
+        if(a == QStringLiteral("--mip"))          model_->SetFilesMipmaps(model_->AllRowIndexes(), true);
+        else if(a == QStringLiteral("--gray"))    model_->SetFilesGrayscale(model_->AllRowIndexes(), true);
+        else if(a == QStringLiteral("--discard")) model_->SetFilesDiscardAlpha(model_->AllRowIndexes(), true);
         else if(a == QStringLiteral("--normal"))  model_->SetFilesNormal(model_->AllRowIndexes(), true);
         else if(a == QStringLiteral("--df"))      model_->SetFilesDF(model_->AllRowIndexes(), true);
         else if(a.startsWith(QStringLiteral("--df-threshold:")))
             model_->SetFilesDFThreshold(model_->AllRowIndexes(), a.mid(14).toInt());
         else if(a.startsWith(QStringLiteral("--provider:")))
-        {
-            const QString name = a.mid(11);
-            const int at = provider_combo_->findData(name);
-
-            if(at >= 0)
-                provider_combo_->setCurrentIndex(at);
-        }
+            model_->SetFilesProvider(model_->AllRowIndexes(), a.mid(11));
         else if(a.startsWith(QStringLiteral("--outdir:")))
             outdir_edit_->setText(a.mid(9));
     }
@@ -277,10 +243,6 @@ void MainWindow::UpdateButtons()
     cancel_btn_->setVisible(busy_);
     table_->setEnabled(true);               // 表格保持可看,编辑被模型锁定
 
-    mip_check_->setEnabled(!busy_);
-    gray_check_->setEnabled(!busy_);
-    discard_check_->setEnabled(!busy_);
-    provider_combo_->setEnabled(!busy_);
     outdir_edit_->setEnabled(!busy_);
     outdir_btn_->setEnabled(!busy_);
 }
@@ -422,12 +384,16 @@ void MainWindow::OnConvert()
         model_->MarkConverting(desc.row);
 
         ConvertItem job;
-        job.row          = desc.row;
-        job.path         = desc.path;
-        job.format       = desc.format;
-        job.normal_map   = desc.normal_map;
-        job.df_mode      = desc.df_mode;
-        job.df_threshold = desc.df_threshold;
+        job.row            = desc.row;
+        job.path           = desc.path;
+        job.format         = desc.format;
+        job.gen_mipmaps    = desc.gen_mipmaps;
+        job.force_grayscale = desc.force_grayscale;
+        job.discard_alpha  = desc.discard_alpha;
+        job.normal_map     = desc.normal_map;
+        job.df_mode        = desc.df_mode;
+        job.df_threshold   = desc.df_threshold;
+        job.provider       = desc.provider;
         jobs.push_back(job);
     }
 
@@ -446,10 +412,6 @@ void MainWindow::OnConvert()
     UpdateButtons();
 
     ConvertOptions opts;
-    opts.gen_mipmaps      = mip_check_->isChecked();
-    opts.force_grayscale  = gray_check_->isChecked();
-    opts.discard_alpha    = discard_check_->isChecked();
-    opts.provider         = provider_combo_->currentData().toString();
     opts.output_dir       = outdir_edit_->text().trimmed();
 
     QMetaObject::invokeMethod(runner_, "RunConvert",
@@ -572,6 +534,91 @@ void MainWindow::OnContextMenu(const QPoint &pos)
         if(ok)
             model_->SetFilesDFThreshold(selected, v);
     });
+
+    menu.addSeparator();
+
+    // ---- 通用转换选项(逐文件) ----
+    bool any_mip = false, all_mip = false;
+    bool any_gray = false, all_gray = false;
+    bool any_discard = false, all_discard = false;
+    bool first = true;
+
+    for(const QModelIndex &idx : selected)
+    {
+        const auto &item = model_->At(idx.row());
+
+        all_mip     = first ? item.gen_mipmaps     : (all_mip && item.gen_mipmaps);
+        any_mip    |= item.gen_mipmaps;
+        all_gray    = first ? item.force_grayscale : (all_gray && item.force_grayscale);
+        any_gray   |= item.force_grayscale;
+        all_discard = first ? item.discard_alpha   : (all_discard && item.discard_alpha);
+        any_discard |= item.discard_alpha;
+
+        first = false;
+    }
+
+    QAction *mip_action = menu.addAction(QStringLiteral("生成 Mipmap"));
+    mip_action->setCheckable(true);
+    mip_action->setChecked(all_mip);
+    connect(mip_action, &QAction::triggered, this, [this, selected, all_mip](bool)
+    {
+        model_->SetFilesMipmaps(selected, !all_mip);
+    });
+
+    QAction *gray_action = menu.addAction(QStringLiteral("转灰度"));
+    gray_action->setCheckable(true);
+    gray_action->setChecked(all_gray);
+    connect(gray_action, &QAction::triggered, this, [this, selected, all_gray](bool)
+    {
+        model_->SetFilesGrayscale(selected, !all_gray);
+    });
+
+    QAction *discard_action = menu.addAction(QStringLiteral("丢弃 Alpha"));
+    discard_action->setCheckable(true);
+    discard_action->setChecked(all_discard);
+    connect(discard_action, &QAction::triggered, this, [this, selected, all_discard](bool)
+    {
+        model_->SetFilesDiscardAlpha(selected, !all_discard);
+    });
+
+    // ---- 压缩后端(逐文件) ----
+    QMenu *provider_menu = menu.addMenu(QStringLiteral("压缩后端"));
+
+    {
+        // 当前选中行的后端是否一致(全一致则打勾对应项)
+        QString uniform;
+        bool same = true, first_p = true;
+
+        for(const QModelIndex &idx : selected)
+        {
+            const QString &p = model_->At(idx.row()).provider;
+
+            if(first_p) { uniform = p; first_p = false; }
+            else if(p != uniform) { same = false; break; }
+        }
+
+        auto add_provider = [this, provider_menu, selected, uniform, same]
+                            (const QString &display, const QString &value)
+        {
+            QAction *act = provider_menu->addAction(display);
+            act->setCheckable(true);
+            act->setChecked(same && uniform == value);
+
+            connect(act, &QAction::triggered, this, [this, selected, value](bool)
+            {
+                model_->SetFilesProvider(selected, value);
+            });
+        };
+
+        add_provider(QStringLiteral("默认(优先 AMD)"), QString());
+
+        TexProviderInfo infos[8];
+        const int n = TexCore_EnumProviders(infos, 8);
+
+        for(int i = 0; i < n; i++)
+            add_provider(QString::fromLatin1(infos[i].short_name),
+                         QString::fromLatin1(infos[i].short_name));
+    }
 
     menu.addSeparator();
     menu.addAction(QStringLiteral("移除选中"), this, &MainWindow::OnRemoveSelected);

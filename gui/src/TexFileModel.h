@@ -3,10 +3,12 @@
 // 行生命周期:Pending →(检测)→ Ready / NotImage →(转换)→ Converting → Done / Failed / Cancelled
 // 转换进行中模型进入只读锁定(禁止增删),行号保持稳定,工作线程以行号回发结果。
 //
-// 法线/距离场是"每文件"配置(非全局):
-//   * 法线:添加文件时按文件名自动识别(含 normal/nmap,或以 _n/-n/ n 结尾),可手动改;
-//     法线行的目标格式锁定 BC5;
-//   * 距离场:手动标记(右键批量),带逐文件阈值;DF 行按 1 通道推导目标格式。
+// 全部转换选项均为"每文件"配置(非全局):
+//   * 生成 Mipmap / 转灰度 / 丢弃 Alpha / 法线 / 距离场(阈值) / 压缩后端;
+//   * 法线在添加文件时按文件名自动识别(含 normal/nmap,或以 _n/-n/ n 结尾),可手动改;
+//   * 右键菜单可对选中行批量设置;
+//   * "标记"列汇总显示一行已启用的全部选项;
+//   * 目标格式的可选项与默认值按"计预处理后的有效通道数"推导(与内核一致)。
 
 #include <QAbstractTableModel>
 #include <QSet>
@@ -38,7 +40,7 @@ public:
         ColSize,        // 宽x高
         ColChannels,    // 通道
         ColPixelType,   // 像素类型
-        ColMode,        // 模式:法线/距离场(阈值)
+        ColFlags,       // 标记:该行已启用的全部选项汇总
         ColTarget,      // 目标格式(选中行变 ComboBox)
         ColResult,      // 转换结果
         ColCount
@@ -50,7 +52,7 @@ public:
         ChannelsRole = Qt::UserRole + 1,    // int:源图通道数(未检测 = 0)
         StateRole,                          // int:FileState
         PathRole,                           // QString:完整路径
-        EffectiveChannelsRole,              // int:计 DF 后的有效通道数(委托过滤用)
+        EffectiveChannelsRole,              // int:计预处理后的有效通道数(委托过滤用)
         NormalLockedRole,                   // bool:该行法线模式,目标格式锁定 BC5
     };
 
@@ -68,9 +70,14 @@ public:
         qint64   output_size = -1;
         QString  probe_fail_text;           // 检测失败原因
 
+        // ---- 每文件转换选项 ----
+        bool     gen_mipmaps = false;       // 生成 mipmap
+        bool     force_grayscale = false;   // 转灰度
+        bool     discard_alpha = false;     // 丢弃 alpha
         bool     normal_map = false;        // 法线贴图:目标格式强制 BC5
         bool     df_mode = false;           // 距离场:对灰度(1ch)或 Alpha 生成后按 1 通道继续
         int      df_threshold = 128;        // 距离场内外判定阈值
+        QString  provider;                  // 压缩后端 short_name;空 = 默认(优先 AMD)
     };
 
     explicit TexFileModel(QObject *parent = nullptr);
@@ -109,16 +116,13 @@ public:
     void SetConvertCancelled(int row);
 
     // --- 每文件配置(作用于选中行;转换锁定期间调用无效) ---
-    /// 法线贴图开关(开:目标格式重推为 BC5)
+    void SetFilesMipmaps(const QModelIndexList &rows, bool on);
+    void SetFilesGrayscale(const QModelIndexList &rows, bool on);
+    void SetFilesDiscardAlpha(const QModelIndexList &rows, bool on);
     void SetFilesNormal(const QModelIndexList &rows, bool on);
-
-    /// 距离场开关(开:目标格式按 1 通道重推)
     void SetFilesDF(const QModelIndexList &rows, bool on);
-
-    /// 距离场阈值(逐文件)
     void SetFilesDFThreshold(const QModelIndexList &rows, int threshold);
-
-    /// 显式设置目标格式(仅作用于该行通道数合法的行)
+    void SetFilesProvider(const QModelIndexList &rows, const QString &provider);
     void SetFilesFormat(const QModelIndexList &rows, const QString &format);
 
     /// 只读锁定(转换期间禁止增删与配置变更)
@@ -131,9 +135,13 @@ public:
         int      row;
         QString  path;
         QString  format;
+        bool     gen_mipmaps;
+        bool     force_grayscale;
+        bool     discard_alpha;
         bool     normal_map;
         bool     df_mode;
         int      df_threshold;
+        QString  provider;
     };
 
     /// 取所有"检测通过"行的任务快照
@@ -142,7 +150,7 @@ public:
     /// 取指定行通道数(委托/其它 UI 用)
     int ChannelsAt(int row) const { return At(row).channels; }
 
-    /// 取指定行有效通道数(计距离场;右键交集过滤用)
+    /// 取指定行有效通道数(计预处理;右键交集过滤用)
     int EffectiveChannelsAt(int row) const { return EffectiveChannels(At(row)); }
 
     const Item &At(int row) const { return items_[size_t(row)]; }
@@ -162,11 +170,8 @@ private:
     /// 按该行当前选项推导默认目标格式
     QString DeriveTarget(const Item &item) const;
 
-    /// 该行有效通道数(DF 生成后为单通道)
-    int EffectiveChannels(const Item &item) const
-    {
-        return item.df_mode ? 1 : item.channels;
-    }
+    /// 计预处理(灰度/丢弃Alpha/距离场)后的有效通道数(对齐内核 ConvertImage 顺序)
+    int EffectiveChannels(const Item &item) const;
 
     void RefreshItem(int row);
     void BumpCounts();

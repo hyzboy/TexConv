@@ -32,13 +32,9 @@ private:
     LogBridge() = default;
 };
 
-/// 批量转换选项(全局;法线/距离场为逐文件配置,见 ConvertItem)
+/// 批量转换选项(仅剩批次级设置;全部转换选项均为逐文件配置,见 ConvertItem)
 struct ConvertOptions
 {
-    bool    gen_mipmaps      = false;
-    bool    force_grayscale  = false;
-    bool    discard_alpha    = false;
-    QString provider;                   // 空 = 默认(优先 AMD)
     QString output_dir;                 // 空 = 与源图同目录;非空 = 产物统一写到该目录
 };
 
@@ -50,9 +46,15 @@ struct ConvertItem
     int     row = -1;
     QString path;
     QString format;             // 目标格式名(显式 target_format)
-    bool    normal_map = false; // 逐文件:法线模式
-    bool    df_mode = false;    // 逐文件:距离场模式
-    int     df_threshold = 128; // 逐文件:距离场阈值
+
+    // ---- 逐文件转换选项 ----
+    bool    gen_mipmaps = false;
+    bool    force_grayscale = false;
+    bool    discard_alpha = false;
+    bool    normal_map = false;
+    bool    df_mode = false;
+    int     df_threshold = 128;
+    QString provider;           // 空 = 默认(优先 AMD)
 };
 
 /// 检测任务描述

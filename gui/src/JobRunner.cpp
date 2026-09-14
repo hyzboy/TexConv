@@ -83,8 +83,6 @@ void JobRunner::RunConvert(QList<ConvertItem> jobs, ConvertOptions opts)
 {
     cancelled_.store(false);
 
-    const QByteArray provider = opts.provider.toLatin1();
-
     const int total = jobs.size();
     int done = 0, failed = 0, cancelled = 0;
 
@@ -99,6 +97,7 @@ void JobRunner::RunConvert(QList<ConvertItem> jobs, ConvertOptions opts)
         }
 
         const QByteArray format = job.format.toLatin1();
+        const QByteArray provider = job.provider.toLatin1();    // 空 = 内核默认(优先 AMD)
 
         // 输出目录:空 = 与源图同目录(内核 output_path=NULL 语义);
         // 非空 = 显式路径,内核自动补 .Tex2D 后缀(这里直接拼全,所见即所得)
@@ -114,10 +113,12 @@ void JobRunner::RunConvert(QList<ConvertItem> jobs, ConvertOptions opts)
                                ? nullptr
                                : reinterpret_cast<const wchar_t *>(output_path.utf16());
         params.target_format   = format.constData();        // 逐文件显式格式(所见即所得)
-        params.gen_mipmaps     = opts.gen_mipmaps ? 1 : 0;
-        params.force_grayscale = opts.force_grayscale ? 1 : 0;
-        params.discard_alpha   = opts.discard_alpha ? 1 : 0;
-        params.normal_map      = job.normal_map ? 1 : 0;    // 法线/距离场为逐文件配置
+
+        // ---- 全部转换选项均为逐文件 ----
+        params.gen_mipmaps     = job.gen_mipmaps ? 1 : 0;
+        params.force_grayscale = job.force_grayscale ? 1 : 0;
+        params.discard_alpha   = job.discard_alpha ? 1 : 0;
+        params.normal_map      = job.normal_map ? 1 : 0;
         params.df_mode         = job.df_mode ? 1 : 0;
         params.df_threshold    = job.df_threshold;
 

@@ -97,10 +97,6 @@ private:
     QPushButton *clear_btn_   = nullptr;
 
     // 转换选项行
-    QCheckBox  *mip_check_    = nullptr;
-    QCheckBox  *gray_check_   = nullptr;
-    QCheckBox  *discard_check_ = nullptr;
-    QComboBox  *provider_combo_ = nullptr;
     QLineEdit  *outdir_edit_  = nullptr;
     QPushButton *outdir_btn_  = nullptr;
 
