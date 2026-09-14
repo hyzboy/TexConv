@@ -14,3 +14,5 @@ target_link_libraries(TexConv
         TexCommon
         TexConvCore
 )
+
+texconv_deploy_im_runtime(TexConv)

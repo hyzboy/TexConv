@@ -135,6 +135,47 @@ if(WIN32)
 endif(WIN32)
 
 # ---------------------------------------------------------------------------
+# ImageMagick 运行时随包部署:把 IM 安装目录的 DLL/配置 XML/modules 拷到
+# 各 exe 旁,使 Debug/Release 行为一致,不再依赖系统 PATH。
+# (Debug 曾因找不到 coders 模块报 "no decode delegate")
+# ---------------------------------------------------------------------------
+set(IM_RUNTIME_ROOT "")
+
+if(ImageMagick_Magick++_LIBRARY)
+    get_filename_component(IM_LIB_DIR "${ImageMagick_Magick++_LIBRARY}" DIRECTORY)
+    get_filename_component(IM_ROOT_CANDIDATE "${IM_LIB_DIR}" DIRECTORY)
+
+    if(EXISTS "${IM_ROOT_CANDIDATE}/modules/coders")
+        set(IM_RUNTIME_ROOT "${IM_ROOT_CANDIDATE}")
+    elseif(EXISTS "${IM_LIB_DIR}/modules/coders")
+        set(IM_RUNTIME_ROOT "${IM_LIB_DIR}")
+    endif()
+endif()
+
+function(texconv_deploy_im_runtime TARGET_NAME)
+    if(NOT IM_RUNTIME_ROOT)
+        return()
+    endif()
+
+    file(GLOB IM_DLLS "${IM_RUNTIME_ROOT}/*.dll")
+    file(GLOB IM_XMLS "${IM_RUNTIME_ROOT}/*.xml")
+
+    foreach(_f IN LISTS IM_DLLS IM_XMLS)
+        get_filename_component(_n "${_f}" NAME)
+        add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    "${_f}" "$<TARGET_FILE_DIR:${TARGET_NAME}>/${_n}")
+    endforeach()
+
+    if(EXISTS "${IM_RUNTIME_ROOT}/modules")
+        add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+                    "${IM_RUNTIME_ROOT}/modules" "$<TARGET_FILE_DIR:${TARGET_NAME}>/modules"
+            COMMENT "Deploy ImageMagick modules -> $<TARGET_FILE_DIR:${TARGET_NAME}>/modules")
+    endif()
+endfunction()
+
+# ---------------------------------------------------------------------------
 # TexConv 模块化架构:
 #   TexCommon    公共 C 接口头 / 格式表(静态库)
 #   TexImage     图像核心(ImageMagick++;hgl 仅链入此 DLL)

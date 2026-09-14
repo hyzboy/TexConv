@@ -13,6 +13,8 @@
 #include <string>
 #include <mutex>
 
+EXTERN_C IMAGE_DOS_HEADER __ImageBase;
+
 using namespace hgl;
 
 // hgl::logger::AddLogger / InitLog / CreateLoggerFile 在 CMCore 中已定义但未公开声明,此处补齐
@@ -105,7 +107,27 @@ extern "C"
             g_log_user  = cb->user;
         }
 
-        Magick::InitializeMagick(nullptr);
+        // 显式给出模块路径:nullptr 在 Debug 配置下会导致 IM 的
+        // coder/配置解析异常("no decode delegate"),与部署位置绑定才稳定
+        {
+            wchar_t module_path[MAX_PATH];
+            GetModuleFileNameW((HMODULE)&__ImageBase, module_path, MAX_PATH);
+
+            std::wstring dir(module_path);
+            const size_t sep = dir.find_last_of(L"\\");
+            if(sep != std::wstring::npos)
+                dir.resize(sep);
+
+            const int n = WideCharToMultiByte(CP_UTF8, 0, dir.c_str(), int(dir.size()),
+                                              nullptr, 0, nullptr, nullptr);
+            std::string dir_utf8(size_t(n > 0 ? n : 0), 0);
+
+            if(n > 0)
+                WideCharToMultiByte(CP_UTF8, 0, dir.c_str(), int(dir.size()),
+                                    &dir_utf8[0], n, nullptr, nullptr);
+
+            Magick::InitializeMagick(dir_utf8.c_str());
+        }
 
         // 诊断文件日志(与旧版 InitLogger 行为一致,写入 %LOCALAPPDATA%\.cmgdk\TexConv*.log);
         // 控制台输出不再由本库负责,由外壳打印 log 回调的行,避免 GUI/CLI 双重输出。
