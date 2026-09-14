@@ -74,6 +74,20 @@ TexConvQt 只依赖 `common/include/texconv/tex_core.h`(C API):
   --df-threshold:N|--provider:X|--outdir:DIR] 文件...` 自动 检测→转换→退出,
   退出码 0 = 全部成功(除 --outdir 外,各开关作用于全部文件)。
 
+## Cubemap(.TexCube)
+
+6 张面图合并为一个 .TexCube(头部 type=CUBE;数据 mip-major:每级 6 面连续,
+面序 +X,-X,+Y,-Y,+Z,-Z,与引擎 `CommitTextureCubeMipmaps` 读取步进一致)。
+
+- **面识别**:主文件名首字母 P/N + 尾字母 X/Y/Z(如 PosX.tga / NY.tga);
+  兜底:首/末 token 为 PX 形(2 字符)或 PosX 形(4 字符,如 skybox_PX.tga)。
+  同目录下 6 面签名齐全自动成组,输出名 = 公共前缀 + .TexCube。
+- **CLI**:`TexConv /cube [/mip] [格式槽] [/out:name] <6 个面文件 | 目录>`(目录可含多组)。
+- **GUI**:目录拖入时签名齐全的 6 面自动合并为一行(标记列含面清单),格式/Mipmap/
+  后端对整组生效;转换调用 `TexCore_RunCubeJob`。
+- **引擎加载**:`TextureManager::LoadTextureCube` 已有实现;`tests/unit_cubefile`
+  用 `TextureCubeLoader` 解析产物校验类型/尺寸/mip/载荷字节数。
+
 ## 重新构建(两种生命周期)
 
 六个工程(TexCommon/TexImage/TexEncAMD/TexEncIntel/TexConvCore/TexConv)在两种
