@@ -60,6 +60,7 @@ namespace
     {
         QStringList flags;
 
+        if(item.single_channel) flags << QStringLiteral("单通道");
         if(item.gen_mipmaps)    flags << QStringLiteral("mip");
         if(item.force_grayscale) flags << QStringLiteral("灰度");
         if(item.discard_alpha)  flags << QStringLiteral("去α");
@@ -72,6 +73,50 @@ namespace
             flags << item.provider;
 
         return flags.join(QStringLiteral(" · "));
+    }
+
+    /// 按文件名识别单通道语义贴图(Roughness/Displacement/Metallic/Alpha/
+    /// Opacity/Luminance 等):命中则自动按单通道转换(等价 灰度+丢弃Alpha)。
+    /// 法线优先:调用方保证法线命中的文件不再做本检测。
+    bool FilenameLooksSingleChannel(const QString &path)
+    {
+        const QString name = QFileInfo(path).completeBaseName().toLower();
+
+        // 长词子串匹配(误报风险低)
+        static const QString contains_words[] =
+        {
+            QStringLiteral("roughness"), QStringLiteral("rough"),
+            QStringLiteral("displacement"), QStringLiteral("disp"),
+            QStringLiteral("metallic"), QStringLiteral("metalness"), QStringLiteral("metal"),
+            QStringLiteral("alpha"), QStringLiteral("opacity"),
+            QStringLiteral("luminance"), QStringLiteral("luma"),
+            QStringLiteral("height"), QStringLiteral("bump"),
+            QStringLiteral("gloss"), QStringLiteral("cavity"),
+            QStringLiteral("occlusion"),
+        };
+
+        for(const QString &w : contains_words)
+            if(name.contains(w))
+                return true;
+
+        // 短词按独立词匹配,避免子串误报(如 "column" 误含 "lum"、"chaos" 误含 "ao")
+        QString token;
+
+        for(const QChar ch : name)
+        {
+            if(ch.isLetterOrNumber())
+            {
+                token.append(ch);
+                continue;
+            }
+
+            if(token == QLatin1String("ao") || token == QLatin1String("lum"))
+                return true;
+
+            token.clear();
+        }
+
+        return token == QLatin1String("ao") || token == QLatin1String("lum");
     }
 }//namespace
 
@@ -232,6 +277,10 @@ int TexFileModel::AddPaths(const QStringList &paths)
         Item item;
         item.path       = norm;
         item.normal_map = FilenameLooksNormal(norm);    // 文件名自动识别法线贴图
+
+        if(!item.normal_map)                            // 其余按单通道语义文件名识别
+            item.single_channel = FilenameLooksSingleChannel(norm);
+
         items_.push_back(item);
 
         endInsertRows();
@@ -312,6 +361,9 @@ int TexFileModel::EffectiveChannels(const Item &item) const
         if(ch == 4)      ch = 3;
         else if(ch == 2) ch = 1;
     }
+
+    if(item.single_channel)
+        ch = 1;
 
     if(item.df_mode)
         ch = 1;
@@ -517,6 +569,25 @@ void TexFileModel::SetFilesNormal(const QModelIndexList &rows, bool on)
     }
 }
 
+void TexFileModel::SetFilesSingleChannel(const QModelIndexList &rows, bool on)
+{
+    if(locked_)
+        return;
+
+    for(const QModelIndex &idx : rows)
+    {
+        if(!idx.isValid() || idx.row() >= int(items_.size()))
+            continue;
+
+        Item &item = items_[size_t(idx.row())];
+
+        item.single_channel = on;
+        item.target_format = DeriveTarget(item);    // 有效通道数变为 1,重推默认(BC4)
+
+        RefreshItem(idx.row());
+    }
+}
+
 void TexFileModel::SetFilesDF(const QModelIndexList &rows, bool on)
 {
     if(locked_)
@@ -599,6 +670,7 @@ std::vector<TexFileModel::JobDesc> TexFileModel::CollectReadyJobs() const
         job.force_grayscale = item.force_grayscale;
         job.discard_alpha  = item.discard_alpha;
         job.normal_map     = item.normal_map;
+        job.single_channel = item.single_channel;
         job.df_mode        = item.df_mode;
         job.df_threshold   = item.df_threshold;
         job.provider       = item.provider;

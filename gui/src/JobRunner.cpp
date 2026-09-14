@@ -116,8 +116,8 @@ void JobRunner::RunConvert(QList<ConvertItem> jobs, ConvertOptions opts)
 
         // ---- 全部转换选项均为逐文件 ----
         params.gen_mipmaps     = job.gen_mipmaps ? 1 : 0;
-        params.force_grayscale = job.force_grayscale ? 1 : 0;
-        params.discard_alpha   = job.discard_alpha ? 1 : 0;
+        params.force_grayscale = (job.force_grayscale || job.single_channel) ? 1 : 0;
+        params.discard_alpha   = (job.discard_alpha || job.single_channel) ? 1 : 0;
         params.normal_map      = job.normal_map ? 1 : 0;
         params.df_mode         = job.df_mode ? 1 : 0;
         params.df_threshold    = job.df_threshold;

@@ -86,7 +86,7 @@ void MainWindow::BuildUi()
     // ---- 批次级设置行(全部转换选项均为逐文件,见右键菜单) ----
     auto options = new QHBoxLayout;
 
-    auto mode_hint = new QLabel(QStringLiteral("全部选项逐文件配置:选中行右键批量设置(法线按文件名自动识别)"), this);
+    auto mode_hint = new QLabel(QStringLiteral("全部选项逐文件配置:选中行右键批量设置(法线/单通道按文件名自动识别)"), this);
 
     auto outdir_label = new QLabel(QStringLiteral("输出:"), this);
     outdir_edit_ = new QLineEdit(this);
@@ -196,6 +196,7 @@ void MainWindow::ApplyCommandLineOptions(const QStringList &args)
         else if(a == QStringLiteral("--gray"))    model_->SetFilesGrayscale(model_->AllRowIndexes(), true);
         else if(a == QStringLiteral("--discard")) model_->SetFilesDiscardAlpha(model_->AllRowIndexes(), true);
         else if(a == QStringLiteral("--normal"))  model_->SetFilesNormal(model_->AllRowIndexes(), true);
+        else if(a == QStringLiteral("--single"))  model_->SetFilesSingleChannel(model_->AllRowIndexes(), true);
         else if(a == QStringLiteral("--df"))      model_->SetFilesDF(model_->AllRowIndexes(), true);
         else if(a.startsWith(QStringLiteral("--df-threshold:")))
             model_->SetFilesDFThreshold(model_->AllRowIndexes(), a.mid(14).toInt());
@@ -492,6 +493,29 @@ void MainWindow::OnContextMenu(const QPoint &pos)
         });
 
     // ---- 法线 / 距离场 ----
+    bool any_single = false, all_single = false;
+    bool first = true;
+
+    for(const QModelIndex &idx : selected)
+    {
+        const auto &item = model_->At(idx.row());
+
+        all_single  = first ? item.single_channel : (all_single && item.single_channel);
+        any_single |= item.single_channel;
+
+        first = false;
+    }
+
+    QAction *single_action = menu.addAction(QStringLiteral("单通道(转灰度+丢弃Alpha)"));
+    single_action->setCheckable(true);
+    single_action->setChecked(all_single);
+    single_action->setToolTip(QStringLiteral("按单通道语义转换(自动识别:Roughness/Displacement/"
+                                             "Metallic/Alpha/Opacity/Luminance/Height/Bump/AO 等)"));
+    connect(single_action, &QAction::triggered, this, [this, ready_rows, all_single](bool)
+    {
+        model_->SetFilesSingleChannel(ready_rows, !all_single);
+    });
+
     QAction *normal_action = menu.addAction(QStringLiteral("法线贴图(BC5)"));
     normal_action->setCheckable(true);
     normal_action->setChecked(all_normal);
@@ -541,7 +565,7 @@ void MainWindow::OnContextMenu(const QPoint &pos)
     bool any_mip = false, all_mip = false;
     bool any_gray = false, all_gray = false;
     bool any_discard = false, all_discard = false;
-    bool first = true;
+    first = true;
 
     for(const QModelIndex &idx : selected)
     {

@@ -64,6 +64,10 @@ TexConvQt 只依赖 `common/include/texconv/tex_core.h`(C API):
   "计预处理(灰度/丢弃Alpha/距离场)后的有效通道数"推导,与内核行为一致。
 - **法线自动识别**:添加文件时按文件名自动标记(含 normal/nmap,或以 _n/-n/ n 结尾),
   识别错误的可手动取消。
+- **单通道自动识别**:文件名含单通道语义词时自动按单通道转换
+  (等价 灰度+丢弃Alpha,默认槽位 BC4):Roughness/Displacement/Metallic/Alpha/
+  Opacity/Luminance/Height/Bump/Gloss/Cavity/Occlusion,以及独立词 AO/Lum/Disp。
+  词表在 TexFileModel.cpp 的 FilenameLooksSingleChannel,可自行扩充。
 - **无头冒烟**:`TexConvQt.exe --auto [--mip|--gray|--discard|--normal|--df|
   --df-threshold:N|--provider:X|--outdir:DIR] 文件...` 自动 检测→转换→退出,
   退出码 0 = 全部成功(除 --outdir 外,各开关作用于全部文件)。

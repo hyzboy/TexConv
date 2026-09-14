@@ -6,6 +6,8 @@
 // 全部转换选项均为"每文件"配置(非全局):
 //   * 生成 Mipmap / 转灰度 / 丢弃 Alpha / 法线 / 距离场(阈值) / 压缩后端;
 //   * 法线在添加文件时按文件名自动识别(含 normal/nmap,或以 _n/-n/ n 结尾),可手动改;
+//   * 单通道语义文件名(Roughness/Displacement/Metallic/Alpha/Opacity/Luminance/
+//     Height/Bump/AO 等)自动按单通道转换(等价 灰度+丢弃Alpha);
 //   * 右键菜单可对选中行批量设置;
 //   * "标记"列汇总显示一行已启用的全部选项;
 //   * 目标格式的可选项与默认值按"计预处理后的有效通道数"推导(与内核一致)。
@@ -75,6 +77,7 @@ public:
         bool     force_grayscale = false;   // 转灰度
         bool     discard_alpha = false;     // 丢弃 alpha
         bool     normal_map = false;        // 法线贴图:目标格式强制 BC5
+        bool     single_channel = false;    // 单通道语义(文件名自动识别):等价 灰度+丢弃Alpha
         bool     df_mode = false;           // 距离场:对灰度(1ch)或 Alpha 生成后按 1 通道继续
         int      df_threshold = 128;        // 距离场内外判定阈值
         QString  provider;                  // 压缩后端 short_name;空 = 默认(优先 AMD)
@@ -120,6 +123,7 @@ public:
     void SetFilesGrayscale(const QModelIndexList &rows, bool on);
     void SetFilesDiscardAlpha(const QModelIndexList &rows, bool on);
     void SetFilesNormal(const QModelIndexList &rows, bool on);
+    void SetFilesSingleChannel(const QModelIndexList &rows, bool on);
     void SetFilesDF(const QModelIndexList &rows, bool on);
     void SetFilesDFThreshold(const QModelIndexList &rows, int threshold);
     void SetFilesProvider(const QModelIndexList &rows, const QString &provider);
@@ -139,6 +143,7 @@ public:
         bool     force_grayscale;
         bool     discard_alpha;
         bool     normal_map;
+        bool     single_channel;
         bool     df_mode;
         int      df_threshold;
         QString  provider;
