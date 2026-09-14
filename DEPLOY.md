@@ -56,7 +56,15 @@ TexConvQt 只依赖 `common/include/texconv/tex_core.h`(C API):
 `gui/` 子目录,Qt6 Widgets(经 vcpkg;找不到 Qt 时自动跳过、不影响 CLI 构建)。
 只依赖 TexCommon + TexConvCore 的 C API。平台插件 `platforms/qwindows.dll`
 由 POST_BUILD 自动拷到产物目录。拖拽文件/文件夹 → 检测 → 逐行选目标格式 → 转换;
-产物与源图同目录。命令行参数可预填文件列表(便于自动化冒烟)。
+产物与源图同目录(可在界面指定统一输出目录)。
+
+- **逐文件配置**:法线/距离场(含阈值)是每文件属性,选中一批后右键菜单批量设置
+  (设置目标格式/法线BC5/距离场/距离场阈值/移除)。
+- **法线自动识别**:添加文件时按文件名自动标记(含 normal/nmap,或以 _n/-n/ n 结尾),
+  识别错误的可手动取消。
+- **无头冒烟**:`TexConvQt.exe --auto [--mip|--gray|--discard|--normal|--df|
+  --df-threshold:N|--provider:X|--outdir:DIR] 文件...` 自动 检测→转换→退出,
+  退出码 0 = 全部成功(其中 --normal/--df 作用于全部文件)。
 
 ## 重新构建(两种生命周期)
 

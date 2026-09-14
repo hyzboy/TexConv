@@ -40,6 +40,31 @@ namespace
             default:            return QColor(128, 128, 128);
         }
     }
+
+    /// 按文件名识别法线贴图:含 normal/nmap,或以 _n/-n/ n 结尾(大小写不敏感)
+    bool FilenameLooksNormal(const QString &path)
+    {
+        const QString name = QFileInfo(path).completeBaseName().toLower();
+
+        if(name.contains(QStringLiteral("normal"))
+         ||name.contains(QStringLiteral("nmap")))
+            return true;
+
+        return name.endsWith(QStringLiteral("_n"))
+             ||name.endsWith(QStringLiteral("-n"))
+             ||name.endsWith(QStringLiteral(" n"));
+    }
+
+    QString ModeText(const TexFileModel::Item &item)
+    {
+        if(item.normal_map)
+            return QStringLiteral("法线");
+
+        if(item.df_mode)
+            return QStringLiteral("距离场(%1)").arg(item.df_threshold);
+
+        return QStringLiteral("-");
+    }
 }//namespace
 
 TexFileModel::TexFileModel(QObject *parent)
@@ -78,6 +103,8 @@ QVariant TexFileModel::data(const QModelIndex &index, int role) const
                                                          : QStringLiteral("-");
                 case ColPixelType:  return item.channels ? coreapi::PixelTypeName(item.pixel_type)
                                                          : QStringLiteral("-");
+                case ColMode:       return (item.channels || item.normal_map || item.df_mode)
+                                                    ? ModeText(item) : QStringLiteral("-");
                 case ColTarget:     return item.state == NotImage ? QStringLiteral("-")
                                                                   : item.target_format;
                 case ColResult:     return item.result_text;
@@ -116,9 +143,11 @@ QVariant TexFileModel::data(const QModelIndex &index, int role) const
             break;
         }
 
-        case ChannelsRole:  return item.channels;
-        case StateRole:     return int(item.state);
-        case PathRole:      return item.path;
+        case ChannelsRole:          return item.channels;
+        case StateRole:             return int(item.state);
+        case PathRole:              return item.path;
+        case EffectiveChannelsRole: return EffectiveChannels(item);
+        case NormalLockedRole:      return item.normal_map;
     }
 
     return QVariant();
@@ -136,6 +165,7 @@ QVariant TexFileModel::headerData(int section, Qt::Orientation orientation, int 
         case ColSize:       return QStringLiteral("尺寸");
         case ColChannels:   return QStringLiteral("通道");
         case ColPixelType:  return QStringLiteral("像素类型");
+        case ColMode:       return QStringLiteral("模式");
         case ColTarget:     return QStringLiteral("目标格式");
         case ColResult:     return QStringLiteral("结果");
     }
@@ -165,7 +195,7 @@ bool TexFileModel::setData(const QModelIndex &index, const QVariant &value, int 
 
     Item &item = items_[size_t(row)];
 
-    if(!coreapi::FormatAllowed(item.channels, value.toString()))
+    if(!coreapi::FormatAllowed(EffectiveChannels(item), value.toString()))
         return false;
 
     item.target_format = value.toString();
@@ -193,7 +223,8 @@ int TexFileModel::AddPaths(const QStringList &paths)
         beginInsertRows(QModelIndex(), row, row);
 
         Item item;
-        item.path = norm;
+        item.path       = norm;
+        item.normal_map = FilenameLooksNormal(norm);    // 文件名自动识别法线贴图
         items_.push_back(item);
 
         endInsertRows();
@@ -249,6 +280,17 @@ void TexFileModel::Clear()
     BumpCounts();
 }
 
+QString TexFileModel::DeriveTarget(const Item &item) const
+{
+    return coreapi::DefaultSlotFormat(EffectiveChannels(item),
+                                      item.normal_map, item.df_mode);
+}
+
+void TexFileModel::RefreshItem(int row)
+{
+    Q_EMIT dataChanged(index(row, 0), index(row, ColCount - 1));
+}
+
 void TexFileModel::MarkProbing(int row)
 {
     if(row < 0 || row >= int(items_.size()))
@@ -256,8 +298,7 @@ void TexFileModel::MarkProbing(int row)
 
     items_[size_t(row)].state = Probing;
 
-    const QModelIndex idx = index(row, ColState);
-    Q_EMIT dataChanged(idx, idx);
+    Q_EMIT dataChanged(index(row, ColState), index(row, ColState));
 }
 
 void TexFileModel::SetProbeResult(int row, quint32 w, quint32 h,
@@ -276,34 +317,10 @@ void TexFileModel::SetProbeResult(int row, quint32 w, quint32 h,
     item.pixel_type  = pixel_type;
     item.has_alpha   = has_alpha;
 
-    item.target_format = coreapi::DefaultSlotFormat(EffectiveChannels(item),
-                                                    normal_map_, df_mode_);
+    item.target_format = DeriveTarget(item);
 
-    Q_EMIT dataChanged(index(row, 0), index(row, ColCount - 1));
+    RefreshItem(row);
     BumpCounts();
-}
-
-void TexFileModel::SetOptionFlags(bool normal_map, bool df_mode)
-{
-    if(locked_)
-        return;
-
-    normal_map_ = normal_map;
-    df_mode_    = df_mode;
-
-    // 全部已就绪行重推默认格式(法线→BC5;DF→按 1 通道推导)
-    for(size_t i = 0; i < items_.size(); i++)
-    {
-        Item &item = items_[i];
-
-        if(item.state != Ready)
-            continue;
-
-        item.target_format = coreapi::DefaultSlotFormat(EffectiveChannels(item),
-                                                        normal_map_, df_mode_);
-
-        Q_EMIT dataChanged(index(int(i), 0), index(int(i), ColCount - 1));
-    }
 }
 
 void TexFileModel::SetProbeFailed(int row, const QString &reason)
@@ -321,7 +338,7 @@ void TexFileModel::SetProbeFailed(int row, const QString &reason)
     item.target_format  = QString();
     item.result_text    = QString();
 
-    Q_EMIT dataChanged(index(row, 0), index(row, ColCount - 1));
+    RefreshItem(row);
     BumpCounts();
 }
 
@@ -333,7 +350,7 @@ void TexFileModel::MarkConverting(int row)
     items_[size_t(row)].state = Converting;
     items_[size_t(row)].result_text.clear();
 
-    Q_EMIT dataChanged(index(row, 0), index(row, ColCount - 1));
+    RefreshItem(row);
 }
 
 void TexFileModel::SetConvertDone(int row, qint64 output_size)
@@ -351,7 +368,7 @@ void TexFileModel::SetConvertDone(int row, qint64 output_size)
                                 QFileInfo(item.path).completeBaseName() + ".Tex2D")
                            .arg(output_size);
 
-    Q_EMIT dataChanged(index(row, 0), index(row, ColCount - 1));
+    RefreshItem(row);
 }
 
 void TexFileModel::SetConvertFailed(int row, const QString &reason)
@@ -364,7 +381,7 @@ void TexFileModel::SetConvertFailed(int row, const QString &reason)
     item.state       = Failed;
     item.result_text = reason;
 
-    Q_EMIT dataChanged(index(row, 0), index(row, ColCount - 1));
+    RefreshItem(row);
 }
 
 void TexFileModel::SetConvertCancelled(int row)
@@ -375,7 +392,91 @@ void TexFileModel::SetConvertCancelled(int row)
     items_[size_t(row)].state = Cancelled;
     items_[size_t(row)].result_text = QStringLiteral("已取消(半成品已删除)");
 
-    Q_EMIT dataChanged(index(row, 0), index(row, ColCount - 1));
+    RefreshItem(row);
+}
+
+void TexFileModel::SetFilesNormal(const QModelIndexList &rows, bool on)
+{
+    if(locked_)
+        return;
+
+    for(const QModelIndex &idx : rows)
+    {
+        if(!idx.isValid() || idx.row() >= int(items_.size()))
+            continue;
+
+        Item &item = items_[size_t(idx.row())];
+
+        item.normal_map = on;
+        item.target_format = DeriveTarget(item);    // 开→BC5;关→重推默认
+
+        RefreshItem(idx.row());
+    }
+}
+
+void TexFileModel::SetFilesDF(const QModelIndexList &rows, bool on)
+{
+    if(locked_)
+        return;
+
+    for(const QModelIndex &idx : rows)
+    {
+        if(!idx.isValid() || idx.row() >= int(items_.size()))
+            continue;
+
+        Item &item = items_[size_t(idx.row())];
+
+        item.df_mode = on;
+        item.target_format = DeriveTarget(item);    // 开→按 1 通道重推;关→恢复
+
+        RefreshItem(idx.row());
+    }
+}
+
+void TexFileModel::SetFilesDFThreshold(const QModelIndexList &rows, int threshold)
+{
+    if(locked_)
+        return;
+
+    for(const QModelIndex &idx : rows)
+    {
+        if(!idx.isValid() || idx.row() >= int(items_.size()))
+            continue;
+
+        Item &item = items_[size_t(idx.row())];
+
+        item.df_threshold = threshold;
+
+        RefreshItem(idx.row());
+    }
+}
+
+void TexFileModel::SetFilesFormat(const QModelIndexList &rows, const QString &format)
+{
+    if(locked_)
+        return;
+
+    for(const QModelIndex &idx : rows)
+    {
+        if(!idx.isValid() || idx.row() >= int(items_.size()))
+            continue;
+
+        Item &item = items_[size_t(idx.row())];
+
+        if(item.state != Ready)
+            continue;
+
+        // 仅设置对该行有效的格式;法线行保持 BC5 锁定
+        if(item.normal_map)
+            continue;
+
+        if(!coreapi::FormatAllowed(EffectiveChannels(item), format))
+            continue;
+
+        item.target_format = format;
+
+        RefreshItem(idx.row());
+    }
 }
 
 std::vector<TexFileModel::JobDesc> TexFileModel::CollectReadyJobs() const
@@ -388,9 +489,12 @@ std::vector<TexFileModel::JobDesc> TexFileModel::CollectReadyJobs() const
             continue;
 
         JobDesc job;
-        job.row    = int(&item - items_.data());
-        job.path   = item.path;
-        job.format = item.target_format;
+        job.row          = int(&item - items_.data());
+        job.path         = item.path;
+        job.format       = item.target_format;
+        job.normal_map   = item.normal_map;
+        job.df_mode      = item.df_mode;
+        job.df_threshold = item.df_threshold;
         jobs.push_back(job);
     }
 
@@ -406,6 +510,16 @@ int TexFileModel::ReadyCount() const
             ++n;
 
     return n;
+}
+
+QModelIndexList TexFileModel::AllRowIndexes() const
+{
+    QModelIndexList list;
+
+    for(int row = 0; row < int(items_.size()); row++)
+        list.append(index(row, 0));
+
+    return list;
 }
 
 void TexFileModel::BumpCounts()

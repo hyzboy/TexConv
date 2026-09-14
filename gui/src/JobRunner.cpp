@@ -117,9 +117,9 @@ void JobRunner::RunConvert(QList<ConvertItem> jobs, ConvertOptions opts)
         params.gen_mipmaps     = opts.gen_mipmaps ? 1 : 0;
         params.force_grayscale = opts.force_grayscale ? 1 : 0;
         params.discard_alpha   = opts.discard_alpha ? 1 : 0;
-        params.normal_map      = opts.normal_map ? 1 : 0;
-        params.df_mode         = opts.df_mode ? 1 : 0;
-        params.df_threshold    = opts.df_threshold;
+        params.normal_map      = job.normal_map ? 1 : 0;    // 法线/距离场为逐文件配置
+        params.df_mode         = job.df_mode ? 1 : 0;
+        params.df_threshold    = job.df_threshold;
 
         if(!provider.isEmpty())
             params.provider = provider.constData();

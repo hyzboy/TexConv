@@ -15,6 +15,8 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QMimeData>
+#include <QInputDialog>
+#include <QMenu>
 #include <QMessageBox>
 #include <QPlainTextEdit>
 #include <QProgressBar>
@@ -90,18 +92,7 @@ void MainWindow::BuildUi()
     gray_check_->setToolTip(QStringLiteral("强制转灰度(/gray)"));
     discard_check_ = new QCheckBox(QStringLiteral("丢弃Alpha"), this);
     discard_check_->setToolTip(QStringLiteral("丢弃 alpha 通道(/discard_alpha)"));
-    normal_check_ = new QCheckBox(QStringLiteral("法线(BC5)"), this);
-    normal_check_->setToolTip(QStringLiteral("法线贴图模式:所有目标格式强制 BC5(/normal)"));
-    df_check_     = new QCheckBox(QStringLiteral("距离场"), this);
-    df_check_->setToolTip(QStringLiteral("距离场模式:单通道对灰度、RGBA 对 Alpha 生成,\n"
-                                         "生成后按 1 通道继续(默认格式变为 R8)(/DF)"));
-
-    df_threshold_spin_ = new QSpinBox(this);
-    df_threshold_spin_->setRange(1, 255);
-    df_threshold_spin_->setValue(128);
-    df_threshold_spin_->setPrefix(QStringLiteral("阈值:"));
-    df_threshold_spin_->setToolTip(QStringLiteral("距离场内外判定阈值(默认 128)"));
-    df_threshold_spin_->setEnabled(false);
+    auto mode_hint = new QLabel(QStringLiteral("法线/距离场:选中行右键批量设置(添加时按文件名自动识别法线)"), this);
 
     auto provider_label = new QLabel(QStringLiteral("后端:"), this);
     provider_combo_ = new QComboBox(this);
@@ -127,9 +118,7 @@ void MainWindow::BuildUi()
     options->addWidget(gray_check_);
     options->addWidget(discard_check_);
     options->addSpacing(8);
-    options->addWidget(normal_check_);
-    options->addWidget(df_check_);
-    options->addWidget(df_threshold_spin_);
+    options->addWidget(mode_hint);
     options->addSpacing(8);
     options->addWidget(provider_label);
     options->addWidget(provider_combo_);
@@ -159,6 +148,7 @@ void MainWindow::BuildUi()
     table_->horizontalHeader()->resizeSection(TexFileModel::ColSize, 90);
     table_->horizontalHeader()->resizeSection(TexFileModel::ColChannels, 50);
     table_->horizontalHeader()->resizeSection(TexFileModel::ColPixelType, 80);
+    table_->horizontalHeader()->resizeSection(TexFileModel::ColMode, 90);
     table_->horizontalHeader()->resizeSection(TexFileModel::ColTarget, 110);
     table_->verticalHeader()->setDefaultSectionSize(24);
     table_->setDragDropMode(QAbstractItemView::NoDragDrop);
@@ -208,18 +198,10 @@ void MainWindow::BuildUi()
     del_shortcut->setContext(Qt::WidgetWithChildrenShortcut);
     connect(del_shortcut, &QShortcut::activated, this, &MainWindow::OnRemoveSelected);
 
-    // 法线/DF 切换 → 模型重推默认格式(格式列显示随之刷新)
-    connect(normal_check_, &QCheckBox::toggled, this, [this](bool)
-    {
-        model_->SetOptionFlags(normal_check_->isChecked(), df_check_->isChecked());
-        OnCurrentRowChanged(table_->currentIndex(), QModelIndex());
-    });
-    connect(df_check_, &QCheckBox::toggled, this, [this](bool checked)
-    {
-        df_threshold_spin_->setEnabled(checked);
-        model_->SetOptionFlags(normal_check_->isChecked(), checked);
-        OnCurrentRowChanged(table_->currentIndex(), QModelIndex());
-    });
+    // 右键菜单:批量设置每文件配置(格式/法线/距离场/阈值)
+    table_->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(table_, &QWidget::customContextMenuRequested,
+            this, &MainWindow::OnContextMenu);
     connect(outdir_btn_, &QPushButton::clicked, this, [this]
     {
         const QString dir = QFileDialog::getExistingDirectory(
@@ -241,10 +223,10 @@ void MainWindow::ApplyCommandLineOptions(const QStringList &args)
         if(a == QStringLiteral("--mip"))          mip_check_->setChecked(true);
         else if(a == QStringLiteral("--gray"))    gray_check_->setChecked(true);
         else if(a == QStringLiteral("--discard")) discard_check_->setChecked(true);
-        else if(a == QStringLiteral("--normal"))  normal_check_->setChecked(true);
-        else if(a == QStringLiteral("--df"))      df_check_->setChecked(true);
+        else if(a == QStringLiteral("--normal"))  model_->SetFilesNormal(model_->AllRowIndexes(), true);
+        else if(a == QStringLiteral("--df"))      model_->SetFilesDF(model_->AllRowIndexes(), true);
         else if(a.startsWith(QStringLiteral("--df-threshold:")))
-            df_threshold_spin_->setValue(a.mid(14).toInt());
+            model_->SetFilesDFThreshold(model_->AllRowIndexes(), a.mid(14).toInt());
         else if(a.startsWith(QStringLiteral("--provider:")))
         {
             const QString name = a.mid(11);
@@ -298,9 +280,6 @@ void MainWindow::UpdateButtons()
     mip_check_->setEnabled(!busy_);
     gray_check_->setEnabled(!busy_);
     discard_check_->setEnabled(!busy_);
-    normal_check_->setEnabled(!busy_);
-    df_check_->setEnabled(!busy_);
-    df_threshold_spin_->setEnabled(!busy_ && df_check_->isChecked());
     provider_combo_->setEnabled(!busy_);
     outdir_edit_->setEnabled(!busy_);
     outdir_btn_->setEnabled(!busy_);
@@ -443,9 +422,12 @@ void MainWindow::OnConvert()
         model_->MarkConverting(desc.row);
 
         ConvertItem job;
-        job.row    = desc.row;
-        job.path   = desc.path;
-        job.format = desc.format;
+        job.row          = desc.row;
+        job.path         = desc.path;
+        job.format       = desc.format;
+        job.normal_map   = desc.normal_map;
+        job.df_mode      = desc.df_mode;
+        job.df_threshold = desc.df_threshold;
         jobs.push_back(job);
     }
 
@@ -467,9 +449,6 @@ void MainWindow::OnConvert()
     opts.gen_mipmaps      = mip_check_->isChecked();
     opts.force_grayscale  = gray_check_->isChecked();
     opts.discard_alpha    = discard_check_->isChecked();
-    opts.normal_map       = normal_check_->isChecked();
-    opts.df_mode          = df_check_->isChecked();
-    opts.df_threshold     = df_threshold_spin_->value();
     opts.provider         = provider_combo_->currentData().toString();
     opts.output_dir       = outdir_edit_->text().trimmed();
 
@@ -477,6 +456,127 @@ void MainWindow::OnConvert()
                               Qt::QueuedConnection,
                               Q_ARG(QList<ConvertItem>, jobs),
                               Q_ARG(ConvertOptions, opts));
+}
+
+void MainWindow::OnContextMenu(const QPoint &pos)
+{
+    if(busy_)
+        return;
+
+    const QModelIndexList selected = table_->selectionModel()->selectedRows();
+
+    if(selected.isEmpty())
+        return;
+
+    // 参与"交集计算"的行:检测通过的行
+    QModelIndexList ready_rows;
+    bool any_normal = false, all_normal = false;
+    bool any_df = false, all_df = false;
+    QStringList allowed;                    // 选中行有效通道数下可选格式的交集
+
+    {
+        bool first = true;
+
+        for(const QModelIndex &idx : selected)
+        {
+            const auto &item = model_->At(idx.row());
+
+            if(item.state != TexFileModel::Ready)
+                continue;
+
+            ready_rows.append(idx);
+
+            any_normal |= item.normal_map;
+            any_df     |= item.df_mode;
+            all_normal  = first ? item.normal_map : (all_normal && item.normal_map);
+            all_df      = first ? item.df_mode     : (all_df && item.df_mode);
+
+            const QStringList af = coreapi::AllowedFormats(model_->EffectiveChannelsAt(idx.row()));
+
+            if(first)
+            {
+                allowed = af;
+            }
+            else
+            {
+                QSet<QString> keep(af.cbegin(), af.cend());
+                QStringList both;
+
+                for(const QString &f : allowed)
+                    if(keep.contains(f))
+                        both << f;
+
+                allowed = both;
+            }
+
+            first = false;
+        }
+    }
+
+    allowed.sort(Qt::CaseInsensitive);
+
+    QMenu menu(this);
+
+    // ---- 目标格式 ----
+    QMenu *fmt_menu = menu.addMenu(QStringLiteral("设置目标格式"));
+
+    if(ready_rows.isEmpty() || allowed.isEmpty())
+        fmt_menu->setEnabled(false);
+
+    for(const QString &fmt : allowed)
+        fmt_menu->addAction(fmt, [this, ready_rows, fmt]
+        {
+            model_->SetFilesFormat(ready_rows, fmt);
+        });
+
+    // ---- 法线 / 距离场 ----
+    QAction *normal_action = menu.addAction(QStringLiteral("法线贴图(BC5)"));
+    normal_action->setCheckable(true);
+    normal_action->setChecked(all_normal);
+    normal_action->setEnabled(!ready_rows.isEmpty());
+    connect(normal_action, &QAction::triggered, this, [this, ready_rows, all_normal](bool)
+    {
+        model_->SetFilesNormal(ready_rows, !all_normal);
+    });
+
+    QAction *df_action = menu.addAction(QStringLiteral("距离场"));
+    df_action->setCheckable(true);
+    df_action->setChecked(all_df);
+    df_action->setEnabled(!ready_rows.isEmpty());
+    connect(df_action, &QAction::triggered, this, [this, ready_rows, all_df](bool)
+    {
+        model_->SetFilesDF(ready_rows, !all_df);
+    });
+
+    QAction *th_action = menu.addAction(QStringLiteral("距离场阈值..."));
+    th_action->setEnabled(any_df);
+    connect(th_action, &QAction::triggered, this, [this, selected]
+    {
+        int current = 128;
+
+        for(const QModelIndex &idx : selected)
+        {
+            if(model_->At(idx.row()).df_mode)
+            {
+                current = model_->At(idx.row()).df_threshold;
+                break;
+            }
+        }
+
+        bool ok = false;
+        const int v = QInputDialog::getInt(this,
+                                           QStringLiteral("距离场阈值"),
+                                           QStringLiteral("内外判定阈值(1-255):"),
+                                           current, 1, 255, 1, &ok);
+
+        if(ok)
+            model_->SetFilesDFThreshold(selected, v);
+    });
+
+    menu.addSeparator();
+    menu.addAction(QStringLiteral("移除选中"), this, &MainWindow::OnRemoveSelected);
+
+    menu.exec(table_->viewport()->mapToGlobal(pos));
 }
 
 void MainWindow::OnRemoveSelected()

@@ -57,6 +57,7 @@ private Q_SLOTS:
     void OnConvert();
     void OnRemoveSelected();
     void OnClear();
+    void OnContextMenu(const QPoint &pos);
 
     void OnCurrentRowChanged(const QModelIndex &current, const QModelIndex &previous);
 
@@ -99,9 +100,6 @@ private:
     QCheckBox  *mip_check_    = nullptr;
     QCheckBox  *gray_check_   = nullptr;
     QCheckBox  *discard_check_ = nullptr;
-    QCheckBox  *normal_check_ = nullptr;
-    QCheckBox  *df_check_     = nullptr;
-    QSpinBox   *df_threshold_spin_ = nullptr;
     QComboBox  *provider_combo_ = nullptr;
     QLineEdit  *outdir_edit_  = nullptr;
     QPushButton *outdir_btn_  = nullptr;
