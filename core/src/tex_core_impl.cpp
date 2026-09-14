@@ -274,6 +274,11 @@ extern "C"
         return texcore::RunJobImpl(params, progress, user);
     }
 
+    int TexCore_RunCubeJob(const TexCubeJobParams *params, TexProgressFn progress, void *user)
+    {
+        return texcore::RunCubeJobImpl(params, progress, user);
+    }
+
     int TexCore_ReadInfo(const wchar_t *tex2d_path, Tex2DInfo *out)
     {
         if(!tex2d_path || !out)

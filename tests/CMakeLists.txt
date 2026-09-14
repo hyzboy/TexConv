@@ -21,6 +21,15 @@ add_executable(unit_core EXCLUDE_FROM_ALL
 target_compile_definitions(unit_core PRIVATE TEXCONV_SHARED_USE)
 target_link_libraries(unit_core PRIVATE TexCommon TexConvCore)
 
+# 引擎侧 .TexCube 加载验证(解析 TextureCubeLoader,纯文件层,不依赖 Vulkan 设备)
+add_executable(unit_cubefile EXCLUDE_FROM_ALL
+    unit_cubefile.cpp
+)
+
+target_link_libraries(unit_cubefile PRIVATE
+    ULRE.SceneGraph ULRE.Vulkan ULRE.Work
+    CMAssetsManage CM2D CMMath CMCore CMPlatform CMUtil CMCoreType)
+
 add_executable(unit_df EXCLUDE_FROM_ALL
     unit_df.cpp
 )

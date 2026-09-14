@@ -108,6 +108,21 @@ TEXCONV_API int  TexCore_EnumDirectory(const wchar_t *dir, int recursive,
 /// 返回 TEX_OK 或错误码;失败时不保证没有残留文件(与旧版行为一致)。
 TEXCONV_API int  TexCore_RunJob(const TexJobParams *params, TexProgressFn progress, void *user);
 
+/// Cubemap 转换:6 张面图合并为一个 .TexCube 文件。
+/// 文件内布局:mip-major(每级 6 面连续,面序 +X,-X,+Y,-Y,+Z,-Z,即 Vulkan 层 0..5),
+/// 每面数据不足 8 字节补 0 —— 与引擎 CommitTextureCubeMipmaps 的读取步进一致。
+typedef struct TexCubeJobParams
+{
+    const wchar_t *face_paths[6];   ///< 必填,顺序固定:+X,-X,+Y,-Y,+Z,-Z
+    const wchar_t *output_path;     ///< 必填:.TexCube 输出路径(建议显式给出完整路径)
+
+    const char    *target_format;   ///< NULL = 按面通道数取默认槽位(BC4/BC5/BC7/BC7)
+    const char    *provider;        ///< NULL = 默认(优先 AMD)
+    int            gen_mipmaps;     ///< 每面独立生成 mip 链(压缩格式 4x4 下限规则同 2D)
+} TexCubeJobParams;
+
+TEXCONV_API int  TexCore_RunCubeJob(const TexCubeJobParams *params, TexProgressFn progress, void *user);
+
 /// 读取 .Tex2D 产物信息。文件不存在/头部非法返回 TEX_ERR_IO。
 TEXCONV_API int  TexCore_ReadInfo(const wchar_t *tex2d_path, Tex2DInfo *out);
 

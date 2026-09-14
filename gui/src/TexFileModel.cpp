@@ -2,6 +2,8 @@
 #include "CoreApi.h"
 
 #include <QFileInfo>
+#include <QDir>
+#include <QRegularExpression>
 #include <QColor>
 
 namespace
@@ -72,6 +74,110 @@ namespace
             flags << item.provider;
 
         return flags.join(QStringLiteral(" · "));
+    }
+
+    /// 面签名:主文件名首字母 P/N + 尾字母 X/Y/Z(大小写不敏感)→ 面序 0..5
+    /// (+X,-X,+Y,-Y,+Z,-Z);兜底:首/末 token 为 PX 形(2 字符)或 PosX 形(4 字符)
+    int CubeFaceIndex(const QString &path)
+    {
+        auto index_from = [](const QString &name) -> int
+        {
+            if(name.size() < 2)
+                return -1;
+
+            const QChar f = name.front().toLower();
+            const QChar l = name.back().toLower();
+
+            const int sign = (f == QLatin1Char('p')) ? 0 : (f == QLatin1Char('n')) ? 1 : -1;
+            const int axis = (l == QLatin1Char('x')) ? 0
+                           : (l == QLatin1Char('y')) ? 1
+                           : (l == QLatin1Char('z')) ? 2 : -1;
+
+            return (sign < 0 || axis < 0) ? -1 : axis * 2 + sign;
+        };
+
+        const QString base = QFileInfo(path).completeBaseName();
+
+        const int direct = index_from(base);            // 规则 1:整体 首字母+尾字母
+        if(direct >= 0)
+            return direct;
+
+        // 规则 2(兜底):首/末 token 是面缩写(PX 形 2 字符 / PosX 形 4 字符)
+        QStringList tokens = base.split(QRegularExpression(QStringLiteral("[_\\-. ]")),
+                                        Qt::SkipEmptyParts);
+
+        if(tokens.isEmpty())
+            return -1;
+
+        auto token_index = [](const QString &t) -> int
+        {
+            if(t.size() == 2)
+            {
+                const QChar f = t[0].toLower();
+                const QChar l = t[1].toLower();
+
+                const int sign = (f == QLatin1Char('p')) ? 0 : (f == QLatin1Char('n')) ? 1 : -1;
+                const int axis = (l == QLatin1Char('x')) ? 0
+                               : (l == QLatin1Char('y')) ? 1
+                               : (l == QLatin1Char('z')) ? 2 : -1;
+
+                return (sign < 0 || axis < 0) ? -1 : axis * 2 + sign;
+            }
+
+            if(t.size() == 4)
+            {
+                const QString low = t.toLower();
+                const int sign = low.startsWith(QStringLiteral("pos")) ? 0
+                               : low.startsWith(QStringLiteral("neg")) ? 1 : -1;
+                const QChar l = low[3];
+
+                const int axis = (l == QLatin1Char('x')) ? 0
+                               : (l == QLatin1Char('y')) ? 1
+                               : (l == QLatin1Char('z')) ? 2 : -1;
+
+                return (sign < 0 || axis < 0) ? -1 : axis * 2 + sign;
+            }
+
+            return -1;
+        };
+
+        const int r = token_index(tokens.front());
+        if(r >= 0)
+            return r;
+
+        return token_index(tokens.back());
+    }
+
+    /// 6 个面文件名的最长公共前缀(去尾部分隔符)
+    QString CubeCommonPrefix(const QString faces[6])
+    {
+        QString p = QFileInfo(faces[0]).completeBaseName();
+
+        bool changed = true;
+
+        while(changed)
+        {
+            changed = false;
+
+            for(int i = 1; i < 6; i++)
+            {
+                const QString b = QFileInfo(faces[i]).completeBaseName();
+
+                if(!b.startsWith(p, Qt::CaseInsensitive))
+                {
+                    p.chop(1);
+                    changed = true;
+                    break;
+                }
+            }
+        }
+
+        while(!p.isEmpty()
+           &&(p.endsWith(QLatin1Char('_')) || p.endsWith(QLatin1Char('-'))
+            ||p.endsWith(QLatin1Char(' ')) || p.endsWith(QLatin1Char('.'))))
+            p.chop(1);
+
+        return p;
     }
 
     /// 按文件名识别单通道语义贴图(Roughness/Displacement/Metallic/Alpha/
@@ -147,7 +253,9 @@ QVariant TexFileModel::data(const QModelIndex &index, int role) const
         {
             switch(index.column())
             {
-                case ColFile:       return QFileInfo(item.path).fileName();
+                case ColFile:       return item.is_cube
+                                            ? QStringLiteral("%1 [Cubemap×6]").arg(QFileInfo(item.path).fileName())
+                                            : QFileInfo(item.path).fileName();
                 case ColState:      return StateText(item.state);
                 case ColSize:       return item.width ? QStringLiteral("%1×%2").arg(item.width).arg(item.height)
                                                       : QStringLiteral("-");
@@ -160,7 +268,8 @@ QVariant TexFileModel::data(const QModelIndex &index, int role) const
                 case ColTarget:     return item.state == NotImage ? QStringLiteral("-")
                                                                   : item.target_format;
                 case ColResult:     return item.result_text;
-                case ColPath:       return item.path;
+                case ColPath:       return item.is_cube ? item.face_paths[0]
+                                                        : item.path;
             }
             break;
         }
@@ -192,6 +301,18 @@ QVariant TexFileModel::data(const QModelIndex &index, int role) const
         {
             if(index.column() == ColFile)
             {
+                if(item.is_cube)
+                {
+                    QStringList list;
+
+                    static const char *fn[6] = {"+X", "-X", "+Y", "-Y", "+Z", "-Z"};
+
+                    for(int i = 0; i < 6; i++)
+                        list << QStringLiteral("%1: %2").arg(QLatin1String(fn[i]), item.face_paths[i]);
+
+                    return list.join(QLatin1Char('\n'));
+                }
+
                 if(item.state == NotImage && !item.probe_fail_text.isEmpty())
                     return item.path + QStringLiteral("\n") + item.probe_fail_text;
 
@@ -286,21 +407,83 @@ bool TexFileModel::setData(const QModelIndex &index, const QVariant &value, int 
 
 int TexFileModel::AddPaths(const QStringList &paths)
 {
-    int added = 0;
+    // 先按 Cubemap 面签名分组
+    struct CubeGroup
+    {
+        QString  dir;
+        QString  face[6];
+        int      count = 0;
+        QStringList all;    // 该组涉及的全部文件
+    };
+
+    std::vector<CubeGroup> groups;
+    QStringList singles;
 
     for(const QString &p : paths)
     {
         const QString norm = QFileInfo(p).absoluteFilePath();
-        const QString key  = norm.toLower();
+        const int face = CubeFaceIndex(norm);
 
-        if(path_set_.contains(key))
+        if(face < 0)
+        {
+            singles << norm;
             continue;
+        }
 
-        path_set_.insert(key);
+        const QString dir = QFileInfo(norm).absolutePath();
 
+        bool placed = false;
+
+        for(CubeGroup &g : groups)
+        {
+            if(g.dir != dir)
+                continue;
+
+            if(g.face[face].isEmpty())
+            {
+                g.face[face] = norm;
+                g.count++;
+                g.all << norm;
+                placed = true;
+                break;
+            }
+        }
+
+        if(!placed)
+        {
+            CubeGroup g;
+            g.dir = dir;
+            g.face[face] = norm;
+            g.count = 1;
+            g.all << norm;
+            groups.push_back(g);
+        }
+    }
+
+    int added = 0;
+
+    auto add_row = [&](const Item &item, const QStringList &dedup_keys)
+    {
         const int row = int(items_.size());
 
         beginInsertRows(QModelIndex(), row, row);
+
+        items_.push_back(item);
+
+        for(const QString &k : dedup_keys)
+            path_set_.insert(k);
+
+        endInsertRows();
+
+        ++added;
+    };
+
+    auto add_single = [&](const QString &norm)
+    {
+        const QString key = norm.toLower();
+
+        if(path_set_.contains(key))
+            return;
 
         Item item;
         item.path       = norm;
@@ -309,12 +492,44 @@ int TexFileModel::AddPaths(const QStringList &paths)
         if(!item.normal_map)                            // 其余按单通道语义文件名识别
             item.single_channel = FilenameLooksSingleChannel(norm);
 
-        items_.push_back(item);
+        add_row(item, {key});
+    };
 
-        endInsertRows();
+    // 面签名齐全的组 → Cubemap 行;不齐全的组退化为普通文件
+    for(CubeGroup &g : groups)
+    {
+        if(g.count == 6)
+        {
+            const QString prefix = CubeCommonPrefix(g.face);
 
-        ++added;
+            if(prefix.isEmpty())
+            {
+                for(const QString &f : g.all)add_single(f);
+                continue;
+            }
+
+            Item item;
+            item.is_cube = true;
+            item.path    = QDir(g.dir).filePath(prefix);
+
+            for(int i = 0; i < 6; i++)
+                item.face_paths[i] = g.face[i];
+
+            QStringList keys;
+            keys << item.path.toLower();
+
+            for(int i = 0; i < 6; i++)
+                keys << g.face[i].toLower();
+
+            add_row(item, keys);
+        }
+        else
+        {
+            for(const QString &f : g.all)add_single(f);
+        }
     }
+
+    for(const QString &f : singles)add_single(f);
 
     BumpCounts();
     return added;
@@ -536,6 +751,8 @@ void TexFileModel::SetFilesGrayscale(const QModelIndexList &rows, bool on)
 
         Item &item = items_[size_t(idx.row())];
 
+        if(item.is_cube)continue;
+
         item.force_grayscale = on;
         item.target_format = DeriveTarget(item);    // 通道数可能变化,重推默认
 
@@ -554,6 +771,8 @@ void TexFileModel::SetFilesDiscardAlpha(const QModelIndexList &rows, bool on)
             continue;
 
         Item &item = items_[size_t(idx.row())];
+
+        if(item.is_cube)continue;
 
         item.discard_alpha = on;
         item.target_format = DeriveTarget(item);    // 通道数可能变化,重推默认
@@ -590,6 +809,8 @@ void TexFileModel::SetFilesNormal(const QModelIndexList &rows, bool on)
 
         Item &item = items_[size_t(idx.row())];
 
+        if(item.is_cube)continue;
+
         item.normal_map = on;
         item.target_format = DeriveTarget(item);    // 开→BC5;关→重推默认
 
@@ -608,6 +829,8 @@ void TexFileModel::SetFilesSingleChannel(const QModelIndexList &rows, bool on)
             continue;
 
         Item &item = items_[size_t(idx.row())];
+
+        if(item.is_cube)continue;
 
         item.single_channel = on;
         item.target_format = DeriveTarget(item);    // 有效通道数变为 1,重推默认(BC4)
@@ -628,6 +851,8 @@ void TexFileModel::SetFilesDF(const QModelIndexList &rows, bool on)
 
         Item &item = items_[size_t(idx.row())];
 
+        if(item.is_cube)continue;
+
         item.df_mode = on;
         item.target_format = DeriveTarget(item);    // 开→按 1 通道重推;关→恢复
 
@@ -646,6 +871,8 @@ void TexFileModel::SetFilesDFThreshold(const QModelIndexList &rows, int threshol
             continue;
 
         Item &item = items_[size_t(idx.row())];
+
+        if(item.is_cube)continue;
 
         item.df_threshold = threshold;
 
@@ -694,6 +921,11 @@ std::vector<TexFileModel::JobDesc> TexFileModel::CollectReadyJobs() const
         job.row            = int(&item - items_.data());
         job.path           = item.path;
         job.format         = item.target_format;
+        job.is_cube        = item.is_cube;
+
+        if(item.is_cube)
+            for(int i = 0; i < 6; i++)
+                job.faces << item.face_paths[i];
         job.gen_mipmaps    = item.gen_mipmaps;
         job.force_grayscale = item.force_grayscale;
         job.discard_alpha  = item.discard_alpha;

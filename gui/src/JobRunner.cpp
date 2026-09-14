@@ -53,10 +53,13 @@ void JobRunner::RunProbe(QList<ProbeItem> jobs)
         if(cancelled_.load())
             break;
 
+        // Cube 行:探测面 0(其余面在转换时校验一致性)
+        const QString probe_path = job.is_cube ? job.faces.value(0) : job.path;
+
         TexImageInfo info{};
 
         const int rc = TexCore_ProbeImage(
-            reinterpret_cast<const wchar_t *>(job.path.utf16()), &info);
+            reinterpret_cast<const wchar_t *>(probe_path.utf16()), &info);
 
         if(rc == TEX_OK)
         {
@@ -103,13 +106,64 @@ void JobRunner::RunConvert(QList<ConvertItem> jobs, ConvertOptions opts)
         const QByteArray format = job.format.toLatin1();
         const QByteArray provider = job.provider.toLatin1();    // 空 = 内核默认(优先 AMD)
 
+        const bool is_cube = job.is_cube;
+        const QString out_ext = is_cube ? ".TexCube" : ".Tex2D";
+
         // 输出目录:空 = 与源图同目录(内核 output_path=NULL 语义);
-        // 非空 = 显式路径,内核自动补 .Tex2D 后缀(这里直接拼全,所见即所得)
+        // 非空 = 显式路径(这里直接拼全后缀,所见即所得)
         QString output_path;
 
         if(!opts.output_dir.isEmpty())
             output_path = QDir(opts.output_dir)
-                              .filePath(QFileInfo(job.path).completeBaseName() + ".Tex2D");
+                              .filePath(QFileInfo(job.path).completeBaseName() + out_ext);
+        else if(is_cube)
+            output_path = job.path + out_ext;   // Cube 无显式目录时写到面图所在目录
+
+        if(is_cube)
+        {
+            // ---- Cubemap:TexCore_RunCubeJob ----
+            const wchar_t *face_ptrs[6];
+
+            for(int i = 0; i < 6; i++)
+                face_ptrs[i] = reinterpret_cast<const wchar_t *>(job.faces[i].utf16());
+
+            TexCubeJobParams cube{};
+            for(int i = 0; i < 6; i++)
+                cube.face_paths[i] = face_ptrs[i];
+
+            cube.output_path   = reinterpret_cast<const wchar_t *>(output_path.utf16());
+            cube.target_format = format.constData();
+            cube.provider      = provider.isEmpty() ? nullptr : provider.constData();
+            cube.gen_mipmaps   = job.gen_mipmaps ? 1 : 0;
+
+            const int crc = TexCore_RunCubeJob(&cube, &JobRunner::ProgressSink, this);
+
+            if(crc == TEX_OK)
+            {
+                Tex2DInfo out{};
+                qint64 size = -1;
+
+                if(TexCore_ReadInfo(
+                       reinterpret_cast<const wchar_t *>(output_path.utf16()), &out) == TEX_OK)
+                    size = out.file_size;
+
+                Q_EMIT ConvertDone(job.row, size);
+                ++done;
+            }
+            else if(crc == TEX_ERR_CANCELLED)
+            {
+                Q_EMIT ConvertCancelled(job.row);
+                ++cancelled;
+            }
+            else
+            {
+                Q_EMIT ConvertFailed(job.row, coreapi::ErrorText(crc));
+                ++failed;
+            }
+
+            Q_EMIT BatchProgress(done + failed + cancelled, total);
+            continue;
+        }
 
         TexJobParams params{};
         params.input_path      = reinterpret_cast<const wchar_t *>(job.path.utf16());

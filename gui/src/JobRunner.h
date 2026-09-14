@@ -44,8 +44,10 @@ Q_DECLARE_METATYPE(ConvertOptions)
 struct ConvertItem
 {
     int     row = -1;
-    QString path;
+    QString path;               // 普通文件:源路径;Cube:公共前缀(输出 = 前缀.TexCube)
     QString format;             // 目标格式名(显式 target_format)
+    bool    is_cube = false;
+    QStringList faces;          // cube:6 张面图,顺序 +X,-X,+Y,-Y,+Z,-Z
 
     // ---- 逐文件转换选项 ----
     bool    gen_mipmaps = false;
@@ -63,6 +65,8 @@ struct ProbeItem
 {
     int     row = -1;
     QString path;
+    bool    is_cube = false;
+    QStringList faces;      // cube:6 张面图(检测取第 0 张)
 };
 
 Q_DECLARE_METATYPE(ConvertItem)

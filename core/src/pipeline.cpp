@@ -29,7 +29,22 @@ namespace texcore
         return level;   // log2 向下取整 + 1(size 为 0 时返回 0,不会发生)
     }
 
-    static const TexEncoderProvider *select_provider(const char *short_name)
+    int CalcMipLevels(uint32_t width, uint32_t height, bool is_compress, bool gen_mipmaps)
+    {
+        int miplevel = 1;
+
+        if(gen_mipmaps)
+        {
+            miplevel = int(get_mip_level((std::max)(width, height)));
+
+            if(is_compress && (width > 4 || height > 4))
+                miplevel -= 2;
+        }
+
+        return miplevel;
+    }
+
+    const TexEncoderProvider *SelectProvider(const char *short_name)
     {
         auto &list = Providers();
 
@@ -68,7 +83,7 @@ namespace texcore
         return list.front().provider;
     }
 
-    static bool ensure_inited(const TexEncoderProvider *provider)
+    bool EnsureProviderInited(const TexEncoderProvider *provider)
     {
         for(auto &p : Providers())
         {
@@ -147,128 +162,143 @@ namespace texcore
             const TexEncoderProvider *provider = nullptr;
         };
 
-        /// 未压缩格式的一级数据(含 RGB565/B10GR11UF/RGBA4 等打包),迁自旧 Write()
+        /// 未压缩格式的一级数据(含 RGB565/B10GR11UF/RGBA4 等位打包),迁自旧 Write()
         bool build_uncompressed_level(JobContext &ctx, std::vector<uint8_t> &payload)
         {
-            const TexPixelFormat *fmt = ctx.fmt;
-
-            // 对齐旧实现:尺寸取自图像当前状态(mip 循环中逐级缩小)
-            uint32_t cur_w = 0, cur_h = 0;
-            TexImage_GetInfo(ctx.img, &cur_w, &cur_h, nullptr, nullptr, nullptr);
-            const uint32_t pixel_total = cur_w * cur_h;
-
-            const size_t raw_need = TexImage_GetBufferSize(ctx.img, ctx.unc_layout, ctx.unc_pt);
-            std::vector<uint8_t> raw(raw_need);
-
-            if(TexImage_GetData(ctx.img, raw.data(), raw.size(), ctx.unc_layout, ctx.unc_pt) != TEX_OK)
-                return false;
-
-            const uint32_t total_bytes = (fmt->total_bits * pixel_total) >> 3;
-
-            payload.resize(total_bytes);
-
-            switch(fmt->format)
-            {
-                case TEX_FMT_RGB32U:
-                case TEX_FMT_RGB32I:
-                case TEX_FMT_RGB32F:
-                case TEX_FMT_R8:
-                case TEX_FMT_R16:
-                case TEX_FMT_R16U:
-                case TEX_FMT_R16I:
-                case TEX_FMT_R16F:
-                case TEX_FMT_R32U:
-                case TEX_FMT_R32I:
-                case TEX_FMT_R32F:
-                case TEX_FMT_RG8:
-                case TEX_FMT_RG16:
-                case TEX_FMT_RG16U:
-                case TEX_FMT_RG16I:
-                case TEX_FMT_RG16F:
-                case TEX_FMT_RG32U:
-                case TEX_FMT_RG32I:
-                case TEX_FMT_RG32F:
-                case TEX_FMT_RGBA8:
-                case TEX_FMT_RGBA8SN:
-                case TEX_FMT_RGBA8U:
-                case TEX_FMT_RGBA8I:
-                case TEX_FMT_RGBA16:
-                case TEX_FMT_RGBA16SN:
-                case TEX_FMT_RGBA16U:
-                case TEX_FMT_RGBA16I:
-                case TEX_FMT_RGBA16F:
-                case TEX_FMT_RGBA32U:
-                case TEX_FMT_RGBA32I:
-                case TEX_FMT_RGBA32F:
-                    memcpy(payload.data(), raw.data(), total_bytes);
-                    return true;
-
-                case TEX_FMT_RGB565:
-                    Tex_RGB8toRGB565_Array((uint16_t *)payload.data(), raw.data(), pixel_total);
-                    return true;
-
-                case TEX_FMT_B10GR11UF:
-                    Tex_RGB16FtoB10GR11UF((uint32_t *)payload.data(), (uint16_t *)raw.data(), pixel_total);
-                    return true;
-
-                case TEX_FMT_RGBA4:
-                    Tex_RGBA8toRGBA4((uint16_t *)payload.data(), raw.data(), pixel_total);
-                    return true;
-
-                case TEX_FMT_BGRA4:
-                    Tex_RGBA8toBGRA4((uint16_t *)payload.data(), raw.data(), pixel_total);
-                    return true;
-
-                case TEX_FMT_A1RGB5:
-                    Tex_RGBA8toA1RGB5((uint16_t *)payload.data(), raw.data(), pixel_total);
-                    return true;
-
-                case TEX_FMT_A2BGR10:
-                    Tex_RGBA16toA2BGR10((uint32_t *)payload.data(), (uint16_t *)raw.data(), pixel_total);
-                    return true;
-
-                default:
-                    return false;
-            }
+            return BuildUncompressedLevel(ctx.img, ctx.fmt, ctx.unc_layout, ctx.unc_pt, payload);
         }
 
         /// 压缩格式的一级数据
         bool build_compressed_level(JobContext &ctx, std::vector<uint8_t> &payload)
         {
-            const size_t raw_need = TexImage_GetBufferSize(ctx.img, ctx.req_layout, ctx.req_pt);
-            std::vector<uint8_t> raw(raw_need);
-
-            if(TexImage_GetData(ctx.img, raw.data(), raw.size(), ctx.req_layout, ctx.req_pt) != TEX_OK)
-                return false;
-
-            // 对齐旧实现:尺寸取自图像当前状态(mip 循环中逐级缩小)
-            uint32_t cur_w = 0, cur_h = 0;
-            TexImage_GetInfo(ctx.img, &cur_w, &cur_h, nullptr, nullptr, nullptr);
-
-            TexEncodeRequest req;
-            memset(&req, 0, sizeof(req));
-
-            req.src            = raw.data();
-            req.width          = cur_w;
-            req.height         = cur_h;
-            req.src_layout     = ctx.req_layout;
-            req.src_pixel_type = ctx.req_pt;
-            req.target_format  = ctx.fmt->name;
-            req.quality        = 100;       // 旧版 fquality=1.0
-            req.thread_count   = 0;         // 插件自定(BC4 单线程,其余 8 线程)
-
-            uint8_t *out_data  = nullptr;
-            size_t   out_bytes = 0;
-
-            if(ctx.provider->Encode(&req, &out_data, &out_bytes) != TEX_OK)
-                return false;
-
-            payload.assign(out_data, out_data + out_bytes);
-            ctx.provider->FreeResult(out_data);
-
-            return true;
+            return BuildCompressedLevel(ctx.img, ctx.provider, ctx.fmt,
+                                        ctx.req_layout, ctx.req_pt, payload);
         }
     }//namespace
+
+    // ---------------------------------------------------------------- 共享实现(供 2D 与 Cube 流水线复用)
+
+    bool BuildUncompressedLevel(TexImage img, const TexPixelFormat *fmt,
+                                int layout, int pixel_type,
+                                std::vector<uint8_t> &payload)
+    {
+        uint32_t cur_w = 0, cur_h = 0;
+        TexImage_GetInfo(img, &cur_w, &cur_h, nullptr, nullptr, nullptr);
+        const uint32_t pixel_total = cur_w * cur_h;
+
+        const size_t raw_need = TexImage_GetBufferSize(img, layout, pixel_type);
+        std::vector<uint8_t> raw(raw_need);
+
+        if(TexImage_GetData(img, raw.data(), raw.size(), layout, pixel_type) != TEX_OK)
+            return false;
+
+        const uint32_t total_bytes = (fmt->total_bits * pixel_total) >> 3;
+
+        payload.resize(total_bytes);
+
+        switch(fmt->format)
+        {
+            case TEX_FMT_RGB32U:
+            case TEX_FMT_RGB32I:
+            case TEX_FMT_RGB32F:
+            case TEX_FMT_R8:
+            case TEX_FMT_R16:
+            case TEX_FMT_R16U:
+            case TEX_FMT_R16I:
+            case TEX_FMT_R16F:
+            case TEX_FMT_R32U:
+            case TEX_FMT_R32I:
+            case TEX_FMT_R32F:
+            case TEX_FMT_RG8:
+            case TEX_FMT_RG16:
+            case TEX_FMT_RG16U:
+            case TEX_FMT_RG16I:
+            case TEX_FMT_RG16F:
+            case TEX_FMT_RG32U:
+            case TEX_FMT_RG32I:
+            case TEX_FMT_RG32F:
+            case TEX_FMT_RGBA8:
+            case TEX_FMT_RGBA8SN:
+            case TEX_FMT_RGBA8U:
+            case TEX_FMT_RGBA8I:
+            case TEX_FMT_RGBA16:
+            case TEX_FMT_RGBA16SN:
+            case TEX_FMT_RGBA16U:
+            case TEX_FMT_RGBA16I:
+            case TEX_FMT_RGBA16F:
+            case TEX_FMT_RGBA32U:
+            case TEX_FMT_RGBA32I:
+            case TEX_FMT_RGBA32F:
+                memcpy(payload.data(), raw.data(), total_bytes);
+                return true;
+
+            case TEX_FMT_RGB565:
+                Tex_RGB8toRGB565_Array((uint16_t *)payload.data(), raw.data(), pixel_total);
+                return true;
+
+            case TEX_FMT_B10GR11UF:
+                Tex_RGB16FtoB10GR11UF((uint32_t *)payload.data(), (uint16_t *)raw.data(), pixel_total);
+                return true;
+
+            case TEX_FMT_RGBA4:
+                Tex_RGBA8toRGBA4((uint16_t *)payload.data(), raw.data(), pixel_total);
+                return true;
+
+            case TEX_FMT_BGRA4:
+                Tex_RGBA8toBGRA4((uint16_t *)payload.data(), raw.data(), pixel_total);
+                return true;
+
+            case TEX_FMT_A1RGB5:
+                Tex_RGBA8toA1RGB5((uint16_t *)payload.data(), raw.data(), pixel_total);
+                return true;
+
+            case TEX_FMT_A2BGR10:
+                Tex_RGBA16toA2BGR10((uint32_t *)payload.data(), (uint16_t *)raw.data(), pixel_total);
+                return true;
+
+            default:
+                return false;
+        }
+    }
+
+    bool BuildCompressedLevel(TexImage img, const TexEncoderProvider *provider,
+                              const TexPixelFormat *fmt,
+                              int layout, int pixel_type,
+                              std::vector<uint8_t> &payload)
+    {
+        const size_t raw_need = TexImage_GetBufferSize(img, layout, pixel_type);
+        std::vector<uint8_t> raw(raw_need);
+
+        if(TexImage_GetData(img, raw.data(), raw.size(), layout, pixel_type) != TEX_OK)
+            return false;
+
+        uint32_t cur_w = 0, cur_h = 0;
+        TexImage_GetInfo(img, &cur_w, &cur_h, nullptr, nullptr, nullptr);
+
+        TexEncodeRequest req;
+        memset(&req, 0, sizeof(req));
+
+        req.src            = raw.data();
+        req.width          = cur_w;
+        req.height         = cur_h;
+        req.src_layout     = layout;
+        req.src_pixel_type = pixel_type;
+        req.target_format  = fmt->name;
+        req.quality        = 100;       // 旧版 fquality=1.0
+        req.thread_count   = 0;         // 插件自定(BC4 单线程,其余 8 线程)
+
+        uint8_t *out_data  = nullptr;
+        size_t   out_bytes = 0;
+
+        if(provider->Encode(&req, &out_data, &out_bytes) != TEX_OK)
+            return false;
+
+        payload.assign(out_data, out_data + out_bytes);
+        provider->FreeResult(out_data);
+
+        return true;
+    }
+
 
     int RunJobImpl(const TexJobParams *params, TexProgressFn progress, void *user)
     {
@@ -276,7 +306,7 @@ namespace texcore
             return TEX_ERR_PARAM;
 
         // 压缩后端选择(旧版:/AMD|/Intel|默认 AMD;指定的后端缺失 → 报错)
-        const TexEncoderProvider *provider = select_provider(params->provider);
+        const TexEncoderProvider *provider = SelectProvider(params->provider);
 
         if(!provider)
         {
@@ -285,7 +315,7 @@ namespace texcore
             return TEX_ERR_NO_PROVIDER;
         }
 
-        if(!ensure_inited(provider))
+        if(!EnsureProviderInited(provider))
         {
             CoreLog(TEX_LOG_ERROR, "texture compression provider init failed.");
             return TEX_ERR_NO_PROVIDER;
@@ -440,15 +470,8 @@ namespace texcore
                               + " channels=" + std::to_string(ctx.channels));
 
         // 5. mip 级数(对齐旧版:压缩格式 4x4 下限,大于 4x4 的图少 2 级)
-        int miplevel = 1;
-
-        if(params->gen_mipmaps)
-        {
-            miplevel = int(get_mip_level((std::max)(ctx.width, ctx.height)));
-
-            if(ctx.is_compress && (ctx.width > 4 || ctx.height > 4))
-                miplevel -= 2;
-        }
+        const int miplevel = CalcMipLevels(ctx.width, ctx.height, ctx.is_compress,
+                                           params->gen_mipmaps != 0);
 
         // 6. 压缩:向编码器询问源布局要求并转换(在文件创建前,失败无文件)
         if(ctx.is_compress)

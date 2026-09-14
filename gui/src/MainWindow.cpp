@@ -370,6 +370,12 @@ void MainWindow::OnDetect()
             ProbeItem job;
             job.row  = row;
             job.path = item.path;
+            job.is_cube = item.is_cube;
+
+            if(item.is_cube)
+                for(int i = 0; i < 6; i++)
+                    job.faces << item.face_paths[i];
+
             jobs.push_back(job);
         }
     }
@@ -401,7 +407,10 @@ void MainWindow::OnConvert()
     const std::vector<TexFileModel::JobDesc> ready = model_->CollectReadyJobs();
 
     if(ready.empty())
+    {
+        if(auto_run_)QCoreApplication::exit(1);     // --auto:无可转行直接失败退出
         return;
+    }
 
     QList<ConvertItem> jobs;
 
@@ -413,6 +422,8 @@ void MainWindow::OnConvert()
         job.row            = desc.row;
         job.path           = desc.path;
         job.format         = desc.format;
+        job.is_cube        = desc.is_cube;
+        job.faces          = desc.faces;
         job.gen_mipmaps    = desc.gen_mipmaps;
         job.force_grayscale = desc.force_grayscale;
         job.discard_alpha  = desc.discard_alpha;

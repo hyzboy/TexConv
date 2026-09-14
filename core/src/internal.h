@@ -43,4 +43,25 @@ namespace texcore
     // ---------------------------------------------------------------- 流水线
 
     int RunJobImpl(const TexJobParams *params, TexProgressFn progress, void *user);
+    int RunCubeJobImpl(const TexCubeJobParams *params, TexProgressFn progress, void *user);
+
+    /// 按名称选择编码后端(空=优先 AMD);不存在返回 nullptr
+    const TexEncoderProvider *SelectProvider(const char *short_name);
+
+    /// 确保后端已初始化(懒加载,幂等)
+    bool EnsureProviderInited(const TexEncoderProvider *provider);
+
+    /// 计算 mip 级数(压缩格式 4x4 下限少 2 级,对齐旧版)
+    int CalcMipLevels(uint32_t width, uint32_t height, bool is_compress, bool gen_mipmaps);
+
+    /// 构建非压缩格式的一级像素数据(含 RGB565/A1RGB5 等位打包),迁自 pipeline 内部
+    bool BuildUncompressedLevel(TexImage img, const TexPixelFormat *fmt,
+                                int layout, int pixel_type,
+                                std::vector<uint8_t> &payload);
+
+    /// 构建压缩格式的一级块数据(经编码器插件)
+    bool BuildCompressedLevel(TexImage img, const TexEncoderProvider *provider,
+                              const TexPixelFormat *fmt,
+                              int layout, int pixel_type,
+                              std::vector<uint8_t> &payload);
 }//namespace texcore

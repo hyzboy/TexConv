@@ -15,6 +15,7 @@
 #include <QAbstractTableModel>
 #include <QSet>
 #include <QString>
+#include <QStringList>
 #include <vector>
 
 class TexFileModel : public QAbstractTableModel
@@ -74,6 +75,10 @@ public:
         qint64   output_size = -1;
         QString  probe_fail_text;           // 检测失败原因
 
+        // ---- Cubemap:6 张面图合并为一行 ----
+        bool     is_cube = false;
+        QString  face_paths[6];             // 顺序 +X,-X,+Y,-Y,+Z,-Z;path = 公共前缀
+
         // ---- 每文件转换选项 ----
         bool     gen_mipmaps = false;       // 生成 mipmap
         bool     force_grayscale = false;   // 转灰度
@@ -96,7 +101,8 @@ public:
     bool setData(const QModelIndex &index, const QVariant &value, int role) override;
 
     // --- 内容操作 ---
-    /// 批量添加文件(去重,同路径只留一条;按文件名自动识别法线贴图);返回实际新增数
+    /// 批量添加文件(去重;按文件名自动识别法线/单通道;Cubemap 面签名齐全的
+    /// 6 个文件自动合并为一行);返回实际新增行数
     int AddPaths(const QStringList &paths);
 
     /// 移除指定行(转换锁定期间调用无效)
@@ -141,6 +147,8 @@ public:
         int      row;
         QString  path;
         QString  format;
+        bool     is_cube = false;
+        QStringList faces;
         bool     gen_mipmaps;
         bool     force_grayscale;
         bool     discard_alpha;

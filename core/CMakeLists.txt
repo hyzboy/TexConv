@@ -6,6 +6,7 @@ add_library(TexConvCore SHARED
     src/tex_core_impl.cpp
     src/tex2d_container.cpp
     src/pipeline.cpp
+    src/cube_pipeline.cpp
 )
 
 target_compile_definitions(TexConvCore PRIVATE TEXCONV_SHARED_BUILD)

@@ -83,6 +83,275 @@ static bool provider_available(const char *short_name)
     return false;
 }
 
+/// 面签名:主文件名首字母 P/N + 尾字母 X/Y/Z(大小写不敏感)→ 面序 0..5(+X,-X,+Y,-Y,+Z,-Z)
+static int face_index_from_name(const std::wstring &name)
+{
+    if(name.size() < 2)return -1;
+
+    const wchar_t f = towlower(name.front());
+    const wchar_t l = towlower(name.back());
+
+    const int sign = (f == L'p') ? 0 : (f == L'n') ? 1 : -1;
+    const int axis = (l == L'x') ? 0 : (l == L'y') ? 1 : (l == L'z') ? 2 : -1;
+
+    if(sign < 0 || axis < 0)return -1;
+
+    return axis * 2 + sign;
+}
+
+static int cube_face_index(const std::wstring &path)
+{
+    std::wstring name = path;
+
+    const size_t sep = name.find_last_of(L"/\\");
+    if(sep != std::wstring::npos)name = name.substr(sep + 1);
+
+    const size_t dot = name.find_last_of(L'.');
+    if(dot != std::wstring::npos)name = name.substr(0, dot);
+
+    // 规则 1:整个主文件名的 首字母+尾字母(PosX / NY 等直接命中)
+    const int direct = face_index_from_name(name);
+    if(direct >= 0)return direct;
+
+    // 规则 2(兜底):首 token 或末 token 是面缩写 —— 2 字符(PX/NY/...)
+    // 或 4 字符(PosX/NegZ/...),避免 noisy 之类误含 n..y 的词误报
+    std::wstring first_token, last_token;
+    std::wstring token;
+
+    for(size_t i = 0; i <= name.size(); i++)
+    {
+        const wchar_t ch = (i < name.size()) ? name[i] : L'_';
+
+        if(ch == L'_' || ch == L'-' || ch == L'.' || ch == L' ')
+        {
+            if(!token.empty())
+            {
+                if(first_token.empty())first_token = token;
+                last_token = token;
+                token.clear();
+            }
+        }
+        else
+        {
+            token += towlower(ch);
+        }
+    }
+
+    auto token_face = [](const std::wstring &t) -> int
+    {
+        if(t.size() == 2)
+        {
+            const int sign = (t[0] == L'p') ? 0 : (t[0] == L'n') ? 1 : -1;
+            const int axis = (t[1] == L'x') ? 0 : (t[1] == L'y') ? 1 : (t[1] == L'z') ? 2 : -1;
+            return (sign >= 0 && axis >= 0) ? axis * 2 + sign : -1;
+        }
+
+        if(t.size() == 4)
+        {
+            const int sign = (t.compare(0, 3, L"pos") == 0) ? 0
+                           : (t.compare(0, 3, L"neg") == 0) ? 1 : -1;
+            const int axis = (t[3] == L'x') ? 0 : (t[3] == L'y') ? 1 : (t[3] == L'z') ? 2 : -1;
+            return (sign >= 0 && axis >= 0) ? axis * 2 + sign : -1;
+        }
+
+        return -1;
+    };
+
+    if(!first_token.empty())
+    {
+        const int r = token_face(first_token);
+        if(r >= 0)return r;
+
+    }
+
+    if(!last_token.empty())
+    {
+        const int r = token_face(last_token);
+        if(r >= 0)return r;
+    }
+
+    return -1;
+}
+
+/// 6 个面文件名的最长公共前缀(去尾部分隔符),作为输出基名
+static std::wstring cube_common_prefix(const std::wstring paths[6])
+{
+    std::wstring bases[6];
+
+    for(int i = 0; i < 6; i++)
+    {
+        std::wstring n = paths[i];
+        const size_t sep = n.find_last_of(L"/\\");
+        if(sep != std::wstring::npos)n = n.substr(sep + 1);
+        const size_t dot = n.find_last_of(L'.');
+        if(dot != std::wstring::npos)n = n.substr(0, dot);
+        bases[i] = n;
+    }
+
+    std::wstring p = bases[0];
+
+    bool changed = true;
+
+    while(changed)
+    {
+        changed = false;
+
+        for(int i = 1; i < 6; i++)
+        {
+            if(_wcsnicmp(p.c_str(), bases[i].c_str(), p.size()) != 0)
+            {
+                p.pop_back();
+                changed = true;
+                break;
+            }
+        }
+    }
+
+    while(!p.empty() && (p.back() == L'_' || p.back() == L'-' || p.back() == L' ' || p.back() == L'.'))
+        p.pop_back();
+
+    return p;
+}
+
+/// /cube 模式:inputs 为 6 个面文件,或 1 个目录(目录内按签名自动分组,可多组)
+static int run_cube(const std::vector<std::wstring> &inputs,
+                    const char *const slot_names_in[4],
+                    TexJobParams &ref_params,
+                    const wchar_t *out_base,
+                    bool gen_mipmaps,
+                    const char *provider)
+{
+    std::vector<std::wstring> faces;
+
+    if(inputs.size() == 1)
+    {
+        // 目录扫描(/cube 忽略 /s,恒递归;内核跳过 .Tex2D)
+        TexCore_EnumDirectory(inputs[0].c_str(), 1,
+                              [](void *user, const wchar_t *path) -> int
+                              {
+                                  static_cast<std::vector<std::wstring> *>(user)->push_back(path);
+                                  return 0;
+                              }, &faces);
+    }
+    else
+    {
+        faces = inputs;
+    }
+
+    if(faces.size() < 6)
+    {
+        printf("[CUBE] need 6 face files (PosX/PosY/PosZ/NegX/NegY/NegZ or PX/PY/PZ/NX/NY/NZ), got %zu.\n",
+               faces.size());
+        return 1;
+    }
+
+    // 分组:目录 + 面签名
+    struct CubeGroup
+    {
+        std::wstring dir;
+        std::wstring paths[6];
+        int count = 0;
+    };
+
+    std::vector<CubeGroup> groups;
+    size_t used = 0;
+
+    for(const std::wstring &f : faces)
+    {
+        const int face = cube_face_index(f);
+
+        if(face < 0)continue;      // 非面文件,忽略
+
+        std::wstring dir = f;
+        const size_t sep = dir.find_last_of(L"/\\");
+        dir = (sep == std::wstring::npos) ? std::wstring(L".") : dir.substr(0, sep);
+
+        bool placed = false;
+
+        for(CubeGroup &g : groups)
+        {
+            if(g.dir != dir)continue;
+            if(g.paths[face].empty())
+            {
+                g.paths[face] = f;
+                g.count++;
+                placed = true;
+                break;
+            }
+        }
+
+        if(!placed)
+        {
+            CubeGroup g;
+            g.dir = dir;
+            g.paths[face] = f;
+            g.count = 1;
+            groups.push_back(g);
+        }
+
+        used++;
+    }
+
+    int exit_code = 0;
+    int group_index = 0;
+
+    for(CubeGroup &g : groups)
+    {
+        if(g.count < 6)
+        {
+            printf("[CUBE] skip incomplete group in %ls (%d/6 faces).\n", g.dir.c_str(), g.count);
+            exit_code = 1;
+            continue;
+        }
+
+        ++group_index;
+
+        // 输出名:/out: 优先(单组);否则公共前缀 + .TexCube
+        std::wstring output;
+
+        if(out_base && *out_base && groups.size() == 1)
+            output = out_base;
+        else
+            output = g.dir + L"\\" + cube_common_prefix(g.paths);
+
+        output += L".TexCube";
+
+        // 面通道数 → 目标格式(显式槽位优先,否则内核默认)
+        TexImageInfo info{};
+        const int rc = TexCore_ProbeImage(g.paths[0].c_str(), &info);
+
+        const char *target = nullptr;
+
+        if(rc == TEX_OK && info.channels >= 1 && info.channels <= 4)
+            target = slot_names_in[info.channels - 1];
+
+        TexCubeJobParams cube{};
+        for(int i = 0; i < 6; i++)
+            cube.face_paths[i] = g.paths[i].c_str();
+
+        cube.output_path   = output.c_str();
+        cube.target_format = target;
+        cube.provider      = provider;
+        cube.gen_mipmaps   = gen_mipmaps ? 1 : 0;
+
+        constexpr const char *face_name[6] = {"+X", "-X", "+Y", "-Y", "+Z", "-Z"};
+
+        for(int i = 0; i < 6; i++)
+            printf("    %s: %ls\n", face_name[i], g.paths[i].c_str());
+
+        printf("output: %ls\n", output.c_str());
+
+        if(TexCore_RunCubeJob(&cube, nullptr, nullptr) != TEX_OK)
+        {
+            printf("[CUBE] group %d convert failed.\n", group_index);
+            exit_code = 1;
+        }
+    }
+
+    (void)ref_params;
+    return exit_code;
+}
+
 int wmain(int argc, wchar_t **argv)
 {
     printf("Image to Texture Convert tools 1.52\n\n");
@@ -226,6 +495,30 @@ int wmain(int argc, wchar_t **argv)
             nm = slot_defs[i].def;
 
         printf("%d: %s\n", i + 1, nm);
+    }
+
+    // Cubemap 模式:/cube(输入为 6 个面文件或 1 个目录)
+    if(cp.Contains(L"/cube"))
+    {
+        std::vector<std::wstring> inputs;
+
+        for(int i = 1; i < argc; i++)
+            if(argv[i][0] != L'/')
+                inputs.push_back(argv[i]);
+
+        if(inputs.empty())
+        {
+            printf("[CUBE] no input. usage: TexConv /cube [/mip] [/R:/RG:/RGB:/RGBA:] [/out:name] <6 face files | directory>\n");
+            TexCore_Shutdown();
+            return 1;
+        }
+
+        const int rc = run_cube(inputs, params.slot_format, params,
+                                (has_out ? out_base : nullptr),
+                                params.gen_mipmaps, provider);
+
+        TexCore_Shutdown();
+        return rc;
     }
 
     const wchar_t *input_path = argv[argc - 1];
