@@ -151,6 +151,7 @@ add_subdirectory(enc_amd)
 add_subdirectory(enc_intel)
 add_subdirectory(core)
 add_subdirectory(cli)
+add_subdirectory(gui)
 add_subdirectory(tests)
 
 # 旧单体实现(附加工具/独立配置支持)已移除;
@@ -168,11 +169,15 @@ foreach(_t TexCommon TexImage TexEncAMD TexEncIntel TexConvCore TexConv)
     endif()
 endforeach()
 
-foreach(_t unit_image unit_encoders unit_core)
+foreach(_t unit_image unit_encoders unit_core unit_df)
     if(TARGET ${_t})
         set_target_properties(${_t} PROPERTIES FOLDER "${TEXCONV_FOLDER}/Tests")
     endif()
 endforeach()
+
+if(TARGET TexConvQt)
+    set_target_properties(TexConvQt PROPERTIES FOLDER "${TEXCONV_FOLDER}")
+endif()
 
 if(TEXCONV_STANDALONE)
     set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT TexConv)

@@ -54,7 +54,8 @@ typedef struct TexJobParams
     int            df_mode;         ///< 距离场模式:单通道源对灰度生成;
                                     ///< 带 Alpha 的源(RGBA/GrayAlpha)对 Alpha 生成;
                                     ///< 生成后图像替换为单通道 8-bit 距离场,
-                                    ///  后续按 1 通道源继续(默认槽位 BC4)
+                                    ///  后续按 1 通道源继续(默认槽位 R8 —— 避开 AMD
+                                    ///  的 BC4 灰度源已知缺陷;显式给 slot_format[0] 可覆盖)
     int            df_threshold;    ///< 距离场内外判定阈值(0-255,<=0 取默认 128)
 } TexJobParams;
 

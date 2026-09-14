@@ -51,6 +51,13 @@ TexConvQt 只依赖 `common/include/texconv/tex_core.h`(C API):
 在工作线程调用 `RunJob`,进度回调刷新 UI,回调返回非 0 即取消并删除半成品。
 逐文件配置通过 `TexJobParams.target_format`(显式指定)实现,槽位模式(`slot_format`)仅为 CLI 兼容保留。
 
+## Qt GUI 外壳(TexConvQt)
+
+`gui/` 子目录,Qt6 Widgets(经 vcpkg;找不到 Qt 时自动跳过、不影响 CLI 构建)。
+只依赖 TexCommon + TexConvCore 的 C API。平台插件 `platforms/qwindows.dll`
+由 POST_BUILD 自动拷到产物目录。拖拽文件/文件夹 → 检测 → 逐行选目标格式 → 转换;
+产物与源图同目录。命令行参数可预填文件列表(便于自动化冒烟)。
+
 ## 重新构建(两种生命周期)
 
 六个工程(TexCommon/TexImage/TexEncAMD/TexEncIntel/TexConvCore/TexConv)在两种
