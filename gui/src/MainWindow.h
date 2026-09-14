@@ -78,8 +78,8 @@ private:
     void BuildUi();
     void CreateRunner();
     void UpdateButtons();
-    void AddDroppedUrls(const QList<QUrl> &urls);
-    void CollectPathsRecursive(const QString &dir, bool recursive, QStringList &out);
+    void AddPathsExpand(const QStringList &paths);
+    void CollectPathsRecursive(const QString &dir, QStringList &out);
 
     TexFileModel   *model_   = nullptr;
     FormatDelegate *format_delegate_ = nullptr;
@@ -88,7 +88,6 @@ private:
     QProgressBar   *progress_ = nullptr;
     QLabel         *progress_label_ = nullptr;
     QLabel         *status_label_ = nullptr;
-    QCheckBox      *recursive_check_ = nullptr;
 
     QPushButton *detect_btn_  = nullptr;
     QPushButton *convert_btn_ = nullptr;

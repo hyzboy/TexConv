@@ -83,6 +83,10 @@ void JobRunner::RunConvert(QList<ConvertItem> jobs, ConvertOptions opts)
 {
     cancelled_.store(false);
 
+    // 输出目录不存在时自动创建(内核 fopen 不建父目录)
+    if(!opts.output_dir.isEmpty())
+        QDir().mkpath(opts.output_dir);
+
     const int total = jobs.size();
     int done = 0, failed = 0, cancelled = 0;
 

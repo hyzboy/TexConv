@@ -56,7 +56,8 @@ TexConvQt 只依赖 `common/include/texconv/tex_core.h`(C API):
 `gui/` 子目录,Qt6 Widgets(经 vcpkg;找不到 Qt 时自动跳过、不影响 CLI 构建)。
 只依赖 TexCommon + TexConvCore 的 C API。平台插件 `platforms/qwindows.dll`
 由 POST_BUILD 自动拷到产物目录。拖拽文件/文件夹 → 检测 → 逐行选目标格式 → 转换;
-产物与源图同目录(可在界面指定统一输出目录)。
+拖入目录时恒递归扫描全部图片(按图片扩展名过滤,非图片不进列表;内核跳过 .Tex2D);
+产物与源图同目录(可在界面指定统一输出目录,目录不存在时自动创建)。
 
 - **逐文件配置**:全部转换选项均为每文件属性——生成 Mipmap、转灰度、丢弃 Alpha、
   法线 BC5、距离场(含逐文件阈值)、压缩后端。选中一批后右键菜单批量设置;

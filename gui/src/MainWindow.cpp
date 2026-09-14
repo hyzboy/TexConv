@@ -28,6 +28,8 @@
 #include <QUrl>
 #include <QVBoxLayout>
 
+#include <algorithm>
+
 MainWindow::MainWindow(const QStringList &initial_files, QWidget *parent)
     : QMainWindow(parent)
 {
@@ -38,7 +40,7 @@ MainWindow::MainWindow(const QStringList &initial_files, QWidget *parent)
     BuildUi();
     CreateRunner();
 
-    model_->AddPaths(initial_files);        // 命令行预填(便于自动化测试)
+    AddPathsExpand(initial_files);          // 命令行预填(目录会展开;便于自动化测试)
 
     UpdateButtons();
 }
@@ -68,15 +70,12 @@ void MainWindow::BuildUi()
     cancel_btn_->setVisible(false);
     remove_btn_ = new QPushButton(QStringLiteral("移除选中"), this);
     clear_btn_  = new QPushButton(QStringLiteral("清空"), this);
-    recursive_check_ = new QCheckBox(QStringLiteral("包含子目录"), this);
 
     toolbar->addWidget(detect_btn_);
     toolbar->addWidget(convert_btn_);
     toolbar->addWidget(cancel_btn_);
     toolbar->addWidget(remove_btn_);
     toolbar->addWidget(clear_btn_);
-    toolbar->addSpacing(16);
-    toolbar->addWidget(recursive_check_);
     toolbar->addStretch(1);
     status_label_ = new QLabel(this);
     toolbar->addWidget(status_label_);
@@ -241,7 +240,6 @@ void MainWindow::UpdateButtons()
     convert_btn_->setEnabled(!busy_ && has_ready);
     remove_btn_->setEnabled(!busy_ && has_rows);
     clear_btn_->setEnabled(!busy_ && has_rows);
-    recursive_check_->setEnabled(!busy_);
     cancel_btn_->setVisible(busy_);
     table_->setEnabled(true);               // 表格保持可看,编辑被模型锁定
 
@@ -260,27 +258,49 @@ void MainWindow::dropEvent(QDropEvent *event)
     if(busy_)
         return;
 
-    AddDroppedUrls(event->mimeData()->urls());
-    event->acceptProposedAction();
-}
+    QStringList paths;
 
-void MainWindow::AddDroppedUrls(const QList<QUrl> &urls)
-{
-    QStringList files;
-
-    for(const QUrl &url : urls)
+    for(const QUrl &url : event->mimeData()->urls())
     {
         const QString local = url.toLocalFile();
 
-        if(local.isEmpty())
-            continue;
+        if(!local.isEmpty())
+            paths << local;
+    }
 
-        const QFileInfo fi(local);
+    AddPathsExpand(paths);
+    event->acceptProposedAction();
+}
+
+/// 是否为常见图片扩展名(目录扫描用;显式拖入的单个文件不做此过滤)
+bool IsImageFile(const QString &path)
+{
+    static const QStringList exts = {
+        QStringLiteral("png"), QStringLiteral("jpg"), QStringLiteral("jpeg"),
+        QStringLiteral("jpe"), QStringLiteral("tga"), QStringLiteral("icb"),
+        QStringLiteral("vda"), QStringLiteral("vst"), QStringLiteral("bmp"),
+        QStringLiteral("gif"), QStringLiteral("tif"), QStringLiteral("tiff"),
+        QStringLiteral("hdr"), QStringLiteral("exr"), QStringLiteral("webp"),
+        QStringLiteral("psd"), QStringLiteral("pic"), QStringLiteral("dds"),
+        QStringLiteral("pnm"), QStringLiteral("ppm"), QStringLiteral("pgm"),
+        QStringLiteral("pbm"),
+    };
+
+    return exts.contains(QFileInfo(path).suffix().toLower());
+}
+
+void MainWindow::AddPathsExpand(const QStringList &paths)
+{
+    QStringList files;
+
+    for(const QString &p : paths)
+    {
+        const QFileInfo fi(p);
 
         if(fi.isDir())
-            CollectPathsRecursive(local, recursive_check_->isChecked(), files);
+            CollectPathsRecursive(p, files);        // 目录:恒递归扫描全部图片
         else if(fi.isFile())
-            files << local;
+            files << p;                             // 显式拖入的文件不过滤
     }
 
     if(files.isEmpty())
@@ -291,13 +311,13 @@ void MainWindow::AddDroppedUrls(const QList<QUrl> &urls)
     LogBridge::Instance().Emit(QStringLiteral("已添加 %1 个文件(去重后)。").arg(added));
 }
 
-void MainWindow::CollectPathsRecursive(const QString &dir, bool recursive, QStringList &out)
+void MainWindow::CollectPathsRecursive(const QString &dir, QStringList &out)
 {
-    // 内核枚举会跳过 .Tex2D(与 CLI 目录模式一致);
-    // 无扩展名白名单 —— 非图片由「检测」标记剔除
+    // 恒为递归扫描;内核枚举会跳过 .Tex2D;
+    // 这里再按图片扩展名过滤,非图片(exe/dll/svg 等)不会进入列表
     TexCore_EnumDirectory(
         reinterpret_cast<const wchar_t *>(dir.utf16()),
-        recursive ? 1 : 0,
+        1,
         [](void *user, const wchar_t *path) -> int
         {
             // path 是临时对象,必须立刻拷贝
@@ -306,6 +326,10 @@ void MainWindow::CollectPathsRecursive(const QString &dir, bool recursive, QStri
             return 0;
         },
         &out);
+
+    out.erase(std::remove_if(out.begin(), out.end(),
+                             [](const QString &f) { return !IsImageFile(f); }),
+              out.end());
 }
 
 void MainWindow::OnCurrentRowChanged(const QModelIndex &current, const QModelIndex &previous)
