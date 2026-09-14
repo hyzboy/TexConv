@@ -261,8 +261,7 @@ void TexFileModel::MarkProbing(int row)
 }
 
 void TexFileModel::SetProbeResult(int row, quint32 w, quint32 h,
-                                  int channels, int layout, int pixel_type, bool has_alpha,
-                                  const QString &default_format)
+                                  int channels, int layout, int pixel_type, bool has_alpha)
 {
     if(row < 0 || row >= int(items_.size()))
         return;
@@ -276,10 +275,35 @@ void TexFileModel::SetProbeResult(int row, quint32 w, quint32 h,
     item.layout      = layout;
     item.pixel_type  = pixel_type;
     item.has_alpha   = has_alpha;
-    item.target_format = default_format;
+
+    item.target_format = coreapi::DefaultSlotFormat(EffectiveChannels(item),
+                                                    normal_map_, df_mode_);
 
     Q_EMIT dataChanged(index(row, 0), index(row, ColCount - 1));
     BumpCounts();
+}
+
+void TexFileModel::SetOptionFlags(bool normal_map, bool df_mode)
+{
+    if(locked_)
+        return;
+
+    normal_map_ = normal_map;
+    df_mode_    = df_mode;
+
+    // 全部已就绪行重推默认格式(法线→BC5;DF→按 1 通道推导)
+    for(size_t i = 0; i < items_.size(); i++)
+    {
+        Item &item = items_[i];
+
+        if(item.state != Ready)
+            continue;
+
+        item.target_format = coreapi::DefaultSlotFormat(EffectiveChannels(item),
+                                                        normal_map_, df_mode_);
+
+        Q_EMIT dataChanged(index(int(i), 0), index(int(i), ColCount - 1));
+    }
 }
 
 void TexFileModel::SetProbeFailed(int row, const QString &reason)

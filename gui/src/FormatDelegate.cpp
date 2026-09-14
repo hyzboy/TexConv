@@ -10,7 +10,15 @@ QWidget *FormatDelegate::createEditor(QWidget *parent,
 {
     Q_UNUSED(option);
 
-    const int channels = index.data(TexFileModel::ChannelsRole).toInt();
+    // 法线模式:目标格式锁定 BC5,不可编辑
+    if(index.data(TexFileModel::NormalLockedRole).toBool())
+        return nullptr;
+
+    // DF 模式下按"计 DF 后的有效通道数"(=1)过滤
+    int channels = index.data(TexFileModel::EffectiveChannelsRole).toInt();
+
+    if(channels < 1 || channels > 4)
+        channels = index.data(TexFileModel::ChannelsRole).toInt();
 
     if(channels < 1 || channels > 4)
         return nullptr;             // 未检测/非图片行不可编辑

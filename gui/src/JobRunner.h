@@ -32,6 +32,21 @@ private:
     LogBridge() = default;
 };
 
+/// 批量转换选项(与 TexJobParams 的全局字段一一对应)
+struct ConvertOptions
+{
+    bool    gen_mipmaps      = false;
+    bool    force_grayscale  = false;
+    bool    discard_alpha    = false;
+    bool    normal_map       = false;
+    bool    df_mode          = false;
+    int     df_threshold     = 128;     // <=0 由内核取默认 128
+    QString provider;                   // 空 = 默认(优先 AMD)
+    QString output_dir;                 // 空 = 与源图同目录;非空 = 产物统一写到该目录
+};
+
+Q_DECLARE_METATYPE(ConvertOptions)
+
 /// 转换任务描述(行号在批处理期间保持稳定:转换锁定禁止增删)
 struct ConvertItem
 {
@@ -66,14 +81,13 @@ public Q_SLOTS:
     /// 批量检测:逐文件 TexCore_ProbeImage
     void RunProbe(QList<ProbeItem> jobs);
 
-    /// 批量转换:逐文件 TexCore_RunJob(串行;输出与源图同目录 .Tex2D)
-    void RunConvert(QList<ConvertItem> jobs);
+    /// 批量转换:逐文件 TexCore_RunJob(串行)
+    void RunConvert(QList<ConvertItem> jobs, ConvertOptions opts);
 
 Q_SIGNALS:
 
     void ProbeResult(int row, quint32 width, quint32 height,
-                     int channels, int layout, int pixel_type, bool has_alpha,
-                     const QString &default_format);
+                     int channels, int layout, int pixel_type, bool has_alpha);
     void ProbeFailed(int row, const QString &reason);
 
     void ConvertDone(int row, qint64 output_size);

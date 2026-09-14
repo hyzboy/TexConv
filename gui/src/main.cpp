@@ -3,6 +3,7 @@
 
 #include <QApplication>
 #include <QMessageBox>
+#include <QRegularExpression>
 #include <QStringList>
 
 #include <windows.h>
@@ -48,7 +49,13 @@ int main(int argc, char *argv[])
         ~CoreGuard() { TexCore_Shutdown(); }
     } core_guard;
 
-    MainWindow window(QCoreApplication::arguments().mid(1));
+    const QStringList args = QCoreApplication::arguments().mid(1);
+
+    MainWindow window(args.filter(QRegularExpression(QStringLiteral("^--"))).isEmpty()
+                         ? args
+                         : args.filter(QRegularExpression(QStringLiteral("^(?!--)"))));
+    window.SetAutoRun(args.contains(QStringLiteral("--auto")));
+    window.ApplyCommandLineOptions(args);
     window.show();
 
     return app.exec();

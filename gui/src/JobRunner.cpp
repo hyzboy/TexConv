@@ -4,6 +4,9 @@
 #include "texconv/tex_core.h"
 #include "texconv/tex_result.h"
 
+#include <QDir>
+#include <QFileInfo>
+
 #include <atomic>
 
 namespace
@@ -26,6 +29,7 @@ JobRunner::JobRunner(QObject *parent)
     qRegisterMetaType<ProbeItem>("ProbeItem");
     qRegisterMetaType<QList<ConvertItem>>("QList<ConvertItem>");
     qRegisterMetaType<QList<ProbeItem>>("QList<ProbeItem>");
+    qRegisterMetaType<ConvertOptions>("ConvertOptions");
 }
 
 int JobRunner::ProgressSink(void *user, float fraction)
@@ -56,11 +60,11 @@ void JobRunner::RunProbe(QList<ProbeItem> jobs)
 
         if(rc == TEX_OK)
         {
+            // 默认目标格式由模型按当前选项推导(法线/DF 会改变默认)
             Q_EMIT ProbeResult(job.row,
-                             info.width, info.height,
-                             info.channels, info.layout, info.pixel_type,
-                             info.has_alpha != 0,
-                             coreapi::DefaultSlotFormat(info.channels));
+                               info.width, info.height,
+                               info.channels, info.layout, info.pixel_type,
+                               info.has_alpha != 0);
         }
         else
         {
@@ -75,9 +79,11 @@ void JobRunner::RunProbe(QList<ProbeItem> jobs)
     Q_EMIT BatchFinished(done - failed, failed, 0, cancelled_.load());
 }
 
-void JobRunner::RunConvert(QList<ConvertItem> jobs)
+void JobRunner::RunConvert(QList<ConvertItem> jobs, ConvertOptions opts)
 {
     cancelled_.store(false);
+
+    const QByteArray provider = opts.provider.toLatin1();
 
     const int total = jobs.size();
     int done = 0, failed = 0, cancelled = 0;
@@ -94,21 +100,44 @@ void JobRunner::RunConvert(QList<ConvertItem> jobs)
 
         const QByteArray format = job.format.toLatin1();
 
+        // 输出目录:空 = 与源图同目录(内核 output_path=NULL 语义);
+        // 非空 = 显式路径,内核自动补 .Tex2D 后缀(这里直接拼全,所见即所得)
+        QString output_path;
+
+        if(!opts.output_dir.isEmpty())
+            output_path = QDir(opts.output_dir)
+                              .filePath(QFileInfo(job.path).completeBaseName() + ".Tex2D");
+
         TexJobParams params{};
-        params.input_path    = reinterpret_cast<const wchar_t *>(job.path.utf16());
-        params.target_format = format.constData();      // 逐文件显式格式(所见即所得)
-        // output_path = NULL:产物与源图同目录 .Tex2D(与 CLI/工作流一致)
+        params.input_path      = reinterpret_cast<const wchar_t *>(job.path.utf16());
+        params.output_path     = output_path.isEmpty()
+                               ? nullptr
+                               : reinterpret_cast<const wchar_t *>(output_path.utf16());
+        params.target_format   = format.constData();        // 逐文件显式格式(所见即所得)
+        params.gen_mipmaps     = opts.gen_mipmaps ? 1 : 0;
+        params.force_grayscale = opts.force_grayscale ? 1 : 0;
+        params.discard_alpha   = opts.discard_alpha ? 1 : 0;
+        params.normal_map      = opts.normal_map ? 1 : 0;
+        params.df_mode         = opts.df_mode ? 1 : 0;
+        params.df_threshold    = opts.df_threshold;
+
+        if(!provider.isEmpty())
+            params.provider = provider.constData();
 
         const int rc = TexCore_RunJob(&params, &JobRunner::ProgressSink, this);
 
         if(rc == TEX_OK)
         {
+            const QString out_for_read = output_path.isEmpty()
+                                       ? job.path
+                                       : output_path;   // 两者内核都能读回
+
             Tex2DInfo out{};
 
             qint64 size = -1;
 
             if(TexCore_ReadInfo(
-                   reinterpret_cast<const wchar_t *>(job.path.utf16()), &out) == TEX_OK)
+                   reinterpret_cast<const wchar_t *>(out_for_read.utf16()), &out) == TEX_OK)
                 size = out.file_size;
 
             Q_EMIT ConvertDone(job.row, size);

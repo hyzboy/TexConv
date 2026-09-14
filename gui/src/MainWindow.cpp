@@ -3,12 +3,17 @@
 #include "FormatDelegate.h"
 
 #include <QCheckBox>
+#include <QComboBox>
 #include <QDragEnterEvent>
+#include <QFileDialog>
+#include <QSpinBox>
 #include <QDropEvent>
 #include <QFileInfo>
 #include <QHBoxLayout>
 #include <QHeaderView>
+#include <QCoreApplication>
 #include <QLabel>
+#include <QLineEdit>
 #include <QMimeData>
 #include <QMessageBox>
 #include <QPlainTextEdit>
@@ -17,6 +22,7 @@
 #include <QPushButton>
 #include <QShortcut>
 #include <QTableView>
+#include <QTimer>
 #include <QUrl>
 #include <QVBoxLayout>
 
@@ -74,6 +80,65 @@ void MainWindow::BuildUi()
     toolbar->addWidget(status_label_);
 
     root_layout->addLayout(toolbar);
+
+    // ---- 转换选项行 ----
+    auto options = new QHBoxLayout;
+
+    mip_check_    = new QCheckBox(QStringLiteral("Mipmap"), this);
+    mip_check_->setToolTip(QStringLiteral("生成 mipmap 链(压缩格式 4×4 下限,少 2 级)"));
+    gray_check_   = new QCheckBox(QStringLiteral("灰度"), this);
+    gray_check_->setToolTip(QStringLiteral("强制转灰度(/gray)"));
+    discard_check_ = new QCheckBox(QStringLiteral("丢弃Alpha"), this);
+    discard_check_->setToolTip(QStringLiteral("丢弃 alpha 通道(/discard_alpha)"));
+    normal_check_ = new QCheckBox(QStringLiteral("法线(BC5)"), this);
+    normal_check_->setToolTip(QStringLiteral("法线贴图模式:所有目标格式强制 BC5(/normal)"));
+    df_check_     = new QCheckBox(QStringLiteral("距离场"), this);
+    df_check_->setToolTip(QStringLiteral("距离场模式:单通道对灰度、RGBA 对 Alpha 生成,\n"
+                                         "生成后按 1 通道继续(默认格式变为 R8)(/DF)"));
+
+    df_threshold_spin_ = new QSpinBox(this);
+    df_threshold_spin_->setRange(1, 255);
+    df_threshold_spin_->setValue(128);
+    df_threshold_spin_->setPrefix(QStringLiteral("阈值:"));
+    df_threshold_spin_->setToolTip(QStringLiteral("距离场内外判定阈值(默认 128)"));
+    df_threshold_spin_->setEnabled(false);
+
+    auto provider_label = new QLabel(QStringLiteral("后端:"), this);
+    provider_combo_ = new QComboBox(this);
+    provider_combo_->addItem(QStringLiteral("默认"), QString());        // data = short_name,空=默认
+
+    {
+        TexProviderInfo infos[8];
+        const int n = TexCore_EnumProviders(infos, 8);
+
+        for(int i = 0; i < n; i++)
+            provider_combo_->addItem(QString::fromLatin1(infos[i].short_name),
+                                     QString::fromLatin1(infos[i].short_name));
+    }
+
+    provider_combo_->setToolTip(QStringLiteral("块压缩编码后端(来自 texenc*.dll 插件)"));
+
+    auto outdir_label = new QLabel(QStringLiteral("输出:"), this);
+    outdir_edit_ = new QLineEdit(this);
+    outdir_edit_->setPlaceholderText(QStringLiteral("(留空 = 与源图同目录)"));
+    outdir_btn_ = new QPushButton(QStringLiteral("浏览..."), this);
+
+    options->addWidget(mip_check_);
+    options->addWidget(gray_check_);
+    options->addWidget(discard_check_);
+    options->addSpacing(8);
+    options->addWidget(normal_check_);
+    options->addWidget(df_check_);
+    options->addWidget(df_threshold_spin_);
+    options->addSpacing(8);
+    options->addWidget(provider_label);
+    options->addWidget(provider_combo_);
+    options->addSpacing(8);
+    options->addWidget(outdir_label);
+    options->addWidget(outdir_edit_, 1);
+    options->addWidget(outdir_btn_);
+
+    root_layout->addLayout(options);
 
     // ---- 表格 + 日志(上下分割) ----
     auto splitter = new QSplitter(Qt::Vertical, this);
@@ -143,9 +208,54 @@ void MainWindow::BuildUi()
     del_shortcut->setContext(Qt::WidgetWithChildrenShortcut);
     connect(del_shortcut, &QShortcut::activated, this, &MainWindow::OnRemoveSelected);
 
+    // 法线/DF 切换 → 模型重推默认格式(格式列显示随之刷新)
+    connect(normal_check_, &QCheckBox::toggled, this, [this](bool)
+    {
+        model_->SetOptionFlags(normal_check_->isChecked(), df_check_->isChecked());
+        OnCurrentRowChanged(table_->currentIndex(), QModelIndex());
+    });
+    connect(df_check_, &QCheckBox::toggled, this, [this](bool checked)
+    {
+        df_threshold_spin_->setEnabled(checked);
+        model_->SetOptionFlags(normal_check_->isChecked(), checked);
+        OnCurrentRowChanged(table_->currentIndex(), QModelIndex());
+    });
+    connect(outdir_btn_, &QPushButton::clicked, this, [this]
+    {
+        const QString dir = QFileDialog::getExistingDirectory(
+            this, QStringLiteral("选择输出目录"), outdir_edit_->text());
+
+        if(!dir.isEmpty())
+            outdir_edit_->setText(dir);
+    });
+
     // 内核日志(可能来自工作线程)→ 日志面板
     connect(&LogBridge::Instance(), &LogBridge::LogLine,
             this, &MainWindow::OnLogLine, Qt::QueuedConnection);
+}
+
+void MainWindow::ApplyCommandLineOptions(const QStringList &args)
+{
+    for(const QString &a : args)
+    {
+        if(a == QStringLiteral("--mip"))          mip_check_->setChecked(true);
+        else if(a == QStringLiteral("--gray"))    gray_check_->setChecked(true);
+        else if(a == QStringLiteral("--discard")) discard_check_->setChecked(true);
+        else if(a == QStringLiteral("--normal"))  normal_check_->setChecked(true);
+        else if(a == QStringLiteral("--df"))      df_check_->setChecked(true);
+        else if(a.startsWith(QStringLiteral("--df-threshold:")))
+            df_threshold_spin_->setValue(a.mid(14).toInt());
+        else if(a.startsWith(QStringLiteral("--provider:")))
+        {
+            const QString name = a.mid(11);
+            const int at = provider_combo_->findData(name);
+
+            if(at >= 0)
+                provider_combo_->setCurrentIndex(at);
+        }
+        else if(a.startsWith(QStringLiteral("--outdir:")))
+            outdir_edit_->setText(a.mid(9));
+    }
 }
 
 void MainWindow::OnLogLine(const QString &text)
@@ -184,6 +294,16 @@ void MainWindow::UpdateButtons()
     recursive_check_->setEnabled(!busy_);
     cancel_btn_->setVisible(busy_);
     table_->setEnabled(true);               // 表格保持可看,编辑被模型锁定
+
+    mip_check_->setEnabled(!busy_);
+    gray_check_->setEnabled(!busy_);
+    discard_check_->setEnabled(!busy_);
+    normal_check_->setEnabled(!busy_);
+    df_check_->setEnabled(!busy_);
+    df_threshold_spin_->setEnabled(!busy_ && df_check_->isChecked());
+    provider_combo_->setEnabled(!busy_);
+    outdir_edit_->setEnabled(!busy_);
+    outdir_btn_->setEnabled(!busy_);
 }
 
 void MainWindow::dragEnterEvent(QDragEnterEvent *event)
@@ -251,9 +371,11 @@ void MainWindow::OnCurrentRowChanged(const QModelIndex &current, const QModelInd
     if(previous.isValid())
         table_->closePersistentEditor(model_->index(previous.row(), TexFileModel::ColTarget));
 
-    // 选中行打开格式下拉(仅"已就绪"行有合法通道数)
+    // 选中行打开格式下拉(仅"已就绪"行;法线模式锁定 BC5 不弹)
     if(current.isValid()
      && model_->At(current.row()).state == TexFileModel::Ready
+     && !model_->index(current.row(), TexFileModel::ColTarget)
+             .data(TexFileModel::NormalLockedRole).toBool()
      && model_->ChannelsAt(current.row()) >= 1)
     {
         table_->openPersistentEditor(model_->index(current.row(), TexFileModel::ColTarget));
@@ -291,6 +413,7 @@ void MainWindow::OnDetect()
     busy_ = true;
     batch_total_ = jobs.size();
     batch_done_ = 0;
+    if(auto_run_)auto_phase_ = 1;
 
     progress_->setVisible(true);
     progress_label_->setVisible(true);
@@ -329,6 +452,7 @@ void MainWindow::OnConvert()
     busy_ = true;
     batch_total_ = jobs.size();
     batch_done_ = 0;
+    if(auto_run_)auto_phase_ = 2;
 
     model_->SetLocked(true);                // 转换期间禁止增删,行号稳定
     table_->closePersistentEditor(table_->currentIndex().siblingAtColumn(TexFileModel::ColTarget));
@@ -339,9 +463,20 @@ void MainWindow::OnConvert()
 
     UpdateButtons();
 
+    ConvertOptions opts;
+    opts.gen_mipmaps      = mip_check_->isChecked();
+    opts.force_grayscale  = gray_check_->isChecked();
+    opts.discard_alpha    = discard_check_->isChecked();
+    opts.normal_map       = normal_check_->isChecked();
+    opts.df_mode          = df_check_->isChecked();
+    opts.df_threshold     = df_threshold_spin_->value();
+    opts.provider         = provider_combo_->currentData().toString();
+    opts.output_dir       = outdir_edit_->text().trimmed();
+
     QMetaObject::invokeMethod(runner_, "RunConvert",
                               Qt::QueuedConnection,
-                              Q_ARG(QList<ConvertItem>, jobs));
+                              Q_ARG(QList<ConvertItem>, jobs),
+                              Q_ARG(ConvertOptions, opts));
 }
 
 void MainWindow::OnRemoveSelected()
@@ -357,10 +492,9 @@ void MainWindow::OnClear()
 }
 
 void MainWindow::OnProbeResult(int row, quint32 w, quint32 h,
-                               int channels, int layout, int pixel_type, bool has_alpha,
-                               const QString &default_format)
+                               int channels, int layout, int pixel_type, bool has_alpha)
 {
-    model_->SetProbeResult(row, w, h, channels, layout, pixel_type, has_alpha, default_format);
+    model_->SetProbeResult(row, w, h, channels, layout, pixel_type, has_alpha);
 
     // 若该行恰为当前选中行,刷新其格式编辑器
     OnCurrentRowChanged(table_->currentIndex(), QModelIndex());
@@ -421,4 +555,19 @@ void MainWindow::OnBatchFinished(int done, int failed, int cancelled, bool cance
         : QStringLiteral("批处理完成:成功 %1,失败 %2,取消 %3").arg(done).arg(failed).arg(cancelled);
 
     status_label_->setText(summary);
+
+    // --auto 流程:检测批结束 → 自动转换;转换批结束 → 自动退出
+    if(auto_run_)
+    {
+        if(auto_phase_ == 1)
+        {
+            auto_phase_ = 0;
+            QTimer::singleShot(0, this, [this] { OnConvert(); });
+        }
+        else if(auto_phase_ == 2)
+        {
+            auto_phase_ = 0;
+            QCoreApplication::exit((failed == 0 && cancelled == 0) ? 0 : 1);
+        }
+    }
 }

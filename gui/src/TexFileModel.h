@@ -44,6 +44,8 @@ public:
         ChannelsRole = Qt::UserRole + 1,    // int:源图通道数(未检测 = 0)
         StateRole,                          // int:FileState
         PathRole,                           // QString:完整路径
+        EffectiveChannelsRole,              // int:计 DF 后的有效通道数(委托过滤用)
+        NormalLockedRole,                   // bool:法线模式锁定目标格式为 BC5
     };
 
     struct Item
@@ -83,10 +85,9 @@ public:
     /// 检测前置位:对应行状态 → Probing
     void MarkProbing(int row);
 
-    /// 回填检测结果(含按内核规则推导的默认目标格式)
+    /// 回填检测结果(默认目标格式按当前选项由模型推导)
     void SetProbeResult(int row, quint32 w, quint32 h,
-                        int channels, int layout, int pixel_type, bool has_alpha,
-                        const QString &default_format);
+                        int channels, int layout, int pixel_type, bool has_alpha);
 
     void SetProbeFailed(int row, const QString &reason);
 
@@ -100,6 +101,13 @@ public:
     /// 只读锁定(转换期间禁止增删)
     void SetLocked(bool locked) { locked_ = locked; }
     bool IsLocked() const { return locked_; }
+
+    /// 转换选项旗标(法线/DF):影响默认目标格式推导与格式列可编辑性。
+    /// 全部"已就绪"行的目标格式按新选项重新推导为默认值。
+    void SetOptionFlags(bool normal_map, bool df_mode);
+
+    bool NormalMapOn() const { return normal_map_; }
+    bool DfModeOn() const { return df_mode_; }
 
     // --- 工作线程取快照 ---
     struct JobDesc
@@ -131,4 +139,11 @@ private:
     std::vector<Item>   items_;
     QSet<QString>       path_set_;      // 去重(小写化路径)
     bool                locked_ = false;
+    bool                normal_map_ = false;
+    bool                df_mode_ = false;
+
+    int EffectiveChannels(const Item &item) const
+    {
+        return df_mode_ ? 1 : item.channels;    // DF 生成后图像为单通道
+    }
 };
