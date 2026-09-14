@@ -42,7 +42,8 @@ public:
         ColSize,        // 宽x高
         ColChannels,    // 通道
         ColPixelType,   // 像素类型
-        ColFlags,       // 标记:该行已启用的全部选项汇总
+        ColFlags,       // 标记:该行已启用的全部选项汇总(不含 Mipmap,独立成列)
+        ColMip,         // 生成 Mipmap:行内 checkbox
         ColTarget,      // 目标格式(选中行变 ComboBox)
         ColResult,      // 转换结果
         ColCount

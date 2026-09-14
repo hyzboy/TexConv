@@ -61,7 +61,6 @@ namespace
         QStringList flags;
 
         if(item.single_channel) flags << QStringLiteral("单通道");
-        if(item.gen_mipmaps)    flags << QStringLiteral("mip");
         if(item.force_grayscale) flags << QStringLiteral("灰度");
         if(item.discard_alpha)  flags << QStringLiteral("去α");
         if(item.normal_map)     flags << QStringLiteral("法线");
@@ -157,6 +156,7 @@ QVariant TexFileModel::data(const QModelIndex &index, int role) const
                 case ColPixelType:  return item.channels ? coreapi::PixelTypeName(item.pixel_type)
                                                          : QStringLiteral("-");
                 case ColFlags:      return FlagsText(item);
+                case ColMip:        return QString();   // 由 CheckStateRole 绘制
                 case ColTarget:     return item.state == NotImage ? QStringLiteral("-")
                                                                   : item.target_format;
                 case ColResult:     return item.result_text;
@@ -170,6 +170,14 @@ QVariant TexFileModel::data(const QModelIndex &index, int role) const
                 return QColor(128, 128, 128);
 
             return StateColor(item.state);
+        }
+
+        case Qt::CheckStateRole:
+        {
+            if(index.column() == ColMip)
+                return item.gen_mipmaps ? Qt::Checked : Qt::Unchecked;
+
+            break;
         }
 
         case Qt::TextAlignmentRole:
@@ -218,6 +226,7 @@ QVariant TexFileModel::headerData(int section, Qt::Orientation orientation, int 
         case ColChannels:   return QStringLiteral("通道");
         case ColPixelType:  return QStringLiteral("像素类型");
         case ColFlags:      return QStringLiteral("标记");
+        case ColMip:        return QStringLiteral("Mipmap");
         case ColTarget:     return QStringLiteral("目标格式");
         case ColResult:     return QStringLiteral("结果");
     }
@@ -232,17 +241,34 @@ Qt::ItemFlags TexFileModel::flags(const QModelIndex &index) const
     if(index.isValid())
         f |= Qt::ItemIsSelectable | Qt::ItemIsEnabled;
 
+    // Mipmap 列:行内 checkbox 直接勾选
+    if(index.isValid() && index.column() == ColMip && !locked_)
+        f |= Qt::ItemIsUserCheckable;
+
     return f;
 }
 
 bool TexFileModel::setData(const QModelIndex &index, const QVariant &value, int role)
 {
-    if(!index.isValid() || index.column() != ColTarget || role != Qt::EditRole)
+    if(!index.isValid())
         return false;
 
     const int row = index.row();
 
     if(row >= int(items_.size()))
+        return false;
+
+    // Mipmap 列:checkbox 勾选
+    if(index.column() == ColMip && role == Qt::CheckStateRole)
+    {
+        items_[size_t(row)].gen_mipmaps = (value == Qt::Checked);
+
+        Q_EMIT dataChanged(this->index(row, ColMip), this->index(row, ColFlags),
+                           { Qt::CheckStateRole, Qt::DisplayRole });
+        return true;
+    }
+
+    if(index.column() != ColTarget || role != Qt::EditRole)
         return false;
 
     Item &item = items_[size_t(row)];

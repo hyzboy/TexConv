@@ -120,7 +120,8 @@ void MainWindow::BuildUi()
     table_->horizontalHeader()->resizeSection(TexFileModel::ColSize, 90);
     table_->horizontalHeader()->resizeSection(TexFileModel::ColChannels, 50);
     table_->horizontalHeader()->resizeSection(TexFileModel::ColPixelType, 80);
-    table_->horizontalHeader()->resizeSection(TexFileModel::ColFlags, 150);
+    table_->horizontalHeader()->resizeSection(TexFileModel::ColFlags, 130);
+    table_->horizontalHeader()->resizeSection(TexFileModel::ColMip, 60);
     table_->horizontalHeader()->resizeSection(TexFileModel::ColTarget, 110);
     table_->verticalHeader()->setDefaultSectionSize(24);
     table_->setDragDropMode(QAbstractItemView::NoDragDrop);
