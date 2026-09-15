@@ -135,6 +135,7 @@ void JobRunner::RunConvert(QList<ConvertItem> jobs, ConvertOptions opts)
             cube.target_format = format.constData();
             cube.provider      = provider.isEmpty() ? nullptr : provider.constData();
             cube.gen_mipmaps   = job.gen_mipmaps ? 1 : 0;
+            cube.ibl_mode      = job.ibl_mode ? 1 : 0;
 
             const int crc = TexCore_RunCubeJob(&cube, &JobRunner::ProgressSink, this);
 
@@ -179,6 +180,7 @@ void JobRunner::RunConvert(QList<ConvertItem> jobs, ConvertOptions opts)
         params.normal_map      = job.normal_map ? 1 : 0;
         params.df_mode         = job.df_mode ? 1 : 0;
         params.df_threshold    = job.df_threshold;
+        params.ibl_mode        = job.ibl_mode;
 
         if(!provider.isEmpty())
             params.provider = provider.constData();

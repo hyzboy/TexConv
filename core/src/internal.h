@@ -47,11 +47,11 @@ namespace texcore
 
     // ── IBL Bake ─────────────────────────────────────────────────────────
 
-    bool BakeDiffuseIrradiance(const std::vector<float> src[6], uint32_t src_w,
+    bool BakeDiffuseIrradiance(const std::vector<float> src[6], uint32_t src_w, uint32_t src_h,
                                std::vector<float> dst[6], uint32_t dst_w, uint32_t dst_h,
                                int sample_count);
 
-    bool BakeGGXPrefilter(const std::vector<float> src[6], uint32_t src_w,
+    bool BakeGGXPrefilter(const std::vector<float> src[6], uint32_t src_w, uint32_t src_h,
                           std::vector<float> dst[6], uint32_t dst_w, uint32_t dst_h,
                           float roughness, int sample_count);
 

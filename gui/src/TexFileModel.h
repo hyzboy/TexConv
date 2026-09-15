@@ -80,11 +80,12 @@ public:
         QString  face_paths[6];             // 顺序 +X,-X,+Y,-Y,+Z,-Z;path = 公共前缀
 
         // ---- 每文件转换选项 ----
-        bool     gen_mipmaps = false;       // 生成 mipmap
+        bool     gen_mipmaps = true;        // 生成 mipmap(默认开)
         bool     force_grayscale = false;   // 转灰度
         bool     discard_alpha = false;     // 丢弃 alpha
         bool     normal_map = false;        // 法线贴图:目标格式强制 BC5
         bool     single_channel = false;    // 单通道语义(文件名自动识别):等价 灰度+丢弃Alpha
+        int      ibl_mode = 0;              // IBL: 0=无 1=Diffuse Irradiance 2=Specular Prefiltered
         bool     df_mode = false;           // 距离场:对灰度(1ch)或 Alpha 生成后按 1 通道继续
         int      df_threshold = 128;        // 距离场内外判定阈值
         QString  provider;                  // 压缩后端 short_name;空 = 默认(优先 Intel)
@@ -131,6 +132,7 @@ public:
     void SetFilesGrayscale(const QModelIndexList &rows, bool on);
     void SetFilesDiscardAlpha(const QModelIndexList &rows, bool on);
     void SetFilesNormal(const QModelIndexList &rows, bool on);
+    void SetFilesIBLMode(const QModelIndexList &rows, int mode);
     void SetFilesSingleChannel(const QModelIndexList &rows, bool on);
     void SetFilesDF(const QModelIndexList &rows, bool on);
     void SetFilesDFThreshold(const QModelIndexList &rows, int threshold);
@@ -154,6 +156,7 @@ public:
         bool     discard_alpha;
         bool     normal_map;
         bool     single_channel;
+        int      ibl_mode;
         bool     df_mode;
         int      df_threshold;
         QString  provider;

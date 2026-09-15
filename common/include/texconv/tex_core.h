@@ -44,6 +44,7 @@ typedef struct TexJobParams
     const char    *provider;        ///< 编码后端 short_name;NULL=默认第一个可用(旧版=AMD)
 
     int            gen_mipmaps;     ///< 生成 mipmap(压缩格式 4x4 下限,少 2 级)
+    int            ibl_mode;        ///< IBL 预处理: 0=无 1=Diffuse Irradiance 2=Specular Prefiltered
     int            force_grayscale;
     int            discard_alpha;
     int            normal_map;      ///< 法线贴图模式:所有槽位强制 BC5(等价旧 /normal)

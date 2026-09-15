@@ -219,6 +219,7 @@ static int run_cube(const std::vector<std::wstring> &inputs,
                     TexJobParams &ref_params,
                     const wchar_t *out_base,
                     bool gen_mipmaps,
+                    bool ibl,
                     const char *provider)
 {
     std::vector<std::wstring> faces;
@@ -347,6 +348,7 @@ static int run_cube(const std::vector<std::wstring> &inputs,
         cube.target_format = target;
         cube.provider      = provider;
         cube.gen_mipmaps   = gen_mipmaps ? 1 : 0;
+        cube.ibl_mode      = ibl ? 1 : 0;   // 1 = 同时产出 _irradiance 与 _prefilter
 
         constexpr const char *face_name[6] = {"+X", "-X", "+Y", "-Y", "+Z", "-Z"};
 
@@ -380,6 +382,8 @@ int wmain(int argc, wchar_t **argv)
                 "\t/normal : normal map mode - always store as 2-channel BC5 (XY); Z is rebuilt in the shader\n"
                 "\t/s : proc sub-directory\n"
                 "\t/mip : generate mipmaps\n"
+                "\t/cube : combine 6 face images into a .TexCube (pass 6 files or a directory)\n"
+                "\t          /ibl : also bake <name>_irradiance.TexCube and <name>_prefilter.TexCube\n"
                 "\t/gray: convert to grayscale\n"
                 "\t/DF[:threshold] : generate distance field then save\n"
                 "\t                    (1-channel: from gray; RGBA/GrayAlpha: from alpha;\n"
@@ -521,14 +525,14 @@ int wmain(int argc, wchar_t **argv)
 
         if(inputs.empty())
         {
-            printf("[CUBE] no input. usage: TexConv /cube [/mip] [/R:/RG:/RGB:/RGBA:] [/out:name] <6 face files | directory>\n");
+            printf("[CUBE] no input. usage: TexConv /cube [/mip] [/ibl] [/R:/RG:/RGB:/RGBA:] [/out:name] <6 face files | directory>\n");
             TexCore_Shutdown();
             return 1;
         }
 
         const int rc = run_cube(inputs, params.slot_format, params,
                                 (has_out ? out_base : nullptr),
-                                params.gen_mipmaps, provider);
+                                params.gen_mipmaps, cp.Contains(L"/ibl"), provider);
 
         TexCore_Shutdown();
         return rc;

@@ -70,6 +70,9 @@ namespace
         if(item.df_mode)
             flags << QStringLiteral("距离场(%1)").arg(item.df_threshold);
 
+        if(item.ibl_mode)
+            flags << QStringLiteral("IBL");
+
         if(!item.provider.isEmpty())
             flags << item.provider;
 
@@ -798,6 +801,17 @@ void TexFileModel::SetFilesProvider(const QModelIndexList &rows, const QString &
     }
 }
 
+void TexFileModel::SetFilesIBLMode(const QModelIndexList &rows, int mode)
+{
+    if(locked_)return;
+    for(const QModelIndex &idx : rows)
+    {
+        if(!idx.isValid() || idx.row() >= int(items_.size()))continue;
+        items_[size_t(idx.row())].ibl_mode = mode;
+        Q_EMIT dataChanged(index(idx.row(), 0), index(idx.row(), ColCount - 1));
+    }
+}
+
 void TexFileModel::SetFilesNormal(const QModelIndexList &rows, bool on)
 {
     if(locked_)
@@ -928,6 +942,7 @@ std::vector<TexFileModel::JobDesc> TexFileModel::CollectReadyJobs() const
             for(int i = 0; i < 6; i++)
                 job.faces << item.face_paths[i];
         job.gen_mipmaps    = item.gen_mipmaps;
+        job.ibl_mode       = item.ibl_mode;
         job.force_grayscale = item.force_grayscale;
         job.discard_alpha  = item.discard_alpha;
         job.normal_map     = item.normal_map;

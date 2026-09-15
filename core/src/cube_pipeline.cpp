@@ -31,6 +31,15 @@ namespace texcore
         }
     }//namespace
 
+    // 前向声明
+    void WriteIBLCubeFile(const std::filesystem::path &base_path,
+                          const wchar_t *suffix,
+                          const std::vector<float> src[6],
+                          uint32_t src_w, uint32_t src_h,
+                          bool (*bake_fn)(const std::vector<float>*, uint32_t, uint32_t,
+                                          std::vector<float>*, uint32_t, uint32_t),
+                          TexProgressFn progress, void *user);
+
     int RunCubeJobImpl(const TexCubeJobParams *params, TexProgressFn progress, void *user)
     {
         if(!params)
@@ -305,6 +314,28 @@ namespace texcore
             TexImage_GetInfo(faces[0], nullptr, nullptr, nullptr, &data_layout, nullptr);
         }
 
+        // 5.5 IBL:提取 RGBA float32 源数据(主转换的 mip 循环会缩放 faces,
+        //     所以必须在循环前取走原始分辨率数据)
+        std::vector<float> ibl_src[6];
+
+        if(params->ibl_mode)
+        {
+            const size_t buf_sz = TexImage_GetBufferSize(faces[0], TEX_LAYOUT_RGBA, TEX_PT_Float32);
+
+            for(int i = 0; i < 6; i++)
+            {
+                ibl_src[i].resize(buf_sz / sizeof(float));
+
+                if(TexImage_GetData(faces[i], ibl_src[i].data(), buf_sz,
+                                    TEX_LAYOUT_RGBA, TEX_PT_Float32) != TEX_OK)
+                {
+                    CoreLog(TEX_LOG_ERROR, "IBL: face data fetch failed.");
+                    for(int j = 0; j < 6; j++)TexImage_Free(faces[j]);
+                    return TEX_ERR_INTERNAL;
+                }
+            }
+        }
+
         // 6. 输出路径(补 .TexCube 后缀)
         std::filesystem::path out(params->output_path);
 
@@ -354,7 +385,6 @@ namespace texcore
         {
             for(int face = 0; face < 6; face++)
             {
-                fprintf(stderr, "[dbg] level %d face %d: encoding\n", level, face);
                 std::vector<uint8_t> payload;
 
                 uint32_t bytes = 0;
@@ -402,7 +432,132 @@ namespace texcore
 
         ContainerClose(f);
 
+        // 9. IBL 后处理:原始 cubemap 已写出,再生成 _irradiance 和 _prefilter
+        if(params->ibl_mode)
+        {
+            WriteIBLCubeFile(out, L"_irradiance", ibl_src, width, height,
+                             [](const std::vector<float> s[6], uint32_t sw, uint32_t sh,
+                                    std::vector<float> d[6], uint32_t dw, uint32_t dh)
+                             {
+                                 return BakeDiffuseIrradiance(s, sw, sh, d, dw, dh, 256);
+                             }, progress, user);
+
+            WriteIBLCubeFile(out, L"_prefilter", ibl_src, width, height,
+                             [](const std::vector<float> s[6], uint32_t sw, uint32_t sh,
+                                    std::vector<float> d[6], uint32_t dw, uint32_t dh)
+                             {
+                                 return BakeGGXPrefilter(s, sw, sh, d, dw, dh, 0.5f, 256);
+                             }, progress, user);
+        }
+
         for(int i = 0; i < 6; i++)TexImage_Free(faces[i]);
         return TEX_OK;
+    }
+
+    /// IBL 产物写出:烘焙 → RGBA16F(半精度)未压缩 .TexCube
+    /// 输出分辨率:irradiance 固定 32x32;prefilter 与源同尺寸
+    void WriteIBLCubeFile(const std::filesystem::path &base_path,
+                          const wchar_t *suffix,
+                          const std::vector<float> src[6],
+                          uint32_t src_w, uint32_t src_h,
+                          bool (*bake_fn)(const std::vector<float>*, uint32_t, uint32_t,
+                                          std::vector<float>*, uint32_t, uint32_t),
+                          TexProgressFn progress, void *user)
+    {
+        const uint32_t dst_w = (suffix[1] == L'i') ? 32 : src_w;    // _irradiance=32, _prefilter=src
+        const uint32_t dst_h = (suffix[1] == L'i') ? 32 : src_h;
+
+        std::vector<float> baked[6];
+
+        for(int i = 0; i < 6; i++)
+            baked[i].resize(size_t(dst_w) * dst_h * 4);
+
+        if(!bake_fn(src, src_w, src_h, baked, dst_w, dst_h))
+        {
+            CoreLog(TEX_LOG_ERROR, "IBL bake failed.");
+            return;
+        }
+
+        // float32 RGBA → half16 RGBA
+        std::vector<uint16_t> half_face;
+
+        // 输出路径:<base> 去扩展名 + 后缀 + .TexCube(sky34 → sky34_irradiance.TexCube;
+        // 注意 replace_extension 会在无点前缀时自动补点,得到 "xxx._irradiance" 错误命名)
+        std::filesystem::path out = base_path;
+        out.replace_extension();
+        out += std::wstring(suffix) + L".TexCube";
+
+        const std::wstring out_w = out.wstring();
+
+        FILE *f = nullptr;
+
+        if(!ContainerOpen(out_w, f))
+        {
+            CoreLog(TEX_LOG_ERROR, "IBL: create file failed.");
+            return;
+        }
+
+        const TexPixelFormat *fmt_rgba16f = TexFormat_Get("RGBA16F");
+
+        if(!ContainerWriteHeader(f, TEX_VIEW_CUBE)
+         ||!ContainerWriteSize2D(f, dst_w, dst_h)
+         ||!ContainerWriteFormatBlock(f, fmt_rgba16f, 1))
+        {
+            ContainerClose(f);
+            ContainerDelete(out_w);
+            return;
+        }
+
+        // float32 → half(简化:截断到 half 范围)
+        auto f32_to_f16 = [](float v) -> uint16_t
+        {
+            // 简易转换(完整 IEEE half 实现在此处省略,精度对 IBL 足够)
+            union { float f; uint32_t u; } fu;
+            fu.f = v;
+            const uint32_t sign = (fu.u >> 16) & 0x8000;
+            int32_t exp = int32_t((fu.u >> 23) & 0xFF) - 127 + 15;
+            uint32_t mant = (fu.u >> 13) & 0x3FF;
+
+            if(exp <= 0)   return uint16_t(sign);
+            if(exp >= 31)  return uint16_t(sign | 0x7C00);
+            return uint16_t(sign | (uint32_t(exp) << 10) | mant);
+        };
+
+        uint32_t total = 0;
+
+        for(int face = 0; face < 6; face++)
+        {
+            const size_t pixel_count = size_t(dst_w) * dst_h;
+            half_face.resize(pixel_count * 4);
+
+            const float *fp = baked[face].data();
+            uint16_t   *hp = half_face.data();
+
+            for(size_t p = 0; p < pixel_count; p++)
+            {
+                hp[p*4+0] = f32_to_f16(fp[p*4+0]);
+                hp[p*4+1] = f32_to_f16(fp[p*4+1]);
+                hp[p*4+2] = f32_to_f16(fp[p*4+2]);
+                hp[p*4+3] = f32_to_f16(fp[p*4+3]);
+            }
+
+            const uint32_t bytes = ContainerWriteLevel(f, half_face.data(),
+                                                       uint32_t(pixel_count * 4 * 2));
+            if(bytes <= 0)break;
+            total += bytes;
+
+            if(progress && progress(user, float(face + 1) / 6.0f))
+            {
+                ContainerClose(f);
+                ContainerDelete(out_w);
+                CoreLog(TEX_LOG_WARN, "IBL: cancelled.");
+                return;
+            }
+        }
+
+        ContainerClose(f);
+
+        CoreLog(TEX_LOG_INFO, "IBL: " + std::filesystem::path(out_w).string()
+                              + " (" + std::to_string(total) + " bytes).");
     }
 }//namespace texcore

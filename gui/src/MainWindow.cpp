@@ -425,6 +425,7 @@ void MainWindow::OnConvert()
         job.is_cube        = desc.is_cube;
         job.faces          = desc.faces;
         job.gen_mipmaps    = desc.gen_mipmaps;
+        job.ibl_mode       = desc.ibl_mode;
         job.force_grayscale = desc.force_grayscale;
         job.discard_alpha  = desc.discard_alpha;
         job.normal_map     = desc.normal_map;
@@ -593,6 +594,27 @@ void MainWindow::OnContextMenu(const QPoint &pos)
 
         if(ok)
             model_->SetFilesDFThreshold(selected, v);
+    });
+
+    // ---- IBL(单选,勾选后同时生成 Irradiance + Prefiltered)----
+    bool all_ibl = true;
+    {
+        bool ibl_first = true;
+
+        for(const QModelIndex &idx : selected)
+        {
+            const auto &item = model_->At(idx.row());
+            all_ibl = ibl_first ? item.ibl_mode != 0 : (all_ibl && item.ibl_mode != 0);
+            ibl_first = false;
+        }
+    }
+
+    QAction *ibl_action = menu.addAction(QStringLiteral("生成 IBL (Irradiance + Prefiltered)"));
+    ibl_action->setCheckable(true);
+    ibl_action->setChecked(all_ibl);
+    connect(ibl_action, &QAction::triggered, this, [this, selected, all_ibl](bool)
+    {
+        model_->SetFilesIBLMode(selected, all_ibl ? 0 : 1);
     });
 
     menu.addSeparator();
