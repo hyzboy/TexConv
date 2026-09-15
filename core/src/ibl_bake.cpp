@@ -1,4 +1,4 @@
-﻿#include "internal.h"
+#include "internal.h"
 #include <cmath>
 #include <cstring>
 #include <vector>
@@ -7,6 +7,23 @@
 namespace texcore
 {
     static constexpr float PI = 3.14159265358979f;
+
+    static constexpr float CUBE_FACE_AXES[6][3][3] =
+    {
+        {{  1, 0, 0},{ 0, 0,-1},{ 0,-1, 0}},    // +X
+        {{ -1, 0, 0},{ 0, 0, 1},{ 0,-1, 0}},    // -X
+        {{  0, 1, 0},{ 1, 0, 0},{ 0, 0, 1}},    // +Y
+        {{  0,-1, 0},{ 1, 0, 0},{ 0, 0,-1}},    // -Y
+        {{  0, 0, 1},{ 1, 0, 0},{ 0,-1, 0}},    // +Z
+        {{  0, 0,-1},{-1, 0, 0},{ 0,-1, 0}},    // -Z
+    };
+
+    static void CubeFaceToDir(int face, float s, float t, float out[3])
+    {
+        const auto &a = CUBE_FACE_AXES[face];
+        for(int i = 0; i < 3; i++)
+            out[i] = a[0][i] + s * a[1][i] + t * a[2][i];
+    }
 
     static void DirToFace(const float d[3], int &out_face, float &out_s, float &out_t)
     {
@@ -36,8 +53,8 @@ namespace texcore
     {
         int f; float s, t;
         DirToFace(dir, f, s, t);
-        uint32_t px = std::min(uint32_t((s+1)*0.5f*w), w-1);
-        uint32_t py = std::min(uint32_t((t+1)*0.5f*h), h-1);
+        uint32_t px = (std::min)(uint32_t((s+1)*0.5f*w), w-1);
+        uint32_t py = (std::min)(uint32_t((t+1)*0.5f*h), h-1);
         const float *p = &faces[f][(size_t(py)*w+px)*4];
         out_rgb[0]=p[0]; out_rgb[1]=p[1]; out_rgb[2]=p[2];
     }
@@ -50,7 +67,19 @@ namespace texcore
         b[0] = n[0]*n[1]*a;         b[1] = sg + n[1]*n[1]*a; b[2] = -sg*n[1];
     }
 
-    bool BakeDiffuseIrradiance(const std::vector<float> src[6], uint32_t src_w,
+    static void GGXSampleDir(float roughness, float u1, float u2,
+                             const float rd[3], const float t[3], const float b[3],
+                             float out_dir[3])
+    {
+        const float a = roughness * roughness;
+        const float phi = 2 * PI * u2;
+        const float ct = std::sqrt((1 - u1) / (1 + (a*a - 1) * u1));
+        const float st = std::sqrt(1 - ct * ct);
+        for(int i = 0; i < 3; i++)
+            out_dir[i] = st * std::cos(phi) * t[i] + st * std::sin(phi) * b[i] + ct * rd[i];
+    }
+
+    bool BakeDiffuseIrradiance(const std::vector<float> src[6], uint32_t src_w, uint32_t src_h,
                                std::vector<float> dst[6], uint32_t dst_w, uint32_t dst_h,
                                int sample_count)
     {
@@ -95,7 +124,7 @@ namespace texcore
         return true;
     }
 
-    bool BakeGGXPrefilter(const std::vector<float> src[6], uint32_t src_w,
+    bool BakeGGXPrefilter(const std::vector<float> src[6], uint32_t src_w, uint32_t src_h,
                           std::vector<float> dst[6], uint32_t dst_w, uint32_t dst_h,
                           float roughness, int sample_count)
     {

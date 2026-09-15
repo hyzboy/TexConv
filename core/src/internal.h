@@ -45,6 +45,16 @@ namespace texcore
     int RunJobImpl(const TexJobParams *params, TexProgressFn progress, void *user);
     int RunCubeJobImpl(const TexCubeJobParams *params, TexProgressFn progress, void *user);
 
+    // ── IBL Bake ─────────────────────────────────────────────────────────
+
+    bool BakeDiffuseIrradiance(const std::vector<float> src[6], uint32_t src_w,
+                               std::vector<float> dst[6], uint32_t dst_w, uint32_t dst_h,
+                               int sample_count);
+
+    bool BakeGGXPrefilter(const std::vector<float> src[6], uint32_t src_w,
+                          std::vector<float> dst[6], uint32_t dst_w, uint32_t dst_h,
+                          float roughness, int sample_count);
+
     /// 按名称选择编码后端(空=优先 Intel,AMD BC7 对部分内容有死锁/极慢问题);不存在返回 nullptr
     const TexEncoderProvider *SelectProvider(const char *short_name);
 

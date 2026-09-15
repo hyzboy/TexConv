@@ -118,7 +118,10 @@ typedef struct TexCubeJobParams
 
     const char    *target_format;   ///< NULL = 按面通道数取默认槽位(BC4/BC5/BC7/BC7)
     const char    *provider;        ///< NULL = 默认(优先 Intel,AMD BC7 对部分内容有死锁/极慢问题)
-    int            gen_mipmaps;     ///< 每面独立生成 mip 链(压缩格式 4x4 下限规则同 2D)
+    int            gen_mipmaps;     ///< 生成 mipmap 链(压缩格式 4x4 下限规则同 2D)
+    int            ibl_mode;        ///< IBL 预处理: 0=无 1=Diffuse Irradiance 2=Specular Prefiltered
+    int            ibl_roughness;   ///< Prefilter 采样粗糙度(仅 prefilter 模式,0-100,默认 50)
+    int            output_float;    ///< 输出格式: 0=按槽位默认 1=RGBA16F 2=RGBA8
 } TexCubeJobParams;
 
 TEXCONV_API int  TexCore_RunCubeJob(const TexCubeJobParams *params, TexProgressFn progress, void *user);
