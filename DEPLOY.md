@@ -87,6 +87,11 @@ TexConvQt 只依赖 `common/include/texconv/tex_core.h`(C API):
   后端对整组生效;转换调用 `TexCore_RunCubeJob`。
 - **引擎加载**:`TextureManager::LoadTextureCube` 已有实现;`tests/unit_cubefile`
   用 `TextureCubeLoader` 解析产物校验类型/尺寸/mip/载荷字节数。
+- **Debug 配置可用**:TexImage.dll 恒按 Release 构建(ImageMagick 上游不支持
+  MSVC Debug 语义的动态 coder 加载);Debug 的 TexConvCore/TexConv/TexConvQt
+  链接 Release 的 TexImage.lib,POST_BUILD 自动把 Release 的 TexImage.dll 拷到
+  Debug 运行目录——经 C ABI 调用,CRT 完全隔离,Debug 转换产物与 Release
+  字节一致(已验证)。注意:首次 Debug 构建前需先完成一次 Release 构建。
 - **已知限制(上游 AMD 缺陷)**:个别 512² RGBA 内容(如 sky_34 的 px.png)会令
   AMD Compressonator 的 BC7 编码死锁(旧版 exe 同样挂,与线程数无关)。此类文件
   请选 Intel 后端(ISPC 0.8 秒完成)——GUI 右键"压缩后端→Intel",或 CLI `/Intel`。

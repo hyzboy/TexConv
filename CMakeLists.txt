@@ -176,6 +176,27 @@ function(texconv_deploy_im_runtime TARGET_NAME)
 endfunction()
 
 # ---------------------------------------------------------------------------
+# TexImage 链接辅助:TexImage.dll 恒按 Release 构建(ImageMagick 上游不支持
+# MSVC Debug 语义);Debug 宿主链接 Release 的 import lib,并把 Release 的
+# TexImage.dll 拷到自身运行目录(经 C ABI 调用,CRT 完全隔离)。
+# ---------------------------------------------------------------------------
+function(texconv_link_teximage TARGET_NAME)
+    target_link_libraries(${TARGET_NAME} PRIVATE
+        $<$<CONFIG:Debug>:${OUTPUT_DIRECTORY_RELEASE}/TexImage.lib>
+        $<$<NOT:$<CONFIG:Debug>>:TexImage>)
+
+    if(TARGET TexImage)
+        add_dependencies(${TARGET_NAME} TexImage)
+    endif()
+
+    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${OUTPUT_DIRECTORY_RELEASE}/TexImage.dll"
+                $<TARGET_FILE_DIR:${TARGET_NAME}>
+        COMMENT "Deploy Release TexImage.dll -> $<TARGET_FILE_DIR:${TARGET_NAME}>")
+endfunction()
+
+# ---------------------------------------------------------------------------
 # TexConv 模块化架构:
 #   TexCommon    公共 C 接口头 / 格式表(静态库)
 #   TexImage     图像核心(ImageMagick++;hgl 仅链入此 DLL)
