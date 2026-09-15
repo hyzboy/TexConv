@@ -117,7 +117,7 @@ typedef struct TexCubeJobParams
     const wchar_t *output_path;     ///< 必填:.TexCube 输出路径(建议显式给出完整路径)
 
     const char    *target_format;   ///< NULL = 按面通道数取默认槽位(BC4/BC5/BC7/BC7)
-    const char    *provider;        ///< NULL = 默认(优先 AMD)
+    const char    *provider;        ///< NULL = 默认(优先 Intel,AMD BC7 对部分内容有死锁/极慢问题)
     int            gen_mipmaps;     ///< 每面独立生成 mip 链(压缩格式 4x4 下限规则同 2D)
 } TexCubeJobParams;
 

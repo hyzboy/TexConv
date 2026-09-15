@@ -101,6 +101,120 @@ namespace texcore
             return TEX_ERR_UNSUPPORTED;
         }
 
+        // 5. Y-up(OpenGL/D3D cubemap 约定)→ Z-up(引擎世界)的 90° 旋转烘焙:
+        //    加载时扭正,后续压缩/写出不再关心方向。90° 整倍数的面间映射为
+        //    精确的像素一一对应(最近邻无损)。
+        {
+            const int bpp = channels * TexPixelTypeBytes(pt);
+
+            std::vector<std::vector<uint8_t>> src(6);
+            for(int i = 0; i < 6; i++)
+            {
+                src[i].resize(TexImage_GetBufferSize(faces[i], layout, pt));
+
+                if(TexImage_GetData(faces[i], src[i].data(), src[i].size(), layout, pt) != TEX_OK)
+                {
+                    CoreLog(TEX_LOG_ERROR, "cube face data fetch failed.");
+                    for(int j = 0; j < 6; j++)TexImage_Free(faces[j]);
+                    return TEX_ERR_INTERNAL;
+                }
+            }
+
+            // 每面的 (法线, s+方向, t+方向),与 OpenGL/Vulkan cubemap 约定一致
+            static constexpr float face_axes[6][3][3] =
+            {
+                {{  1, 0, 0},{ 0, 0,-1},{ 0,-1, 0}},    // +X
+                {{ -1, 0, 0},{ 0, 0, 1},{ 0,-1, 0}},    // -X
+                {{  0, 1, 0},{ 1, 0, 0},{ 0, 0, 1}},    // +Y
+                {{  0,-1, 0},{ 1, 0, 0},{ 0, 0,-1}},    // -Y
+                {{  0, 0, 1},{ 1, 0, 0},{ 0,-1, 0}},    // +Z
+                {{  0, 0,-1},{-1, 0, 0},{ 0,-1, 0}},    // -Z
+            };
+
+            std::vector<std::vector<uint8_t>> rotated(6);
+
+            for(int dst = 0; dst < 6; dst++)
+            {
+                rotated[dst].resize(src[0].size());
+
+                const auto &axes = face_axes[dst];
+
+                for(uint32_t py = 0; py < height; py++)
+                for(uint32_t px = 0; px < width;  px++)
+                {
+                    // 该像素在世界空间(Z-up)的方向
+                    const float sc = (float(px) + 0.5f) / width  * 2.0f - 1.0f;
+                    const float tc = (float(py) + 0.5f) / height * 2.0f - 1.0f;
+
+                    const float dw[3] =
+                    {
+                        axes[0][0] + sc * axes[1][0] + tc * axes[2][0],
+                        axes[0][1] + sc * axes[1][1] + tc * axes[2][1],
+                        axes[0][2] + sc * axes[1][2] + tc * axes[2][2],
+                    };
+
+                    // 世界(Z-up)→ 源(Y-up):(x,y,z) → (x,z,-y)
+                    // 加上绕 Z 轴的 90° 补偿旋转(x,y)→(y,-x):
+                    const float wx = -dw[1], wy = dw[0];
+                    const float ds[3] = { wx, dw[2], -wy };
+
+                    // 主轴 → 源面与面内 (s,t)
+                    int face; float s_src, t_src;
+
+                    const float ax[3] = { std::fabs(ds[0]), std::fabs(ds[1]), std::fabs(ds[2]) };
+
+                    if(ax[0] >= ax[1] && ax[0] >= ax[2])
+                    {
+                        face = ds[0] > 0 ? 0 : 1;              // ±X: s=∓z, t=-y
+                        s_src = (ds[0] > 0) ? -ds[2] : ds[2];
+                        t_src = -ds[1];
+                    }
+                    else if(ax[1] >= ax[2])
+                    {
+                        face = ds[1] > 0 ? 2 : 3;              // ±Y: s=x, t=±z
+                        s_src = ds[0];
+                        t_src = (ds[1] > 0) ? ds[2] : -ds[2];
+                    }
+                    else
+                    {
+                        face = ds[2] > 0 ? 4 : 5;              // ±Z: s=±x, t=-y
+                        s_src = (ds[2] > 0) ? ds[0] : -ds[0];
+                        t_src = -ds[1];
+                    }
+
+                    uint32_t sx = (std::min)(uint32_t((s_src + 1.0f) * 0.5f * width),  width - 1);
+                    uint32_t sy = (std::min)(uint32_t((t_src + 1.0f) * 0.5f * height), height - 1);
+
+                    memcpy(&rotated[dst][(size_t(py) * width + px) * bpp],
+                           &src[face][(size_t(sy) * width + sx) * bpp],
+                           bpp);
+                }
+            }
+
+            // 用旋转后的面替换(原生类型/通道不变)
+            TexImage replaced_handle[6] = {};
+            for(int i = 0; i < 6; i++)
+            {
+                TexImage replaced = nullptr;
+
+                if(TexImage_CreateFromData(&replaced, width, height, channels, pt,
+                                           rotated[i].data()) != TEX_OK)
+                {
+                    CoreLog(TEX_LOG_ERROR, "cube rotation bake failed.");
+                    for(int j = 0; j < 6; j++)TexImage_Free(faces[j]);
+                    for(int j = 0; j <= i; j++)TexImage_Free(replaced_handle[j]);
+                    return TEX_ERR_INTERNAL;
+                }
+
+                replaced_handle[i] = replaced;
+                TexImage_Free(faces[i]);
+                faces[i] = replaced;
+            }
+
+            // 旋转后重读布局/像素类型(RGBA8 化后可能与源不同)
+            TexImage_GetInfo(faces[0], &width, &height, nullptr, &layout, &pt);
+        }
+
         // 3. 目标格式(显式指定或按面通道数取默认槽位)
         const TexPixelFormat *fmt = nullptr;
 

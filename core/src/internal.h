@@ -45,7 +45,7 @@ namespace texcore
     int RunJobImpl(const TexJobParams *params, TexProgressFn progress, void *user);
     int RunCubeJobImpl(const TexCubeJobParams *params, TexProgressFn progress, void *user);
 
-    /// 按名称选择编码后端(空=优先 AMD);不存在返回 nullptr
+    /// 按名称选择编码后端(空=优先 Intel,AMD BC7 对部分内容有死锁/极慢问题);不存在返回 nullptr
     const TexEncoderProvider *SelectProvider(const char *short_name);
 
     /// 确保后端已初始化(懒加载,幂等)

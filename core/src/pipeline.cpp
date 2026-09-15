@@ -75,7 +75,11 @@ namespace texcore
             return nullptr;     // 指定的后端不存在(旧版 /Intel 缺失 → 报错退出)
         }
 
-        // 未指定:优先 AMD(旧版默认),否则取第一个
+        // 未指定:优先 Intel(AMD BC7 对部分内容存在死锁/极慢问题),否则取第一个
+        for(auto &p : list)
+            if(strcmp(p.provider->short_name, "Intel") == 0)
+                return p.provider;
+
         for(auto &p : list)
             if(strcmp(p.provider->short_name, "AMD") == 0)
                 return p.provider;
@@ -312,7 +316,7 @@ namespace texcore
         if(!params || !params->input_path || !*params->input_path)
             return TEX_ERR_PARAM;
 
-        // 压缩后端选择(旧版:/AMD|/Intel|默认 AMD;指定的后端缺失 → 报错)
+        // 压缩后端选择(默认 Intel;/AMD|/Intel 显式指定,缺失的后端 → 报错)
         const TexEncoderProvider *provider = SelectProvider(params->provider);
 
         if(!provider)

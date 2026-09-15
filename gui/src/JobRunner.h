@@ -57,7 +57,7 @@ struct ConvertItem
     bool    single_channel = false;     // 单通道语义(等价 灰度+丢弃Alpha)
     bool    df_mode = false;
     int     df_threshold = 128;
-    QString provider;           // 空 = 默认(优先 AMD)
+    QString provider;           // 空 = 默认(优先 Intel)
 };
 
 /// 检测任务描述

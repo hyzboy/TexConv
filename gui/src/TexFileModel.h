@@ -87,7 +87,7 @@ public:
         bool     single_channel = false;    // 单通道语义(文件名自动识别):等价 灰度+丢弃Alpha
         bool     df_mode = false;           // 距离场:对灰度(1ch)或 Alpha 生成后按 1 通道继续
         int      df_threshold = 128;        // 距离场内外判定阈值
-        QString  provider;                  // 压缩后端 short_name;空 = 默认(优先 AMD)
+        QString  provider;                  // 压缩后端 short_name;空 = 默认(优先 Intel)
     };
 
     explicit TexFileModel(QObject *parent = nullptr);

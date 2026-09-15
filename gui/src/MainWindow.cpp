@@ -670,7 +670,7 @@ void MainWindow::OnContextMenu(const QPoint &pos)
             });
         };
 
-        add_provider(QStringLiteral("默认(优先 AMD)"), QString());
+        add_provider(QStringLiteral("默认(优先 Intel)"), QString());
 
         TexProviderInfo infos[8];
         const int n = TexCore_EnumProviders(infos, 8);

@@ -413,7 +413,7 @@ int wmain(int argc, wchar_t **argv)
             params.df_threshold = int(wcstol(dft, nullptr, 10));
     }
 
-    // 压缩后端(默认 AMD;指定的后端不可用 → fail-fast,对齐旧版 /Intel)
+    // 压缩后端(默认 Intel:AMD BC7 对部分内容有死锁/极慢问题;/AMD 可显式选回)
     const char *provider = nullptr;
 
     if(cp.Contains(L"/AMD"))
@@ -488,10 +488,9 @@ int wmain(int argc, wchar_t **argv)
         return 1;
     }
 
-    // 旧版启动时打印所用后端(默认即 AMD)
+    // 启动时打印所用后端(未指定时默认 Intel 优先)
     {
-        const char *use = provider ? provider : "AMD";
-        printf("Using %s Texture Compressor\n", use);
+        const char *use = provider ? provider : provider_available("Intel") ? "Intel ISPC" : "AMD Compressonator";        printf("Using %s Texture Compressor\n", use);
     }
 
     // 回显各通道槽位的实际格式(对齐旧版 std::cout 打印)

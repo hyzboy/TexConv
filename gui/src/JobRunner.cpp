@@ -104,7 +104,7 @@ void JobRunner::RunConvert(QList<ConvertItem> jobs, ConvertOptions opts)
         }
 
         const QByteArray format = job.format.toLatin1();
-        const QByteArray provider = job.provider.toLatin1();    // 空 = 内核默认(优先 AMD)
+        const QByteArray provider = job.provider.toLatin1();    // 空 = 内核默认(优先 Intel)
 
         const bool is_cube = job.is_cube;
         const QString out_ext = is_cube ? ".TexCube" : ".Tex2D";
