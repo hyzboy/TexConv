@@ -212,7 +212,17 @@ namespace
         options.dwnumThreads = (dst_tex.format == CMP_FORMAT_BC4) ? 1
                              : (req->thread_count > 0 ? req->thread_count : 8);
 
-        const CMP_ERROR cmp_result = CMP_ConvertTexture(&src_tex, &dst_tex, &options, nullptr);
+        // GPU 加速:优先 DirectX Compute,失败自动回退 CPU 多线程
+        options.nEncodeWith = CMP_GPU_DXC;
+
+        CMP_ERROR cmp_result = CMP_ConvertTexture(&src_tex, &dst_tex, &options, nullptr);
+
+        if(cmp_result != CMP_OK)
+        {
+            // GPU 路径失败(驱动不支持/显存不足/compute 不可用)→ 回退 CPU
+            options.nEncodeWith = CMP_CPU;
+            cmp_result = CMP_ConvertTexture(&src_tex, &dst_tex, &options, nullptr);
+        }
 
         // 编码失败必须报错返回:否则 dst_tex 里是"已按目标格式申请、从未写入"的内存,落盘即垃圾
         if(cmp_result != CMP_OK)
