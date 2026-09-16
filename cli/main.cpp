@@ -220,6 +220,7 @@ static int run_cube(const std::vector<std::wstring> &inputs,
                     const wchar_t *out_base,
                     bool gen_mipmaps,
                     bool ibl,
+                    const char *ibl_format,
                     const char *provider)
 {
     std::vector<std::wstring> faces;
@@ -349,6 +350,7 @@ static int run_cube(const std::vector<std::wstring> &inputs,
         cube.provider      = provider;
         cube.gen_mipmaps   = gen_mipmaps ? 1 : 0;
         cube.ibl_mode      = ibl ? 1 : 0;   // 1 = 同时产出 _irradiance 与 _prefilter
+        cube.ibl_format    = ibl_format;    // NULL = 自动(BC6H 优先)
 
         constexpr const char *face_name[6] = {"+X", "-X", "+Y", "-Y", "+Z", "-Z"};
 
@@ -383,7 +385,8 @@ int wmain(int argc, wchar_t **argv)
                 "\t/s : proc sub-directory\n"
                 "\t/mip : generate mipmaps\n"
                 "\t/cube : combine 6 face images into a .TexCube (pass 6 files or a directory)\n"
-                "\t          /ibl : also bake <name>_irradiance.TexCube and <name>_prefilter.TexCube\n"
+                "\t          /ibl[:fmt] : also bake <name>_irradiance.TexCube and <name>_prefilter.TexCube\n"
+                "\t                       fmt = BC6H(HDR,default) | BC7(LDR,RGB8 source) | RGBA16F | RGBA8\n"
                 "\t/gray: convert to grayscale\n"
                 "\t/DF[:threshold] : generate distance field then save\n"
                 "\t                    (1-channel: from gray; RGBA/GrayAlpha: from alpha;\n"
@@ -525,14 +528,32 @@ int wmain(int argc, wchar_t **argv)
 
         if(inputs.empty())
         {
-            printf("[CUBE] no input. usage: TexConv /cube [/mip] [/ibl] [/R:/RG:/RGB:/RGBA:] [/out:name] <6 face files | directory>\n");
+            printf("[CUBE] no input. usage: TexConv /cube [/mip] [/ibl[:BC6H|BC7|RGBA16F]] [/R:/RG:/RGB:/RGBA:] [/out:name] <6 face files | directory>\n");
             TexCore_Shutdown();
             return 1;
         }
 
+        // /ibl = 自动格式(BC6H 优先);/ibl:BC7 等显式指定 IBL 产物格式
+        const wchar_t *ibl_fmt_w = nullptr;
+        cp.GetString(L"/ibl:", &ibl_fmt_w);
+
+        char ibl_fmt_utf8[32] = {};
+
+        if(ibl_fmt_w && *ibl_fmt_w)
+        {
+            size_t n = 0;
+            while(n + 1 < sizeof(ibl_fmt_utf8) && ibl_fmt_w[n] && ibl_fmt_w[n] < 128)
+            {
+                ibl_fmt_utf8[n] = char(ibl_fmt_w[n]);
+                ++n;
+            }
+        }
+
         const int rc = run_cube(inputs, params.slot_format, params,
                                 (has_out ? out_base : nullptr),
-                                params.gen_mipmaps, cp.Contains(L"/ibl"), provider);
+                                params.gen_mipmaps, cp.Contains(L"/ibl"),
+                                (ibl_fmt_utf8[0] ? ibl_fmt_utf8 : nullptr),
+                                provider);
 
         TexCore_Shutdown();
         return rc;

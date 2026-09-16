@@ -31,6 +31,32 @@ namespace texcore
         }
     }//namespace
 
+    namespace
+    {
+        /// 编码器是否支持指定目标格式名
+        bool ProviderSupportsTarget(const TexEncoderProvider *provider, const char *name)
+        {
+            if(!provider || !provider->QueryTargets || !name)
+                return false;
+
+            const int n = provider->QueryTargets(nullptr, 0);
+
+            if(n <= 0)
+                return false;
+
+            std::vector<const char *> names{ size_t(n) };
+
+            if(provider->QueryTargets(names.data(), n) != n)
+                return false;
+
+            for(int i = 0; i < n; i++)
+                if(names[size_t(i)] && strcmp(names[size_t(i)], name) == 0)
+                    return true;
+
+            return false;
+        }
+    }//namespace
+
     // 前向声明
     void WriteIBLCubeFile(const std::filesystem::path &base_path,
                           const wchar_t *suffix,
@@ -38,6 +64,8 @@ namespace texcore
                           uint32_t src_w, uint32_t src_h,
                           bool (*bake_fn)(const std::vector<float>*, uint32_t, uint32_t,
                                           std::vector<float>*, uint32_t, uint32_t),
+                          const TexEncoderProvider *provider,
+                          const char *ibl_format,
                           TexProgressFn progress, void *user);
 
     int RunCubeJobImpl(const TexCubeJobParams *params, TexProgressFn progress, void *user)
@@ -440,32 +468,115 @@ namespace texcore
                                     std::vector<float> d[6], uint32_t dw, uint32_t dh)
                              {
                                  return BakeDiffuseIrradiance(s, sw, sh, d, dw, dh, 256);
-                             }, progress, user);
+                             }, provider, params->ibl_format, progress, user);
 
             WriteIBLCubeFile(out, L"_prefilter", ibl_src, width, height,
                              [](const std::vector<float> s[6], uint32_t sw, uint32_t sh,
                                     std::vector<float> d[6], uint32_t dw, uint32_t dh)
                              {
                                  return BakeGGXPrefilter(s, sw, sh, d, dw, dh, 0.5f, 256);
-                             }, progress, user);
+                             }, provider, params->ibl_format, progress, user);
         }
 
         for(int i = 0; i < 6; i++)TexImage_Free(faces[i]);
         return TEX_OK;
     }
 
-    /// IBL 产物写出:烘焙 → RGBA16F(半精度)未压缩 .TexCube
+    /// IBL 产物写出:烘焙 → half16 或 u8 → BC6H/BC7 压缩或未压缩 .TexCube
     /// 输出分辨率:irradiance 固定 32x32;prefilter 与源同尺寸
+    /// 输出格式:ibl_format 非空 = 显式指定(BC6H/BC7/RGBA16F/RGBA8),校验失败
+    ///          警告后回退自动;空 = 自动(BC6H 优先,不支持时 RGBA16F)。
+    /// 编码源量化:BC6H/RGBA16F → half16(HDR);BC7/RGBA8 → u8(LDR,RGB8 源推荐)
     void WriteIBLCubeFile(const std::filesystem::path &base_path,
                           const wchar_t *suffix,
                           const std::vector<float> src[6],
                           uint32_t src_w, uint32_t src_h,
                           bool (*bake_fn)(const std::vector<float>*, uint32_t, uint32_t,
                                           std::vector<float>*, uint32_t, uint32_t),
+                          const TexEncoderProvider *provider,
+                          const char *ibl_format,
                           TexProgressFn progress, void *user)
     {
         const uint32_t dst_w = (suffix[1] == L'i') ? 32 : src_w;    // _irradiance=32, _prefilter=src
         const uint32_t dst_h = (suffix[1] == L'i') ? 32 : src_h;
+
+        // 候选格式校验:压缩格式须编码器支持且源布局匹配(BC6H→half,BC7→u8);
+        // 非压缩格式须 4 通道合法且为 Float16/UInt8。usable=false 表示该格式名存在但不可用
+        auto try_format = [&provider](const char *name,
+                                      const TexPixelFormat *&out_fmt,
+                                      bool &is_compress, bool &quant_u8) -> bool
+        {
+            out_fmt = TexFormat_Get(name);
+
+            if(!out_fmt)
+                return false;
+
+            if(TexFormat_IsCompress(out_fmt))
+            {
+                const bool half_src = (strcmp(name, "BC6H") == 0
+                                    || strcmp(name, "BC6H_SF") == 0);
+                const int src_pt = half_src ? TEX_PT_Float16 : TEX_PT_UInt8;
+
+                if(provider)
+                {
+                    int data_layout = 0, data_pt = 0;
+
+                    if(!ProviderSupportsTarget(provider, name)
+                     || provider->QuerySourceLayout(name, 4, src_pt,
+                                                    &data_layout, &data_pt) != TEX_OK
+                     || data_layout != TEX_LAYOUT_RGBA
+                     || data_pt != src_pt)
+                        return false;
+                }
+                else
+                    return false;
+
+                is_compress = true;
+                quant_u8    = !half_src;
+                return true;
+            }
+
+            if(!TexFormat_IsAllowed(4, out_fmt))
+                return false;
+
+            const int pt = TexFormat_PixelType(out_fmt);
+
+            if(pt != TEX_PT_Float16 && pt != TEX_PT_UInt8)
+                return false;
+
+            is_compress = false;
+            quant_u8    = (pt == TEX_PT_UInt8);
+            return true;
+        };
+
+        const TexPixelFormat *fmt = nullptr;
+        bool is_compress = false;
+        bool quant_u8    = false;
+
+        if(ibl_format && *ibl_format)
+        {
+            if(try_format(ibl_format, fmt, is_compress, quant_u8))
+                CoreLog(TEX_LOG_INFO, std::string("IBL: output format ") + ibl_format);
+            else
+                CoreLog(TEX_LOG_WARN, std::string("IBL: format ") + ibl_format
+                                      + " is not available, fallback to auto.");
+        }
+
+        if(!fmt)
+        {
+            if(!try_format("BC6H", fmt, is_compress, quant_u8))
+            {
+                fmt         = TexFormat_Get("RGBA16F");
+                is_compress = false;
+                quant_u8    = false;
+            }
+        }
+
+        if(!fmt)
+        {
+            CoreLog(TEX_LOG_ERROR, "IBL: no usable output format.");
+            return;
+        }
 
         std::vector<float> baked[6];
 
@@ -478,8 +589,73 @@ namespace texcore
             return;
         }
 
-        // float32 RGBA → half16 RGBA
-        std::vector<uint16_t> half_face;
+        // float32 → half(简化截断转换,精度对 IBL 天空值足够)
+        auto f32_to_f16 = [](float v) -> uint16_t
+        {
+            union { float f; uint32_t u; } fu;
+            fu.f = v;
+            const uint32_t sign = (fu.u >> 16) & 0x8000;
+            int32_t exp = int32_t((fu.u >> 23) & 0xFF) - 127 + 15;
+            uint32_t mant = (fu.u >> 13) & 0x3FF;
+
+            if(exp <= 0)   return uint16_t(sign);
+            if(exp >= 31)  return uint16_t(sign | 0x7C00);
+            return uint16_t(sign | (uint32_t(exp) << 10) | mant);
+        };
+
+        // float32 → u8(UNORM,clamp 到 0-1;LDR 目标格式用)
+        auto f32_to_u8 = [](float v) -> uint8_t
+        {
+            if(v <= 0.0f)  return 0;
+            if(v >= 1.0f)  return 255;
+            return uint8_t(v * 255.0f + 0.5f);
+        };
+
+        const size_t pixel_count = size_t(dst_w) * dst_h;
+
+        std::vector<uint16_t> half_faces[6];
+        std::vector<uint8_t>  u8_faces[6];
+
+        if(quant_u8)
+        {
+            for(int face = 0; face < 6; face++)
+            {
+                u8_faces[face].resize(pixel_count * 4);
+
+                const float *fp = baked[face].data();
+                uint8_t    *up = u8_faces[face].data();
+
+                for(size_t p = 0; p < pixel_count; p++)
+                {
+                    up[p*4+0] = f32_to_u8(fp[p*4+0]);
+                    up[p*4+1] = f32_to_u8(fp[p*4+1]);
+                    up[p*4+2] = f32_to_u8(fp[p*4+2]);
+                    up[p*4+3] = f32_to_u8(fp[p*4+3]);
+                }
+            }
+        }
+        else
+        {
+            for(int face = 0; face < 6; face++)
+            {
+                half_faces[face].resize(pixel_count * 4);
+
+                const float *fp = baked[face].data();
+                uint16_t   *hp = half_faces[face].data();
+
+                for(size_t p = 0; p < pixel_count; p++)
+                {
+                    hp[p*4+0] = f32_to_f16(fp[p*4+0]);
+                    hp[p*4+1] = f32_to_f16(fp[p*4+1]);
+                    hp[p*4+2] = f32_to_f16(fp[p*4+2]);
+                    hp[p*4+3] = f32_to_f16(fp[p*4+3]);
+                }
+            }
+        }
+
+        // 输出格式:显式指定(BC6H/BC7/RGBA16F/RGBA8)或自动(BC6H→RGBA16F);
+        // 编码器支持 BC6H 且声明接受 RGBA 半精度源 → 压缩,否则未压缩
+        // (try_format 已在上面完成解析)
 
         // 输出路径:<base> 去扩展名 + 后缀 + .TexCube(sky34 → sky34_irradiance.TexCube;
         // 注意 replace_extension 会在无点前缀时自动补点,得到 "xxx._irradiance" 错误命名)
@@ -497,53 +673,72 @@ namespace texcore
             return;
         }
 
-        const TexPixelFormat *fmt_rgba16f = TexFormat_Get("RGBA16F");
-
         if(!ContainerWriteHeader(f, TEX_VIEW_CUBE)
          ||!ContainerWriteSize2D(f, dst_w, dst_h)
-         ||!ContainerWriteFormatBlock(f, fmt_rgba16f, 1))
+         ||!ContainerWriteFormatBlock(f, fmt, 1))
         {
             ContainerClose(f);
             ContainerDelete(out_w);
             return;
         }
 
-        // float32 → half(简化:截断到 half 范围)
-        auto f32_to_f16 = [](float v) -> uint16_t
-        {
-            // 简易转换(完整 IEEE half 实现在此处省略,精度对 IBL 足够)
-            union { float f; uint32_t u; } fu;
-            fu.f = v;
-            const uint32_t sign = (fu.u >> 16) & 0x8000;
-            int32_t exp = int32_t((fu.u >> 23) & 0xFF) - 127 + 15;
-            uint32_t mant = (fu.u >> 13) & 0x3FF;
-
-            if(exp <= 0)   return uint16_t(sign);
-            if(exp >= 31)  return uint16_t(sign | 0x7C00);
-            return uint16_t(sign | (uint32_t(exp) << 10) | mant);
-        };
-
         uint32_t total = 0;
 
         for(int face = 0; face < 6; face++)
         {
-            const size_t pixel_count = size_t(dst_w) * dst_h;
-            half_face.resize(pixel_count * 4);
+            uint32_t bytes = 0;
 
-            const float *fp = baked[face].data();
-            uint16_t   *hp = half_face.data();
-
-            for(size_t p = 0; p < pixel_count; p++)
+            if(is_compress)
             {
-                hp[p*4+0] = f32_to_f16(fp[p*4+0]);
-                hp[p*4+1] = f32_to_f16(fp[p*4+1]);
-                hp[p*4+2] = f32_to_f16(fp[p*4+2]);
-                hp[p*4+3] = f32_to_f16(fp[p*4+3]);
+                // 直接进编码器:RGBA 源(BC6H=half 8B/px,BC7=u8 4B/px)→ 块序列
+                TexEncodeRequest req;
+                memset(&req, 0, sizeof(req));
+
+                req.src            = quant_u8
+                                   ? reinterpret_cast<const uint8_t *>(u8_faces[face].data())
+                                   : reinterpret_cast<const uint8_t *>(half_faces[face].data());
+                req.width          = dst_w;
+                req.height         = dst_h;
+                req.src_layout     = TEX_LAYOUT_RGBA;
+                req.src_pixel_type = quant_u8 ? TEX_PT_UInt8 : TEX_PT_Float16;
+                req.target_format  = fmt->name;
+                req.quality        = 100;
+                req.thread_count   = 0;
+
+                uint8_t *out_data = nullptr;
+                size_t   out_bytes = 0;
+
+                if(provider->Encode(&req, &out_data, &out_bytes) == TEX_OK
+                 && out_data && out_bytes > 0)
+                {
+                    bytes = ContainerWriteLevel(f, out_data, uint32_t(out_bytes));
+                    provider->FreeResult(out_data);
+                }
+                else
+                {
+                    if(out_data)provider->FreeResult(out_data);
+                    CoreLog(TEX_LOG_ERROR, "IBL: block encode failed.");
+                }
+            }
+            else if(quant_u8)
+            {
+                bytes = ContainerWriteLevel(f, u8_faces[face].data(),
+                                            uint32_t(pixel_count * 4));
+            }
+            else
+            {
+                bytes = ContainerWriteLevel(f, half_faces[face].data(),
+                                            uint32_t(pixel_count * 4 * 2));
             }
 
-            const uint32_t bytes = ContainerWriteLevel(f, half_face.data(),
-                                                       uint32_t(pixel_count * 4 * 2));
-            if(bytes <= 0)break;
+            if(bytes <= 0)
+            {
+                ContainerClose(f);
+                ContainerDelete(out_w);
+                CoreLog(TEX_LOG_ERROR, "IBL: write face data failed.");
+                return;
+            }
+
             total += bytes;
 
             if(progress && progress(user, float(face + 1) / 6.0f))
@@ -558,6 +753,6 @@ namespace texcore
         ContainerClose(f);
 
         CoreLog(TEX_LOG_INFO, "IBL: " + std::filesystem::path(out_w).string()
-                              + " (" + std::to_string(total) + " bytes).");
+                              + " (" + fmt->name + ", " + std::to_string(total) + " bytes).");
     }
 }//namespace texcore

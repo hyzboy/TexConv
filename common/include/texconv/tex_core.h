@@ -123,6 +123,10 @@ typedef struct TexCubeJobParams
     int            ibl_mode;        ///< IBL 预处理: 0=无 1=Diffuse Irradiance 2=Specular Prefiltered
     int            ibl_roughness;   ///< Prefilter 采样粗糙度(仅 prefilter 模式,0-100,默认 50)
     int            output_float;    ///< 输出格式: 0=按槽位默认 1=RGBA16F 2=RGBA8
+    const char    *ibl_format;      ///< IBL 附加产物(_irradiance/_prefilter)输出格式名;
+                                      ///< NULL/空=自动(优先 BC6H,编码器不支持时回退 RGBA16F);
+                                      ///< 可指定 "BC6H"(HDR 半精度) / "BC7"(LDR,RGB8 源推荐)
+                                      ///< / "RGBA16F" / "RGBA8";指定格式不可用时警告并回退自动
 } TexCubeJobParams;
 
 TEXCONV_API int  TexCore_RunCubeJob(const TexCubeJobParams *params, TexProgressFn progress, void *user);

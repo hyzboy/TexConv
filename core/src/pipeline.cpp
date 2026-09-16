@@ -270,14 +270,12 @@ namespace texcore
                               int layout, int pixel_type,
                               std::vector<uint8_t> &payload)
     {
-        fprintf(stderr, "[dbg2] BC7 build enter\n");
         const size_t raw_need = TexImage_GetBufferSize(img, layout, pixel_type);
         std::vector<uint8_t> raw(raw_need);
 
         if(TexImage_GetData(img, raw.data(), raw.size(), layout, pixel_type) != TEX_OK)
             return false;
 
-        fprintf(stderr, "[dbg2] data fetched\n");
 
         uint32_t cur_w = 0, cur_h = 0;
         TexImage_GetInfo(img, &cur_w, &cur_h, nullptr, nullptr, nullptr);
@@ -297,12 +295,10 @@ namespace texcore
         uint8_t *out_data  = nullptr;
         size_t   out_bytes = 0;
 
-        fprintf(stderr, "[dbg2] before Encode %ux%u\n", req.width, req.height);
 
         if(provider->Encode(&req, &out_data, &out_bytes) != TEX_OK)
             return false;
 
-        fprintf(stderr, "[dbg2] after Encode %zu bytes\n", out_bytes);
 
         payload.assign(out_data, out_data + out_bytes);
         provider->FreeResult(out_data);

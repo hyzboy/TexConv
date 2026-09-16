@@ -426,6 +426,7 @@ void MainWindow::OnConvert()
         job.faces          = desc.faces;
         job.gen_mipmaps    = desc.gen_mipmaps;
         job.ibl_mode       = desc.ibl_mode;
+        job.ibl_format     = desc.ibl_format;
         job.force_grayscale = desc.force_grayscale;
         job.discard_alpha  = desc.discard_alpha;
         job.normal_map     = desc.normal_map;
@@ -616,6 +617,43 @@ void MainWindow::OnContextMenu(const QPoint &pos)
     {
         model_->SetFilesIBLMode(selected, all_ibl ? 0 : 1);
     });
+
+    // ---- IBL 输出格式(逐文件;仅生成 IBL 时生效)----
+    {
+        // 收集选中行的一致格式值(空 = 自动)
+        QString uniform;
+        bool first = true, mixed = false;
+
+        for(const QModelIndex &idx : selected)
+        {
+            const auto &item = model_->At(idx.row());
+            const QString &fmt = item.ibl_format;
+            if(first) { uniform = fmt; first = false; }
+            else if(fmt != uniform) { mixed = true; break; }
+        }
+
+        QMenu *fmt_menu = menu.addMenu(QStringLiteral("IBL 输出格式"));
+
+        struct IblFmtEntry { const char *label; const char *value; };
+        static constexpr IblFmtEntry entries[] =
+        {
+            { "自动 (BC6H,不支持回退 RGBA16F)", ""       },
+            { "BC6H (HDR,半精度块压缩)",        "BC6H"   },
+            { "BC7 (LDR,RGB8 源推荐)",          "BC7"    },
+            { "RGBA16F (未压缩)",               "RGBA16F"},
+        };
+
+        for(const auto &e : entries)
+        {
+            const QString value = QString::fromLatin1(e.value);
+            QAction *a = fmt_menu->addAction(QString::fromUtf8(e.label));
+            a->setCheckable(true);
+            a->setChecked(!mixed && uniform == value);
+            connect(a, &QAction::triggered, this,
+                    [this, selected, value](bool)
+                    { model_->SetFilesIBLFormat(selected, value); });
+        }
+    }
 
     menu.addSeparator();
 

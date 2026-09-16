@@ -71,7 +71,9 @@ namespace
             flags << QStringLiteral("距离场(%1)").arg(item.df_threshold);
 
         if(item.ibl_mode)
-            flags << QStringLiteral("IBL");
+            flags << (item.ibl_format.isEmpty()
+                        ? QStringLiteral("IBL")
+                        : QStringLiteral("IBL:%1").arg(item.ibl_format));
 
         if(!item.provider.isEmpty())
             flags << item.provider;
@@ -812,6 +814,17 @@ void TexFileModel::SetFilesIBLMode(const QModelIndexList &rows, int mode)
     }
 }
 
+void TexFileModel::SetFilesIBLFormat(const QModelIndexList &rows, const QString &format)
+{
+    if(locked_)return;
+    for(const QModelIndex &idx : rows)
+    {
+        if(!idx.isValid() || idx.row() >= int(items_.size()))continue;
+        items_[size_t(idx.row())].ibl_format = format;
+        Q_EMIT dataChanged(index(idx.row(), 0), index(idx.row(), ColCount - 1));
+    }
+}
+
 void TexFileModel::SetFilesNormal(const QModelIndexList &rows, bool on)
 {
     if(locked_)
@@ -943,6 +956,7 @@ std::vector<TexFileModel::JobDesc> TexFileModel::CollectReadyJobs() const
                 job.faces << item.face_paths[i];
         job.gen_mipmaps    = item.gen_mipmaps;
         job.ibl_mode       = item.ibl_mode;
+        job.ibl_format     = item.ibl_format;
         job.force_grayscale = item.force_grayscale;
         job.discard_alpha  = item.discard_alpha;
         job.normal_map     = item.normal_map;

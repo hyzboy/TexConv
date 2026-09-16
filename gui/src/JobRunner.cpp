@@ -137,6 +137,9 @@ void JobRunner::RunConvert(QList<ConvertItem> jobs, ConvertOptions opts)
             cube.gen_mipmaps   = job.gen_mipmaps ? 1 : 0;
             cube.ibl_mode      = job.ibl_mode ? 1 : 0;
 
+            const QByteArray ibl_fmt = job.ibl_format.toLatin1();
+            cube.ibl_format    = ibl_fmt.isEmpty() ? nullptr : ibl_fmt.constData();
+
             const int crc = TexCore_RunCubeJob(&cube, &JobRunner::ProgressSink, this);
 
             if(crc == TEX_OK)
