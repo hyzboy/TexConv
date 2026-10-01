@@ -7,7 +7,7 @@
 3. Bindless 系统(`VKBindlessTextureManager.cpp` + `ShaderLibrary/common/bindless_textures.glsl`)只有 `texture2DArray[]`(binding=0)与 `sampler[]`(binding=1)——**需要新增 binding=2 `textureCube[]`**。
 4. `Texture::GetBindlessArrayView()` 基类返回主 view(TextureCube 的主 view 即 CUBE 类型);`Texture2D` 覆写为 companion 2D_ARRAY view。→ 给 Texture 加 `virtual VkImageView GetBindlessCubeView(){return VK_NULL_HANDLE;}`,TextureCube 覆写返回主 view。
 5. 注册路径:`RenderSceneUBOSystem::RegisterTextureResource(resource_id, tex, bindless_mgr)` → `BindlessTextureManager::RegisterTexture(tex)`(写 `tex->GetBindlessArrayView()` 到 binding=0)。→ RegisterTexture 分支:`GetBindlessCubeView()` 非空写 binding=2,否则 binding=0。
-6. ECS 校验(`PrimitiveComponent.cpp:301/420`):只限制 2DArray 的 layer 匹配;`SamplerCube` 声明 + 默认 kind Texture2D 能通过现有校验(非 array sampler),**枚举可不加 Cube**;但运行时 `RegisterTexture` 必须按 view 类型分流。
+6. ECS 校验(图元材质校验路径):只限制 2DArray 的 layer 匹配;`SamplerCube` 声明 + 默认 kind Texture2D 能通过现有校验(非 array sampler),**枚举可不加 Cube**;但运行时 `RegisterTexture` 必须按 view 类型分流。
 7. `RenderSceneUBOSystem` 还有一个 path-policy 无关的确认:材质化把 handle 按 resource_id 写入行(`GetBindlessHandle` → materialization)。handle 流转与采样类型无关。
 
 ## 实施状态(已按用户决定调整设计)
@@ -30,7 +30,7 @@ view(单张 = DEPTH 1),走 bindless binding=2 `textureCubeArray[]`。**
   - 注意:dataIndex 链(emit_data_index_id / MTL_TEX(i))是否对"无 SSBO 行"的 primitive 可用 **未核实**;若不可用,退化方案:照 unlit_texture 建 material_source,要求 geometry 带 UV0;或给 sky recipe 分配一行材质数据。
 - [ ] `ShaderLibrary/material/sky_cube_source.glsl`:@ulre texture_reference sky_cube Fragment required;SampleCube(MTL_TEX(dataIndex).sky_cube.x, TrilinearSampler, normalize(si.worldPos));输出 baseColor/alpha。
 - [ ] 示例 `example/Environment/SkyCubeSphere.cpp`:LoadTextureCube(.TexCube) → HexSphere(半径 256,subdiv 3) 居中 → recipe mtl_def_id="SkyCube" + MakeSkyConfig() → SetMaterialTextureResource("sky_cube", tex, sampler) → 相机 target 原点。
-- [ ] 运行时材质化路径(PrimitiveComponent.cpp:301/420 校验 + materialization)对 SamplerCube 声明 + TextureCube* 指针放行(补校验用例)。
+- [ ] 运行时材质化路径(图元材质校验 + materialization)对 SamplerCube 声明 + TextureCube* 指针放行(补校验用例)。
 - [ ] 验证:Debug 用 Release(见 IM 已知限制);渲染出天空球 = 成功。
 
 ## 已踩坑
