@@ -180,23 +180,28 @@ endfunction()
 # MSVC Debug 语义);Debug 宿主链接 Release 的 import lib,并把 Release 的
 # TexImage.dll 拷到自身运行目录(经 C ABI 调用,CRT 完全隔离)。
 # ---------------------------------------------------------------------------
-function(texconv_link_teximage TARGET_NAME)
-    target_link_libraries(${TARGET_NAME} PRIVATE
-        $<$<CONFIG:Debug>:${OUTPUT_DIRECTORY_RELEASE}/TexImage.lib>
-        $<$<NOT:$<CONFIG:Debug>>:TexImage>)
+set(TEXCONV_RELEASE_TEXIMAGE_LIB "${OUTPUT_DIRECTORY_RELEASE}/TexImage.lib")
+set(TEXCONV_RELEASE_TEXIMAGE_DLL "${OUTPUT_DIRECTORY_RELEASE}/TexImage.dll")
 
-    if(TARGET TexImage)
-        add_dependencies(${TARGET_NAME} TexImage)
-    endif()
+function(texconv_link_teximage TARGET_NAME)
+    # 非 Debug 配置链接 TexImage target，CMake 会自动建立构建依赖；
+    # Debug 链接的是 Release import lib 的字面路径，构建依赖由基线脚本前置保证，
+    # 这里不能 add_dependencies(TexImage) —— 那会在 Debug 下编出一个没人链接的
+    # Debug 版 TexImage（/MTd 混 IM 的 /MT，随时可能 LNK2038），纯浪费。
+    target_link_libraries(${TARGET_NAME} PRIVATE
+        $<$<CONFIG:Debug>:${TEXCONV_RELEASE_TEXIMAGE_LIB}>
+        $<$<NOT:$<CONFIG:Debug>>:TexImage>)
 
     # Debug 宿主链的是 **Release** 的 import lib —— 它只在做过一次 Release 构建后才存在。
     # 缺它时链接器只吐一句难懂的 LNK1104（全量构建 EXIT=1 的固定来源），
     # 所以在 configure 阶段就把原因和修复命令说清楚。
-    if(NOT EXISTS "${OUTPUT_DIRECTORY_RELEASE}/TexImage.lib")
+    # scripts/ci/build-baseline.ps1 已把这一步做成自动前置。
+    if(NOT EXISTS "${TEXCONV_RELEASE_TEXIMAGE_LIB}")
         message(WARNING
             "[TexConv] 缺少 Release 版 TexImage.lib\n"
-            "        路径：${OUTPUT_DIRECTORY_RELEASE}/TexImage.lib\n"
-            "        原因：TexImage.dll 恒按 Release 构建（ImageMagick 上游不支持 MSVC Debug 语义），\n"
+            "        路径：${TEXCONV_RELEASE_TEXIMAGE_LIB}\n"
+            "        原因：TexImage.dll 恒按 Release 构建（ImageMagick 上游只提供 /MT 版，\n"
+            "              Debug 编译会撞 RuntimeLibrary / _ITERATOR_DEBUG_LEVEL 不匹配），\n"
             "              Debug 宿主必须链它的 import lib ⇒ 任何 Debug 构建之前需先做一次 Release 构建。\n"
             "        修复：${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --config Release --target TexImage\n"
             "        做完这一次之后，全量 Debug 构建即不再出现该 LNK1104。")
@@ -204,7 +209,7 @@ function(texconv_link_teximage TARGET_NAME)
 
     add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                "${OUTPUT_DIRECTORY_RELEASE}/TexImage.dll"
+                "${TEXCONV_RELEASE_TEXIMAGE_DLL}"
                 $<TARGET_FILE_DIR:${TARGET_NAME}>
         COMMENT "Deploy Release TexImage.dll -> $<TARGET_FILE_DIR:${TARGET_NAME}>")
 endfunction()
