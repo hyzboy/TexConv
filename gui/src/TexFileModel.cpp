@@ -67,6 +67,8 @@ namespace
         if(item.discard_alpha)  flags << QStringLiteral("去α");
         if(item.generate_normal_map)
             flags << QStringLiteral("颜色转法线");
+        else if(item.generate_roughness_map)
+            flags << QStringLiteral("法线转粗糙度");
         else if(item.normal_map)
             flags << QStringLiteral("法线BC5");
 
@@ -614,6 +616,9 @@ int TexFileModel::EffectiveChannels(const Item &item) const
     if(item.generate_normal_map)
         return 2;
 
+    if(item.generate_roughness_map)
+        return 1;
+
     int ch = item.channels;
 
     if(item.force_grayscale)
@@ -781,6 +786,9 @@ void TexFileModel::SetFilesGrayscale(const QModelIndexList &rows, bool on)
             item.normal_map = false;
         }
 
+        if(on)
+            item.generate_roughness_map = false;
+
         item.force_grayscale = on;
         item.target_format = DeriveTarget(item);    // 通道数可能变化,重推默认
 
@@ -807,6 +815,9 @@ void TexFileModel::SetFilesDiscardAlpha(const QModelIndexList &rows, bool on)
             item.generate_normal_map = false;
             item.normal_map = false;
         }
+
+        if(on)
+            item.generate_roughness_map = false;
 
         item.discard_alpha = on;
         item.target_format = DeriveTarget(item);    // 通道数可能变化,重推默认
@@ -895,6 +906,7 @@ void TexFileModel::SetFilesNormal(const QModelIndexList &rows, bool on)
         if(item.is_cube)continue;
 
         item.generate_normal_map = false;
+        item.generate_roughness_map = false;
         item.normal_map = on;
         item.target_format = DeriveTarget(item);    // 开→BC5;关→重推默认
 
@@ -918,7 +930,40 @@ void TexFileModel::SetFilesGenerateNormal(const QModelIndexList &rows, bool on)
             continue;
 
         item.generate_normal_map = on;
+        item.generate_roughness_map = false;
         item.normal_map = on;
+
+        if(on)
+        {
+            item.force_grayscale = false;
+            item.discard_alpha = false;
+            item.single_channel = false;
+            item.df_mode = false;
+        }
+
+        item.target_format = DeriveTarget(item);
+        RefreshItem(idx.row());
+    }
+}
+
+void TexFileModel::SetFilesGenerateRoughness(const QModelIndexList &rows, bool on)
+{
+    if(locked_)
+        return;
+
+    for(const QModelIndex &idx : rows)
+    {
+        if(!idx.isValid() || idx.row() >= int(items_.size()))
+            continue;
+
+        Item &item = items_[size_t(idx.row())];
+
+        if(item.is_cube)
+            continue;
+
+        item.generate_roughness_map = on;
+        item.generate_normal_map = false;
+        item.normal_map = false;
 
         if(on)
         {
@@ -953,6 +998,9 @@ void TexFileModel::SetFilesSingleChannel(const QModelIndexList &rows, bool on)
             item.normal_map = false;
         }
 
+        if(on)
+            item.generate_roughness_map = false;
+
         item.single_channel = on;
         item.target_format = DeriveTarget(item);    // 有效通道数变为 1,重推默认(BC4)
 
@@ -979,6 +1027,9 @@ void TexFileModel::SetFilesDF(const QModelIndexList &rows, bool on)
             item.generate_normal_map = false;
             item.normal_map = false;
         }
+
+        if(on)
+            item.generate_roughness_map = false;
 
         item.df_mode = on;
         item.target_format = DeriveTarget(item);    // 开→按 1 通道重推;关→恢复
@@ -1061,6 +1112,7 @@ std::vector<TexFileModel::JobDesc> TexFileModel::CollectReadyJobs() const
         job.discard_alpha  = item.discard_alpha;
         job.normal_map     = item.normal_map;
         job.generate_normal_map = item.generate_normal_map;
+        job.generate_roughness_map = item.generate_roughness_map;
         job.single_channel = item.single_channel;
         job.df_mode        = item.df_mode;
         job.df_threshold   = item.df_threshold;

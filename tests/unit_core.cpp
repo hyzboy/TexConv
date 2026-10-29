@@ -128,6 +128,38 @@ static void run_color_to_normal_case(const std::wstring &inputs, const std::wstr
     CHECK(output_info.mip_levels == 1, "normal generation mip count");
 }
 
+static void run_normal_to_roughness_case(const std::wstring &inputs, const std::wstring &work)
+{
+    ++total;
+    printf("[normal_to_roughness]\n");
+
+    const std::wstring input_path = inputs + L"\\rgb8.png";
+    TexImageInfo source_info{};
+    CHECK(TexCore_ProbeImage(input_path.c_str(), &source_info) == TEX_OK,
+          "roughness source probe");
+
+    const std::wstring output_path = work + L"\\normal_to_roughness.Tex2D";
+    DeleteFileW(output_path.c_str());
+
+    TexJobParams params{};
+    params.input_path = input_path.c_str();
+    params.output_path = output_path.c_str();
+    params.target_format = "RGBA8"; // conversion must reduce to scalar and default to BC4
+    params.generate_roughness_map = 1;
+
+    CHECK(TexCore_RunJob(&params, nullptr, nullptr) == TEX_OK,
+          "normal to roughness job");
+
+    Tex2DInfo output_info{};
+    CHECK(TexCore_ReadInfo(output_path.c_str(), &output_info) == TEX_OK,
+          "roughness output read");
+    CHECK(output_info.width == source_info.width && output_info.height == source_info.height,
+          "roughness output dimensions");
+    CHECK(strcmp(output_info.format_name, "BC4") == 0,
+          "roughness output uses scalar BC4 format");
+    CHECK(output_info.mip_levels == 1, "roughness output mip count");
+}
+
 static void run_octa_case(const std::wstring &inputs, const std::wstring &work)
 {
     ++total;
@@ -299,6 +331,7 @@ int main(int argc, char **argv)
     run_octa_case(inputs, work);
     run_laea_case(inputs, work);
     run_color_to_normal_case(inputs, work);
+    run_normal_to_roughness_case(inputs, work);
 
     TexCore_Shutdown();
 

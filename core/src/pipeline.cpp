@@ -73,6 +73,92 @@ namespace texcore
                                        TEX_PT_UInt8, normal_xy.data());
     }
 
+    static int GenerateRoughnessMap(TexImage source, uint32_t width, uint32_t height,
+                                    int source_layout, TexImage *out_image)
+    {
+        if(!source || !out_image || width == 0 || height == 0)
+            return TEX_ERR_PARAM;
+
+        const int channels = TexLayoutChannels(source_layout);
+
+        if(channels < 2 || channels > 4)
+            return TEX_ERR_UNSUPPORTED;
+
+        if(TexImage_Convert(source, source_layout, TEX_PT_UInt8) != TEX_OK)
+            return TEX_ERR_UNSUPPORTED;
+
+        const size_t pixel_count = size_t(width) * height;
+        std::vector<uint8_t> source_data(pixel_count * size_t(channels));
+
+        if(TexImage_GetData(source, source_data.data(), source_data.size(),
+                            source_layout, TEX_PT_UInt8) != TEX_OK)
+            return TEX_ERR_INTERNAL;
+
+        std::vector<float> normals(pixel_count * 3);
+
+        for(size_t i = 0; i < pixel_count; ++i)
+        {
+            const size_t offset = i * size_t(channels);
+            float nx = float(source_data[offset]) / 127.5f - 1.0f;
+            float ny = float(source_data[offset + 1]) / 127.5f - 1.0f;
+            float nz;
+
+            if(channels == 2)
+                nz = std::sqrt((std::max)(1.0f - nx * nx - ny * ny, 0.0f));
+            else
+                nz = float(source_data[offset + 2]) / 127.5f - 1.0f;
+
+            const float length = std::sqrt(nx * nx + ny * ny + nz * nz);
+
+            if(length > 1e-6f)
+            {
+                nx /= length;
+                ny /= length;
+                nz /= length;
+            }
+            else
+            {
+                nx = 0.0f;
+                ny = 0.0f;
+                nz = 1.0f;
+            }
+
+            normals[i * 3] = nx;
+            normals[i * 3 + 1] = ny;
+            normals[i * 3 + 2] = nz;
+        }
+
+        std::vector<uint8_t> roughness(pixel_count);
+
+        for(uint32_t y = 0; y < height; ++y)
+            for(uint32_t x = 0; x < width; ++x)
+            {
+                float avg_x = 0.0f, avg_y = 0.0f, avg_z = 0.0f;
+
+                for(int dy = -1; dy <= 1; ++dy)
+                    for(int dx = -1; dx <= 1; ++dx)
+                    {
+                        const uint32_t sx = uint32_t((std::clamp<int64_t>)(
+                            int64_t(x) + dx, 0, int64_t(width) - 1));
+                        const uint32_t sy = uint32_t((std::clamp<int64_t>)(
+                            int64_t(y) + dy, 0, int64_t(height) - 1));
+                        const size_t offset = (size_t(sy) * width + sx) * 3;
+                        avg_x += normals[offset];
+                        avg_y += normals[offset + 1];
+                        avg_z += normals[offset + 2];
+                    }
+
+                const float mean_length = std::sqrt(avg_x * avg_x + avg_y * avg_y
+                                                    + avg_z * avg_z) / 9.0f;
+                const float value = std::sqrt((std::clamp)(1.0f - mean_length, 0.0f, 1.0f));
+                roughness[size_t(y) * width + x] =
+                    uint8_t(std::lround(value * 255.0f));
+            }
+
+        return TexImage_CreateFromData(out_image, width, height, 1,
+                                       TEX_PT_UInt8, roughness.data());
+    }
+
     /// hgl::GetMipLevel 的等价实现:floor(log2(size))+1
     static uint32_t get_mip_level(uint32_t size)
     {
@@ -368,9 +454,11 @@ namespace texcore
         if(!params || !params->input_path || !*params->input_path)
             return TEX_ERR_PARAM;
 
-        if(params->generate_normal_map && params->df_mode)
+        if((params->generate_normal_map && params->df_mode)
+         || (params->generate_roughness_map
+          && (params->generate_normal_map || params->normal_map || params->df_mode)))
         {
-            CoreLog(TEX_LOG_ERROR, "color-to-normal generation cannot be combined with distance field mode.");
+            CoreLog(TEX_LOG_ERROR, "normal generation, normal-to-roughness, and distance field modes are incompatible.");
             return TEX_ERR_UNSUPPORTED;
         }
 
@@ -418,9 +506,25 @@ namespace texcore
             ctx.img = normal_img;
             TexImage_GetInfo(ctx.img, nullptr, nullptr, nullptr, &layout, &pt);
         }
+        else if(params->generate_roughness_map)
+        {
+            TexImage roughness_img = nullptr;
+            rc = GenerateRoughnessMap(ctx.img, ctx.width, ctx.height, layout, &roughness_img);
+
+            if(rc != TEX_OK)
+            {
+                TexImage_Free(ctx.img);
+                return rc;
+            }
+
+            TexImage_Free(ctx.img);
+            ctx.img = roughness_img;
+            TexImage_GetInfo(ctx.img, nullptr, nullptr, nullptr, &layout, &pt);
+        }
 
         // 2. 灰度(对齐旧 ConvertImage:有 alpha 或未丢弃 alpha → 转 RG,否则转 Gray)
-        if(params->force_grayscale && !params->generate_normal_map)
+        if(params->force_grayscale && !params->generate_normal_map
+         && !params->generate_roughness_map)
         {
             if(TexImage_HasAlpha(ctx.img) || !params->discard_alpha)
                 TexImage_Convert(ctx.img, TEX_LAYOUT_GrayAlpha, pt);
@@ -431,7 +535,8 @@ namespace texcore
         }
 
         // 3. 丢弃 alpha
-        if(params->discard_alpha && !params->generate_normal_map)
+        if(params->discard_alpha && !params->generate_normal_map
+         && !params->generate_roughness_map)
         {
             if(layout == TEX_LAYOUT_RGBA)
                 TexImage_Convert(ctx.img, TEX_LAYOUT_RGB, pt);
@@ -443,7 +548,8 @@ namespace texcore
 
         // 3.5 距离场模式:单通道源对灰度生成;带 Alpha 的源(RGBA/GrayAlpha)对
         //     Alpha 生成。生成后图像替换为单通道 8-bit 距离场,按 1 通道源继续。
-        if(params->df_mode && !params->generate_normal_map)
+        if(params->df_mode && !params->generate_normal_map
+         && !params->generate_roughness_map)
         {
             int df_layout = 0;
 

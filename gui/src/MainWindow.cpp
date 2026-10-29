@@ -199,6 +199,8 @@ void MainWindow::ApplyCommandLineOptions(const QStringList &args)
         else if(a == QStringLiteral("--normal"))  model_->SetFilesNormal(model_->AllRowIndexes(), true);
         else if(a == QStringLiteral("--height2normal"))
             model_->SetFilesGenerateNormal(model_->AllRowIndexes(), true);
+        else if(a == QStringLiteral("--normal2roughness"))
+            model_->SetFilesGenerateRoughness(model_->AllRowIndexes(), true);
         else if(a == QStringLiteral("--single"))  model_->SetFilesSingleChannel(model_->AllRowIndexes(), true);
         else if(a == QStringLiteral("--df"))      model_->SetFilesDF(model_->AllRowIndexes(), true);
         else if(a.startsWith(QStringLiteral("--df-threshold:")))
@@ -441,6 +443,7 @@ void MainWindow::OnConvert()
         job.discard_alpha  = desc.discard_alpha;
         job.normal_map     = desc.normal_map;
         job.generate_normal_map = desc.generate_normal_map;
+        job.generate_roughness_map = desc.generate_roughness_map;
         job.df_mode        = desc.df_mode;
         job.df_threshold   = desc.df_threshold;
         job.provider       = desc.provider;
@@ -485,6 +488,8 @@ void MainWindow::OnContextMenu(const QPoint &pos)
     bool all_normal = false;
     bool all_generate_normal = false;
     bool has_2d_rows = false, generate_first = true;
+    bool all_generate_roughness = false;
+    bool roughness_first = true;
     bool any_df = false, all_df = false;
     QStringList allowed;                    // 选中行有效通道数下可选格式的交集
 
@@ -511,6 +516,9 @@ void MainWindow::OnContextMenu(const QPoint &pos)
                 all_generate_normal = generate_first ? item.generate_normal_map
                                                      : (all_generate_normal && item.generate_normal_map);
                 generate_first = false;
+                all_generate_roughness = roughness_first ? item.generate_roughness_map
+                                                         : (all_generate_roughness && item.generate_roughness_map);
+                roughness_first = false;
             }
 
             const QStringList af = coreapi::AllowedFormats(model_->EffectiveChannelsAt(idx.row()));
@@ -593,6 +601,17 @@ void MainWindow::OnContextMenu(const QPoint &pos)
             [this, ready_rows, all_generate_normal](bool)
     {
         model_->SetFilesGenerateNormal(ready_rows, !all_generate_normal);
+    });
+
+    QAction *generate_roughness_action = menu.addAction(QStringLiteral("法线贴图转粗糙度(BC4 默认)"));
+    generate_roughness_action->setCheckable(true);
+    generate_roughness_action->setChecked(has_2d_rows && all_generate_roughness);
+    generate_roughness_action->setEnabled(has_2d_rows);
+    generate_roughness_action->setToolTip(QStringLiteral("依据法线邻域方向变化估算粗糙度；支持 RG/RGB/RGBA 法线贴图"));
+    connect(generate_roughness_action, &QAction::triggered, this,
+            [this, ready_rows, all_generate_roughness](bool)
+    {
+        model_->SetFilesGenerateRoughness(ready_rows, !all_generate_roughness);
     });
 
     QAction *df_action = menu.addAction(QStringLiteral("距离场"));
