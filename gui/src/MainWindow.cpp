@@ -490,6 +490,8 @@ void MainWindow::OnContextMenu(const QPoint &pos)
     bool has_2d_rows = false, generate_first = true;
     bool all_generate_roughness = false;
     bool roughness_first = true;
+    bool has_roughness_inputs = false;
+    QModelIndexList roughness_rows;
     bool any_df = false, all_df = false;
     QStringList allowed;                    // 选中行有效通道数下可选格式的交集
 
@@ -516,9 +518,15 @@ void MainWindow::OnContextMenu(const QPoint &pos)
                 all_generate_normal = generate_first ? item.generate_normal_map
                                                      : (all_generate_normal && item.generate_normal_map);
                 generate_first = false;
-                all_generate_roughness = roughness_first ? item.generate_roughness_map
-                                                         : (all_generate_roughness && item.generate_roughness_map);
-                roughness_first = false;
+                if(item.channels >= 2 && item.channels <= 4)
+                {
+                    has_roughness_inputs = true;
+                    roughness_rows.append(idx);
+                    all_generate_roughness = roughness_first ? item.generate_roughness_map
+                                                             : (all_generate_roughness
+                                                                && item.generate_roughness_map);
+                    roughness_first = false;
+                }
             }
 
             const QStringList af = coreapi::AllowedFormats(model_->EffectiveChannelsAt(idx.row()));
@@ -605,13 +613,13 @@ void MainWindow::OnContextMenu(const QPoint &pos)
 
     QAction *generate_roughness_action = menu.addAction(QStringLiteral("法线贴图转粗糙度(BC4 默认)"));
     generate_roughness_action->setCheckable(true);
-    generate_roughness_action->setChecked(has_2d_rows && all_generate_roughness);
-    generate_roughness_action->setEnabled(has_2d_rows);
+    generate_roughness_action->setChecked(has_roughness_inputs && all_generate_roughness);
+    generate_roughness_action->setEnabled(has_roughness_inputs);
     generate_roughness_action->setToolTip(QStringLiteral("依据法线邻域方向变化估算粗糙度；支持 RG/RGB/RGBA 法线贴图"));
     connect(generate_roughness_action, &QAction::triggered, this,
-            [this, ready_rows, all_generate_roughness](bool)
+            [this, roughness_rows, all_generate_roughness](bool)
     {
-        model_->SetFilesGenerateRoughness(ready_rows, !all_generate_roughness);
+        model_->SetFilesGenerateRoughness(roughness_rows, !all_generate_roughness);
     });
 
     QAction *df_action = menu.addAction(QStringLiteral("距离场"));

@@ -958,7 +958,7 @@ void TexFileModel::SetFilesGenerateRoughness(const QModelIndexList &rows, bool o
 
         Item &item = items_[size_t(idx.row())];
 
-        if(item.is_cube)
+        if(item.is_cube || item.channels < 2 || item.channels > 4)
             continue;
 
         item.generate_roughness_map = on;
