@@ -222,6 +222,7 @@ static int run_cube(const std::vector<std::wstring> &inputs,
                     bool ibl,
                     const char *ibl_format,
                     bool octahedral,
+                    bool lambert_azimuthal,
                     const char *provider)
 {
     std::vector<std::wstring> faces;
@@ -331,7 +332,7 @@ static int run_cube(const std::vector<std::wstring> &inputs,
             output = g.dir + L"\\" + base;
         }
 
-        output += octahedral ? L".Tex2D" : L".TexCube";
+        output += (octahedral || lambert_azimuthal) ? L".Tex2D" : L".TexCube";
 
         // 面通道数 → 目标格式(显式槽位优先,否则内核默认)
         TexImageInfo info{};
@@ -362,7 +363,9 @@ static int run_cube(const std::vector<std::wstring> &inputs,
 
         const int rc = octahedral
             ? TexCore_RunCubeToOctaJob(&cube, nullptr, nullptr)
-            : TexCore_RunCubeJob(&cube, nullptr, nullptr);
+            : lambert_azimuthal
+                ? TexCore_RunCubeToLambertAzimuthalJob(&cube, nullptr, nullptr)
+                : TexCore_RunCubeJob(&cube, nullptr, nullptr);
 
         if(rc != TEX_OK)
         {
@@ -391,6 +394,7 @@ int wmain(int argc, wchar_t **argv)
                 "\t/mip : generate mipmaps\n"
                 "\t/cube : combine 6 face images into a .TexCube (pass 6 files or a directory)\n"
                 "\t          /octa : output a square 2x-face-width Octahedral Mapping .Tex2D instead\n"
+                "\t          /laea : output the +Z sky hemisphere as a Lambert equal-area .Tex2D\n"
                 "\t          /ibl[:fmt] : also bake <name>_irradiance.TexCube and <name>_prefilter.TexCube\n"
                 "\t                       fmt = BC6H(HDR,default) | BC7(LDR,RGB8 source) | RGBA16F | RGBA8\n"
                 "\t/gray: convert to grayscale\n"
@@ -556,10 +560,12 @@ int wmain(int argc, wchar_t **argv)
         }
 
         const bool octahedral = cp.Contains(L"/octa");
+        const bool lambert_azimuthal = cp.Contains(L"/laea");
 
-        if(octahedral && cp.Contains(L"/ibl"))
+        if((octahedral && lambert_azimuthal)
+         || ((octahedral || lambert_azimuthal) && cp.Contains(L"/ibl")))
         {
-            printf("[CUBE] /octa cannot be combined with /ibl.\n");
+            printf("[CUBE] /octa and /laea are mutually exclusive and cannot be combined with /ibl.\n");
             TexCore_Shutdown();
             return 1;
         }
@@ -569,6 +575,7 @@ int wmain(int argc, wchar_t **argv)
                                 params.gen_mipmaps, cp.Contains(L"/ibl"),
                                 (ibl_fmt_utf8[0] ? ibl_fmt_utf8 : nullptr),
                                 octahedral,
+                                lambert_azimuthal,
                                 provider);
 
         TexCore_Shutdown();

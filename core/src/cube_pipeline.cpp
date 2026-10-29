@@ -9,6 +9,7 @@
 #include "texconv/tex_distance_field.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstring>
 #include <filesystem>
 #include <limits>
@@ -40,9 +41,10 @@ namespace texcore
             return BuildUncompressedLevel(face, fmt, layout, pt, payload);
         }
 
-        /// 投影旋转归一化后的 6 面立方体为正方形 Octahedral Mapping 图像。
-        bool BuildOctahedralImage(TexImage faces[6], uint32_t width, uint32_t height,
-                                  int channels, int layout, int pixel_type, TexImage &output)
+        /// 投影旋转归一化后的 6 面立方体为正方形 2D 投影图像。
+        bool BuildProjectedImage(TexImage faces[6], uint32_t width, uint32_t height,
+                                 int channels, int layout, int pixel_type,
+                                 CubeOutputProjection projection, TexImage &output)
         {
             if(width == 0 || height == 0)
                 return false;
@@ -77,13 +79,30 @@ namespace texcore
             {
                 float x = 2.0f * (float(px) + 0.5f) / output_size - 1.0f;
                 float y = 2.0f * (float(py) + 0.5f) / output_size - 1.0f;
-                float z = 1.0f - std::fabs(x) - std::fabs(y);
+                float z = 0.0f;
 
-                if(z < 0.0f)
+                if(projection == CubeOutputProjection::LambertAzimuthal)
                 {
-                    const float old_x = x;
-                    x = (1.0f - std::fabs(y)) * (old_x >= 0.0f ? 1.0f : -1.0f);
-                    y = (1.0f - std::fabs(old_x)) * (y >= 0.0f ? 1.0f : -1.0f);
+                    const float radius_squared = x * x + y * y;
+
+                    if(radius_squared > 1.0f)
+                        continue;
+
+                    const float horizontal_scale = std::sqrt((std::max)(0.0f, 2.0f - radius_squared));
+                    x *= horizontal_scale;
+                    y *= horizontal_scale;
+                    z = 1.0f - radius_squared;
+                }
+                else
+                {
+                    z = 1.0f - std::fabs(x) - std::fabs(y);
+
+                    if(z < 0.0f)
+                    {
+                        const float old_x = x;
+                        x = (1.0f - std::fabs(y)) * (old_x >= 0.0f ? 1.0f : -1.0f);
+                        y = (1.0f - std::fabs(old_x)) * (y >= 0.0f ? 1.0f : -1.0f);
+                    }
                 }
 
                 const float abs_dir[3] = {std::fabs(x), std::fabs(y), std::fabs(z)};
@@ -163,12 +182,12 @@ namespace texcore
                           TexProgressFn progress, void *user);
 
     int RunCubeJobImpl(const TexCubeJobParams *params, TexProgressFn progress, void *user,
-                       bool output_octahedral)
+                       CubeOutputProjection projection)
     {
         if(!params)
             return TEX_ERR_PARAM;
 
-        if(output_octahedral && params->ibl_mode)
+        if(projection != CubeOutputProjection::Cube && params->ibl_mode)
             return TEX_ERR_PARAM;
 
         for(int i = 0; i < 6; i++)
@@ -339,20 +358,21 @@ namespace texcore
             TexImage_GetInfo(faces[0], &width, &height, nullptr, &layout, &pt);
         }
 
-        if(output_octahedral)
+        if(projection != CubeOutputProjection::Cube)
         {
             if(width != height || width > (std::numeric_limits<uint32_t>::max)() / 2)
             {
-                CoreLog(TEX_LOG_ERROR, "Octahedral Mapping requires square cube faces.");
+                CoreLog(TEX_LOG_ERROR, "2D cubemap projections require square cube faces.");
                 for(int i = 0; i < 6; i++)TexImage_Free(faces[i]);
                 return TEX_ERR_UNSUPPORTED;
             }
 
             TexImage octahedral = nullptr;
 
-            if(!BuildOctahedralImage(faces, width, height, channels, layout, pt, octahedral))
+            if(!BuildProjectedImage(faces, width, height, channels, layout, pt,
+                                    projection, octahedral))
             {
-                CoreLog(TEX_LOG_ERROR, "Cubemap Octahedral Mapping projection failed.");
+                CoreLog(TEX_LOG_ERROR, "Cubemap 2D projection failed.");
                 for(int i = 0; i < 6; i++)TexImage_Free(faces[i]);
                 return TEX_ERR_INTERNAL;
             }
@@ -369,7 +389,7 @@ namespace texcore
             TexImage_GetInfo(faces[0], &width, &height, nullptr, &layout, &pt);
         }
 
-        const int output_face_count = output_octahedral ? 1 : 6;
+        const int output_face_count = projection == CubeOutputProjection::Cube ? 6 : 1;
 
         // 3. 目标格式(显式指定或按面通道数取默认槽位)
         const TexPixelFormat *fmt = nullptr;
@@ -492,10 +512,11 @@ namespace texcore
             for(wchar_t &c : ext)
                 c = (c >= L'A' && c <= L'Z') ? c + 32 : c;
 
-            const wchar_t *expected_ext = output_octahedral ? L".tex2d" : L".texcube";
+            const wchar_t *expected_ext = projection == CubeOutputProjection::Cube
+                ? L".texcube" : L".tex2d";
 
             if(ext != expected_ext)
-                out += output_octahedral ? L".Tex2D" : L".TexCube";
+                out += projection == CubeOutputProjection::Cube ? L".TexCube" : L".Tex2D";
         }
 
         const std::wstring output_path = out.wstring();
@@ -510,12 +531,16 @@ namespace texcore
             return TEX_ERR_IO;
         }
 
-        CoreLog(TEX_LOG_INFO, std::string(output_octahedral
-              ? "Convert cube faces to Octahedral Mapping <"
-              : "Convert 6 cube faces to <")
-              + std::filesystem::path(output_path).string() + ">.");
+        const char *description = projection == CubeOutputProjection::Octahedral
+            ? "Convert cube faces to Octahedral Mapping <"
+            : projection == CubeOutputProjection::LambertAzimuthal
+                ? "Convert sky hemisphere to Lambert Azimuthal Equal-Area <"
+                : "Convert 6 cube faces to <";
+        CoreLog(TEX_LOG_INFO, std::string(description)
+                              + std::filesystem::path(output_path).string() + ">.");
 
-        if(!ContainerWriteHeader(f, output_octahedral ? TEX_VIEW_2D : TEX_VIEW_CUBE)
+        if(!ContainerWriteHeader(f, projection == CubeOutputProjection::Cube
+                                   ? TEX_VIEW_CUBE : TEX_VIEW_2D)
          ||!ContainerWriteSize2D(f, width, height)
          ||!ContainerWriteFormatBlock(f, fmt, miplevel))
         {

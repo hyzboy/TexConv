@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include "texconv/tex_core.h"
+#include "texconv/tex2d_container.h"
 
 static int failures = 0;
 static int total = 0;
@@ -123,6 +124,53 @@ static void run_octa_case(const std::wstring &inputs, const std::wstring &work)
     CHECK(output_info.mip_levels == 1, "octa output mip count");
 }
 
+static void run_laea_case(const std::wstring &inputs, const std::wstring &work)
+{
+    ++total;
+    printf("[cube_to_laea]\n");
+
+    const std::wstring input_path = inputs + L"\\rgb8.png";
+    TexImageInfo source_info{};
+    CHECK(TexCore_ProbeImage(input_path.c_str(), &source_info) == TEX_OK, "laea source probe");
+
+    TexCubeJobParams params{};
+    for(const wchar_t *&face_path : params.face_paths)
+        face_path = input_path.c_str();
+
+    const std::wstring output_path = work + L"\\laea.Tex2D";
+    DeleteFileW(output_path.c_str());
+    params.output_path = output_path.c_str();
+    params.target_format = "RGB565";
+    params.gen_mipmaps = 1;
+
+    CHECK(TexCore_RunCubeToLambertAzimuthalJob(&params, nullptr, nullptr) == TEX_OK,
+          "cube to Lambert azimuthal job");
+
+    Tex2DInfo output_info{};
+    CHECK(TexCore_ReadInfo(output_path.c_str(), &output_info) == TEX_OK, "laea output read");
+    CHECK(output_info.view_type == TEX_VIEW_2D, "laea output is 2D");
+    CHECK(output_info.width == source_info.width * 2, "laea output width");
+    CHECK(output_info.height == source_info.width * 2, "laea output height");
+    CHECK(output_info.mip_levels > 1, "laea output mip chain");
+
+    std::vector<uint8_t> data;
+    CHECK(read_file(output_path, data), "laea output file read");
+
+    if(source_info.width >= 2 && output_info.width > 0 && output_info.height > 0)
+    {
+        const size_t level_bytes = size_t(output_info.width) * output_info.height * 2;
+
+        if(data.size() >= TEX2D_HEADER_SIZE + level_bytes)
+        {
+            CHECK(data[TEX2D_HEADER_SIZE] == 0 && data[TEX2D_HEADER_SIZE + 1] == 0,
+                  "laea outside-disk top-left pixel is zero");
+            const size_t last_pixel = TEX2D_HEADER_SIZE + level_bytes - 2;
+            CHECK(data[last_pixel] == 0 && data[last_pixel + 1] == 0,
+                  "laea outside-disk bottom-right pixel is zero");
+        }
+    }
+}
+
 int main(int argc, char **argv)
 {
     if(argc < 3)
@@ -185,6 +233,7 @@ int main(int argc, char **argv)
     }
 
     run_octa_case(inputs, work);
+    run_laea_case(inputs, work);
 
     TexCore_Shutdown();
 
