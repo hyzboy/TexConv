@@ -71,7 +71,7 @@ TexConvQt 只依赖 `common/include/texconv/tex_core.h`(C API):
   Opacity/Luminance/Height/Bump/Gloss/Cavity/Occlusion,以及独立词 AO/Lum/Disp。
   词表在 TexFileModel.cpp 的 FilenameLooksSingleChannel,可自行扩充。
 - **无头冒烟**:`TexConvQt.exe --auto [--mip|--gray|--discard|--normal|--df|
-  --df-threshold:N|--provider:X|--outdir:DIR] 文件...` 自动 检测→转换→退出,
+  --df-threshold:N|--provider:X|--outdir:DIR|--cube-output:cube|octa|laea] 文件...` 自动 检测→转换→退出,
   退出码 0 = 全部成功(除 --outdir 外,各开关作用于全部文件)。
 
 ## Cubemap(.TexCube)
@@ -84,7 +84,8 @@ TexConvQt 只依赖 `common/include/texconv/tex_core.h`(C API):
   同目录下 6 面签名齐全自动成组,输出名 = 公共前缀 + .TexCube。
 - **CLI**:`TexConv /cube [/mip] [格式槽] [/out:name] <6 个面文件 | 目录>`(目录可含多组)。
 - **GUI**:目录拖入时签名齐全的 6 面自动合并为一行(标记列含面清单),格式/Mipmap/
-  后端对整组生效;转换调用 `TexCore_RunCubeJob`。
+  后端对整组生效;右键「Cubemap 输出」可选 `.TexCube`、Octahedral `.Tex2D` 或
+  Lambert 等面积天空半球 `.Tex2D`。
 - **引擎加载**:`TextureManager::LoadTextureCube` 已有实现;`tests/unit_cubefile`
   用 `TextureCubeLoader` 解析产物校验类型/尺寸/mip/载荷字节数。
 - **Debug 配置可用**:TexImage.dll 恒按 Release 构建(ImageMagick 上游不支持

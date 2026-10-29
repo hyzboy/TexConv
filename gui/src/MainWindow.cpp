@@ -4,6 +4,7 @@
 
 #include <QCheckBox>
 #include <QComboBox>
+#include <QActionGroup>
 #include <QDragEnterEvent>
 #include <QFileDialog>
 #include <QSpinBox>
@@ -85,7 +86,7 @@ void MainWindow::BuildUi()
     // ---- 批次级设置行(全部转换选项均为逐文件,见右键菜单) ----
     auto options = new QHBoxLayout;
 
-    auto mode_hint = new QLabel(QStringLiteral("全部选项逐文件配置:选中行右键批量设置(法线/单通道按文件名自动识别)"), this);
+    auto mode_hint = new QLabel(QStringLiteral("全部选项逐文件配置:选中行右键批量设置(Cubemap 可选输出投影)"), this);
 
     auto outdir_label = new QLabel(QStringLiteral("输出:"), this);
     outdir_edit_ = new QLineEdit(this);
@@ -202,6 +203,12 @@ void MainWindow::ApplyCommandLineOptions(const QStringList &args)
             model_->SetFilesDFThreshold(model_->AllRowIndexes(), a.mid(14).toInt());
         else if(a.startsWith(QStringLiteral("--provider:")))
             model_->SetFilesProvider(model_->AllRowIndexes(), a.mid(11));
+        else if(a == QStringLiteral("--cube-output:cube"))
+            model_->SetFilesCubeProjection(model_->AllRowIndexes(), CubeProjection::Cubemap);
+        else if(a == QStringLiteral("--cube-output:octa"))
+            model_->SetFilesCubeProjection(model_->AllRowIndexes(), CubeProjection::Octahedral);
+        else if(a == QStringLiteral("--cube-output:laea"))
+            model_->SetFilesCubeProjection(model_->AllRowIndexes(), CubeProjection::LambertAzimuthal);
         else if(a.startsWith(QStringLiteral("--outdir:")))
             outdir_edit_->setText(a.mid(9));
     }
@@ -427,6 +434,7 @@ void MainWindow::OnConvert()
         job.gen_mipmaps    = desc.gen_mipmaps;
         job.ibl_mode       = desc.ibl_mode;
         job.ibl_format     = desc.ibl_format;
+        job.cube_projection = desc.cube_projection;
         job.force_grayscale = desc.force_grayscale;
         job.discard_alpha  = desc.discard_alpha;
         job.normal_map     = desc.normal_map;
@@ -617,6 +625,61 @@ void MainWindow::OnContextMenu(const QPoint &pos)
     {
         model_->SetFilesIBLMode(selected, all_ibl ? 0 : 1);
     });
+
+    // ---- Cubemap 输出投影(仅对已就绪的 Cubemap 行生效)----
+    QModelIndexList ready_cube_rows;
+    CubeProjection current_projection = CubeProjection::Cubemap;
+    bool projection_first = true;
+    bool projection_uniform = true;
+
+    for(const QModelIndex &idx : selected)
+    {
+        const auto &item = model_->At(idx.row());
+
+        if(item.state != TexFileModel::Ready || !item.is_cube)
+            continue;
+
+        ready_cube_rows.append(idx);
+
+        if(projection_first)
+        {
+            current_projection = item.cube_projection;
+            projection_first = false;
+        }
+        else if(item.cube_projection != current_projection)
+        {
+            projection_uniform = false;
+        }
+    }
+
+    QMenu *projection_menu = menu.addMenu(QStringLiteral("Cubemap 输出"));
+    projection_menu->setEnabled(!ready_cube_rows.isEmpty());
+    QActionGroup *projection_group = new QActionGroup(projection_menu);
+    projection_group->setExclusive(true);
+
+    const struct ProjectionEntry
+    {
+        const char *label;
+        CubeProjection projection;
+    } projection_entries[] =
+    {
+        {"Cubemap (.TexCube)", CubeProjection::Cubemap},
+        {"Octahedral Mapping (.Tex2D)", CubeProjection::Octahedral},
+        {"Lambert 等面积天空半球 (.Tex2D)", CubeProjection::LambertAzimuthal},
+    };
+
+    for(const ProjectionEntry &entry : projection_entries)
+    {
+        QAction *action = projection_menu->addAction(QString::fromUtf8(entry.label));
+        action->setCheckable(true);
+        action->setChecked(projection_uniform && current_projection == entry.projection);
+        projection_group->addAction(action);
+
+        connect(action, &QAction::triggered, this, [this, ready_cube_rows, entry](bool)
+        {
+            model_->SetFilesCubeProjection(ready_cube_rows, entry.projection);
+        });
+    }
 
     // ---- IBL 输出格式(逐文件;仅生成 IBL 时生效)----
     {

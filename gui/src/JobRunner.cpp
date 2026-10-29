@@ -107,7 +107,9 @@ void JobRunner::RunConvert(QList<ConvertItem> jobs, ConvertOptions opts)
         const QByteArray provider = job.provider.toLatin1();    // 空 = 内核默认(优先 Intel)
 
         const bool is_cube = job.is_cube;
-        const QString out_ext = is_cube ? ".TexCube" : ".Tex2D";
+        const bool cube_projection = is_cube
+            && job.cube_projection != CubeProjection::Cubemap;
+        const QString out_ext = is_cube && !cube_projection ? ".TexCube" : ".Tex2D";
 
         // 输出目录:空 = 与源图同目录(内核 output_path=NULL 语义);
         // 非空 = 显式路径(这里直接拼全后缀,所见即所得)
@@ -140,7 +142,23 @@ void JobRunner::RunConvert(QList<ConvertItem> jobs, ConvertOptions opts)
             const QByteArray ibl_fmt = job.ibl_format.toLatin1();
             cube.ibl_format    = ibl_fmt.isEmpty() ? nullptr : ibl_fmt.constData();
 
-            const int crc = TexCore_RunCubeJob(&cube, &JobRunner::ProgressSink, this);
+            int crc;
+
+            switch(job.cube_projection)
+            {
+                case CubeProjection::Octahedral:
+                    crc = TexCore_RunCubeToOctaJob(&cube, &JobRunner::ProgressSink, this);
+                    break;
+
+                case CubeProjection::LambertAzimuthal:
+                    crc = TexCore_RunCubeToLambertAzimuthalJob(
+                        &cube, &JobRunner::ProgressSink, this);
+                    break;
+
+                default:
+                    crc = TexCore_RunCubeJob(&cube, &JobRunner::ProgressSink, this);
+                    break;
+            }
 
             if(crc == TEX_OK)
             {

@@ -75,6 +75,14 @@ namespace
                         ? QStringLiteral("IBL")
                         : QStringLiteral("IBL:%1").arg(item.ibl_format));
 
+        if(item.is_cube)
+        {
+            if(item.cube_projection == CubeProjection::Octahedral)
+                flags << QStringLiteral("Octahedral");
+            else if(item.cube_projection == CubeProjection::LambertAzimuthal)
+                flags << QStringLiteral("Lambert 天空");
+        }
+
         if(!item.provider.isEmpty())
             flags << item.provider;
 
@@ -699,7 +707,9 @@ void TexFileModel::SetConvertDone(int row, qint64 output_size)
 
     item.result_text = QStringLiteral("%1 -> %2 (%3 字节)")
                            .arg(item.target_format,
-                                QFileInfo(item.path).completeBaseName() + ".Tex2D")
+                                QFileInfo(item.path).completeBaseName()
+                                    + (item.is_cube && item.cube_projection == CubeProjection::Cubemap
+                                           ? QStringLiteral(".TexCube") : QStringLiteral(".Tex2D")))
                            .arg(output_size);
 
     RefreshItem(row);
@@ -809,7 +819,33 @@ void TexFileModel::SetFilesIBLMode(const QModelIndexList &rows, int mode)
     for(const QModelIndex &idx : rows)
     {
         if(!idx.isValid() || idx.row() >= int(items_.size()))continue;
-        items_[size_t(idx.row())].ibl_mode = mode;
+        Item &item = items_[size_t(idx.row())];
+        item.ibl_mode = mode;
+
+        if(item.is_cube && mode)
+            item.cube_projection = CubeProjection::Cubemap;
+
+        Q_EMIT dataChanged(index(idx.row(), 0), index(idx.row(), ColCount - 1));
+    }
+}
+
+void TexFileModel::SetFilesCubeProjection(const QModelIndexList &rows, CubeProjection projection)
+{
+    if(locked_)return;
+    for(const QModelIndex &idx : rows)
+    {
+        if(!idx.isValid() || idx.row() >= int(items_.size()))continue;
+
+        Item &item = items_[size_t(idx.row())];
+
+        if(!item.is_cube)
+            continue;
+
+        item.cube_projection = projection;
+
+        if(projection != CubeProjection::Cubemap)
+            item.ibl_mode = 0;
+
         Q_EMIT dataChanged(index(idx.row(), 0), index(idx.row(), ColCount - 1));
     }
 }
@@ -957,6 +993,7 @@ std::vector<TexFileModel::JobDesc> TexFileModel::CollectReadyJobs() const
         job.gen_mipmaps    = item.gen_mipmaps;
         job.ibl_mode       = item.ibl_mode;
         job.ibl_format     = item.ibl_format;
+        job.cube_projection = item.cube_projection;
         job.force_grayscale = item.force_grayscale;
         job.discard_alpha  = item.discard_alpha;
         job.normal_map     = item.normal_map;
