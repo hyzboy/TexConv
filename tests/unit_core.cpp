@@ -128,6 +128,47 @@ static void run_color_to_normal_case(const std::wstring &inputs, const std::wstr
     CHECK(output_info.mip_levels == 1, "normal generation mip count");
 }
 
+static void run_heightmap_to_normal_case(const std::wstring &inputs, const std::wstring &work)
+{
+    ++total;
+    printf("[heightmap_to_normal]\n");
+
+    const std::wstring input_path = inputs + L"\\g8.png";
+    TexImageInfo source_info{};
+    CHECK(TexCore_ProbeImage(input_path.c_str(), &source_info) == TEX_OK,
+          "heightmap source probe");
+    CHECK(source_info.channels == 1, "heightmap source is single-channel");
+
+    const std::wstring output_path = work + L"\\heightmap_to_normal.Tex2D";
+    DeleteFileW(output_path.c_str());
+
+    TexJobParams params{};
+    params.input_path = input_path.c_str();
+    params.output_path = output_path.c_str();
+    params.generate_normal_from_heightmap = 1;
+
+    CHECK(TexCore_RunJob(&params, nullptr, nullptr) == TEX_OK,
+          "heightmap to normal job");
+
+    Tex2DInfo output_info{};
+    CHECK(TexCore_ReadInfo(output_path.c_str(), &output_info) == TEX_OK,
+          "heightmap normal output read");
+    CHECK(output_info.width == source_info.width && output_info.height == source_info.height,
+          "heightmap normal dimensions");
+    CHECK(strcmp(output_info.format_name, "BC5") == 0,
+          "heightmap normal output uses BC5");
+
+    const std::wstring invalid_output_path = work + L"\\invalid_heightmap_to_normal.Tex2D";
+    const std::wstring color_input_path = inputs + L"\\rgb8.png";
+    DeleteFileW(invalid_output_path.c_str());
+    params.input_path = color_input_path.c_str();
+    params.output_path = invalid_output_path.c_str();
+    CHECK(TexCore_RunJob(&params, nullptr, nullptr) == TEX_ERR_UNSUPPORTED,
+          "heightmap mode rejects color input");
+    CHECK(GetFileAttributesW(invalid_output_path.c_str()) == INVALID_FILE_ATTRIBUTES,
+          "invalid heightmap input produces no output file");
+}
+
 static void run_normal_to_roughness_case(const std::wstring &inputs, const std::wstring &work)
 {
     ++total;
@@ -336,6 +377,7 @@ int main(int argc, char **argv)
     run_octa_case(inputs, work);
     run_laea_case(inputs, work);
     run_color_to_normal_case(inputs, work);
+    run_heightmap_to_normal_case(inputs, work);
     run_normal_to_roughness_case(inputs, work);
 
     TexCore_Shutdown();

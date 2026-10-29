@@ -37,7 +37,7 @@ typedef struct TexJobParams
 
     const char    *target_format;   ///< 非 NULL:显式目标格式(逐文件配置,GUI 用),
                                       ///< 且必须通过 TexFormat_IsAllowed(channels,fmt) 校验;
-                                      ///< generate_normal_map 开启时忽略并固定为 BC5;
+                                      ///< generate_normal_map / generate_normal_from_heightmap 开启时忽略并固定为 BC5;
                                       ///< NULL:按源图通道数取 slot_format 槽位
     const char    *slot_format[4];  ///< 槽位模式:1/2/3/4 通道源各自的目标格式名;
                                       ///< NULL 项 = 默认 BC4/BC5/BC7/BC7

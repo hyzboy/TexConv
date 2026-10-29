@@ -966,7 +966,7 @@ void TexFileModel::SetFilesGenerateNormalFromHeightmap(const QModelIndexList &ro
 
         Item &item = items_[size_t(idx.row())];
 
-        if(item.is_cube || item.channels != 1)
+        if(item.is_cube || (item.channels != 0 && item.channels != 1))
             continue;
 
         item.generate_normal_from_heightmap = on;

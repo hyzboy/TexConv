@@ -514,8 +514,10 @@ void MainWindow::OnContextMenu(const QPoint &pos)
             ready_rows.append(idx);
 
             any_df     |= item.df_mode;
-            all_normal  = first ? (item.normal_map && !item.generate_normal_map)
-                                : (all_normal && item.normal_map && !item.generate_normal_map);
+            all_normal  = first ? (item.normal_map && !item.generate_normal_map
+                                   && !item.generate_normal_from_heightmap)
+                                : (all_normal && item.normal_map && !item.generate_normal_map
+                                   && !item.generate_normal_from_heightmap);
             all_df      = first ? item.df_mode     : (all_df && item.df_mode);
 
             if(!item.is_cube)

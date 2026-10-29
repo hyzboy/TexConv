@@ -60,23 +60,26 @@ TexConvQt 只依赖 `common/include/texconv/tex_core.h`(C API):
 产物与源图同目录(可在界面指定统一输出目录,目录不存在时自动创建)。
 
 - **逐文件配置**:全部转换选项均为每文件属性——生成 Mipmap、转灰度、丢弃 Alpha、
-  法线 BC5、从颜色纹理生成法线(亮度 Sobel)、距离场(含逐文件阈值)、压缩后端。选中一批后右键菜单批量设置;
+  法线 BC5、从颜色纹理生成法线(亮度 Sobel)、从单通道高度图生成法线、
+  距离场(含逐文件阈值)、压缩后端。选中一批后右键菜单批量设置;
   「标记」列汇总显示每行已启用的选项;生成 Mipmap 独立成列,行内 checkbox
   直接勾选(右键菜单可批量)。目标格式的可选项与默认值按
   "计预处理(灰度/丢弃Alpha/距离场)后的有效通道数"推导,与内核行为一致。
 - **法线自动识别**:添加文件时按文件名自动标记(含 normal/nmap,或以 _n/-n/ n 结尾),
   识别错误的可手动取消;「从颜色纹理生成法线」按亮度计算 Sobel 梯度并锁定 BC5。
+  「高度图转法线」只接受检测为单通道的 2D 图像,使用同一 Sobel 算法输出 BC5。
 - **法线转粗糙度**:从 RG/RGB/RGBA 法线贴图的 3×3 邻域方向方差估算单通道粗糙度,
   GUI 默认 BC4,也可选择其他单通道格式。
 - **CLI**:`TexConv /height2normal image.png` 从颜色亮度生成切线空间 XY 法线,
+  `TexConv /heightmap2normal height.png` 从单通道高度图生成切线空间 XY 法线,
   `TexConv /normal2roughness normal.png` 由法线方向变化估算粗糙度;
-  前者与 `/normal`(源图已经是法线)相互独立;GUI 无头模式分别对应
-  `--height2normal` 和 `--normal2roughness`。
+  两种法线生成方式与 `/normal`(源图已经是法线)相互独立;GUI 无头模式对应
+  `--height2normal`、`--heightmap2normal` 和 `--normal2roughness`。
 - **单通道自动识别**:文件名含单通道语义词时自动按单通道转换
   (等价 灰度+丢弃Alpha,默认槽位 BC4):Roughness/Displacement/Metallic/Alpha/
   Opacity/Luminance/Height/Bump/Gloss/Cavity/Occlusion,以及独立词 AO/Lum/Disp。
   词表在 TexFileModel.cpp 的 FilenameLooksSingleChannel,可自行扩充。
-- **无头冒烟**:`TexConvQt.exe --auto [--mip|--gray|--discard|--normal|--height2normal|--normal2roughness|--df|
+- **无头冒烟**:`TexConvQt.exe --auto [--mip|--gray|--discard|--normal|--height2normal|--heightmap2normal|--normal2roughness|--df|
   --df-threshold:N|--provider:X|--outdir:DIR|--cube-output:cube|octa|laea] 文件...` 自动 检测→转换→退出,
   退出码 0 = 全部成功(除 --outdir 外,各开关作用于全部文件)。
 
