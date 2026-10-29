@@ -10,12 +10,67 @@
 #include "texconv/tex_distance_field.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstring>
 #include <filesystem>
+#include <vector>
 
 namespace texcore
 {
     static const char *default_slot_name[4] = {"BC4", "BC5", "BC7", "BC7"};
+
+    static int GenerateNormalMap(TexImage source, uint32_t width, uint32_t height,
+                                 TexImage *out_image)
+    {
+        if(!source || !out_image || width == 0 || height == 0)
+            return TEX_ERR_PARAM;
+
+        int rc = TexImage_Convert(source, TEX_LAYOUT_Gray, TEX_PT_UInt8);
+
+        if(rc != TEX_OK)
+            return rc;
+
+        const size_t pixel_count = size_t(width) * height;
+        std::vector<uint8_t> height_data(pixel_count);
+
+        rc = TexImage_GetData(source, height_data.data(), height_data.size(),
+                              TEX_LAYOUT_Gray, TEX_PT_UInt8);
+
+        if(rc != TEX_OK)
+            return rc;
+
+        std::vector<uint8_t> normal_xy(pixel_count * 2);
+
+        auto sample = [&](int x, int y) -> float
+        {
+            x = (std::clamp)(x, 0, int(width) - 1);
+            y = (std::clamp)(y, 0, int(height) - 1);
+            return float(height_data[size_t(y) * width + uint32_t(x)]) / 255.0f;
+        };
+
+        for(uint32_t y = 0; y < height; ++y)
+            for(uint32_t x = 0; x < width; ++x)
+            {
+                const int ix = int(x), iy = int(y);
+                const float gx = -sample(ix - 1, iy - 1) + sample(ix + 1, iy - 1)
+                               - 2.0f * sample(ix - 1, iy) + 2.0f * sample(ix + 1, iy)
+                               - sample(ix - 1, iy + 1) + sample(ix + 1, iy + 1);
+                const float gy = -sample(ix - 1, iy - 1) - 2.0f * sample(ix, iy - 1)
+                               - sample(ix + 1, iy - 1) + sample(ix - 1, iy + 1)
+                               + 2.0f * sample(ix, iy + 1) + sample(ix + 1, iy + 1);
+
+                // Sobel sums span eight samples; use a fixed unit height scale.
+                const float nx = -gx / 8.0f;
+                const float ny =  gy / 8.0f; // image rows run opposite to texture V
+                const float inv_length = 1.0f / std::sqrt(nx * nx + ny * ny + 1.0f);
+                const size_t offset = (size_t(y) * width + x) * 2;
+                normal_xy[offset] = uint8_t(std::lround((nx * inv_length * 0.5f + 0.5f) * 255.0f));
+                normal_xy[offset + 1] = uint8_t(std::lround((ny * inv_length * 0.5f + 0.5f) * 255.0f));
+            }
+
+        return TexImage_CreateFromData(out_image, width, height, 2,
+                                       TEX_PT_UInt8, normal_xy.data());
+    }
 
     /// hgl::GetMipLevel 的等价实现:floor(log2(size))+1
     static uint32_t get_mip_level(uint32_t size)
@@ -312,6 +367,12 @@ namespace texcore
         if(!params || !params->input_path || !*params->input_path)
             return TEX_ERR_PARAM;
 
+        if(params->generate_normal_map && params->df_mode)
+        {
+            CoreLog(TEX_LOG_ERROR, "color-to-normal generation cannot be combined with distance field mode.");
+            return TEX_ERR_UNSUPPORTED;
+        }
+
         // 压缩后端选择(默认 Intel;/AMD|/Intel 显式指定,缺失的后端 → 报错)
         const TexEncoderProvider *provider = SelectProvider(params->provider);
 
@@ -340,8 +401,25 @@ namespace texcore
         int layout = 0, pt = 0;
         TexImage_GetInfo(ctx.img, &ctx.width, &ctx.height, nullptr, &layout, &pt);
 
+        // 从颜色亮度生成两通道切线空间法线;后续格式固定为 BC5。
+        if(params->generate_normal_map)
+        {
+            TexImage normal_img = nullptr;
+            rc = GenerateNormalMap(ctx.img, ctx.width, ctx.height, &normal_img);
+
+            if(rc != TEX_OK)
+            {
+                TexImage_Free(ctx.img);
+                return rc;
+            }
+
+            TexImage_Free(ctx.img);
+            ctx.img = normal_img;
+            TexImage_GetInfo(ctx.img, nullptr, nullptr, nullptr, &layout, &pt);
+        }
+
         // 2. 灰度(对齐旧 ConvertImage:有 alpha 或未丢弃 alpha → 转 RG,否则转 Gray)
-        if(params->force_grayscale)
+        if(params->force_grayscale && !params->generate_normal_map)
         {
             if(TexImage_HasAlpha(ctx.img) || !params->discard_alpha)
                 TexImage_Convert(ctx.img, TEX_LAYOUT_GrayAlpha, pt);
@@ -352,7 +430,7 @@ namespace texcore
         }
 
         // 3. 丢弃 alpha
-        if(params->discard_alpha)
+        if(params->discard_alpha && !params->generate_normal_map)
         {
             if(layout == TEX_LAYOUT_RGBA)
                 TexImage_Convert(ctx.img, TEX_LAYOUT_RGB, pt);
@@ -364,7 +442,7 @@ namespace texcore
 
         // 3.5 距离场模式:单通道源对灰度生成;带 Alpha 的源(RGBA/GrayAlpha)对
         //     Alpha 生成。生成后图像替换为单通道 8-bit 距离场,按 1 通道源继续。
-        if(params->df_mode)
+        if(params->df_mode && !params->generate_normal_map)
         {
             int df_layout = 0;
 
@@ -430,7 +508,17 @@ namespace texcore
         }
 
         // 4. 目标格式解析(槽位模式对齐旧 ParseParamFormat:名字非法回退默认)
-        if(params->target_format)
+        if(params->generate_normal_map)
+        {
+            ctx.fmt = TexFormat_Get("BC5");
+
+            if(!ctx.fmt)
+            {
+                TexImage_Free(ctx.img);
+                return TEX_ERR_UNSUPPORTED;
+            }
+        }
+        else if(params->target_format)
         {
             ctx.fmt = TexFormat_Get(params->target_format);
 

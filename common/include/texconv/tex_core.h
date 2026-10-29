@@ -37,6 +37,7 @@ typedef struct TexJobParams
 
     const char    *target_format;   ///< 非 NULL:显式目标格式(逐文件配置,GUI 用),
                                       ///< 且必须通过 TexFormat_IsAllowed(channels,fmt) 校验;
+                                      ///< generate_normal_map 开启时忽略并固定为 BC5;
                                       ///< NULL:按源图通道数取 slot_format 槽位
     const char    *slot_format[4];  ///< 槽位模式:1/2/3/4 通道源各自的目标格式名;
                                       ///< NULL 项 = 默认 BC4/BC5/BC7/BC7
@@ -58,6 +59,7 @@ typedef struct TexJobParams
                                     ///  后续按 1 通道源继续(默认槽位 R8 —— 避开 AMD
                                     ///  的 BC4 灰度源已知缺陷;显式给 slot_format[0] 可覆盖)
     int            df_threshold;    ///< 距离场内外判定阈值(0-255,<=0 取默认 128)
+    int            generate_normal_map; ///< 从颜色亮度经 Sobel 生成切线空间 XY 法线并强制 BC5
 } TexJobParams;
 
 /// 快速读取源图元数据(不产生转换)。成功后 channels 可用于 GUI 预过滤格式。

@@ -199,6 +199,7 @@ void JobRunner::RunConvert(QList<ConvertItem> jobs, ConvertOptions opts)
         params.force_grayscale = (job.force_grayscale || job.single_channel) ? 1 : 0;
         params.discard_alpha   = (job.discard_alpha || job.single_channel) ? 1 : 0;
         params.normal_map      = job.normal_map ? 1 : 0;
+        params.generate_normal_map = job.generate_normal_map ? 1 : 0;
         params.df_mode         = job.df_mode ? 1 : 0;
         params.df_threshold    = job.df_threshold;
         params.ibl_mode        = job.ibl_mode;

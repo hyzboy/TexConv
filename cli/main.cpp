@@ -385,11 +385,12 @@ int wmain(int argc, wchar_t **argv)
     if(argc <= 1)
     {
         printf( "Command format:\n"
-                "\tTexConv [/AMD|Intel] [/R:][/RG:][/RGB:][/RGBA:] [/normal] [/ColorKey:rrggbb] [/s] [/mip] [/gray] [/discard_alpha] [/DF[:threshold]] [/out:<new_name_without_ext>] <pathname or filename>\n"
+                "\tTexConv [/AMD|Intel] [/R:][/RG:][/RGB:][/RGBA:] [/normal] [/height2normal] [/ColorKey:rrggbb] [/s] [/mip] [/gray] [/discard_alpha] [/DF[:threshold]] [/out:<new_name_without_ext>] <pathname or filename>\n"
                 "\n"
                 "Params:\n"
                 "\t/R: /RG: /RGB: /RGBA: : target compressed format for 1/2/3/4-channel source (e.g. /RGB:BC5)\n"
                 "\t/normal : normal map mode - always store as 2-channel BC5 (XY); Z is rebuilt in the shader\n"
+                "\t/height2normal : generate tangent-space XY normals from color luminance with a Sobel filter; output BC5\n"
                 "\t/s : proc sub-directory\n"
                 "\t/mip : generate mipmaps\n"
                 "\t/cube : combine 6 face images into a .TexCube (pass 6 files or a directory)\n"
@@ -418,6 +419,7 @@ int wmain(int argc, wchar_t **argv)
     params.force_grayscale = cp.Contains(L"/gray");
     params.discard_alpha   = cp.Contains(L"/discard_alpha");
     params.normal_map      = cp.Contains(L"/normal");
+    params.generate_normal_map = cp.Contains(L"/height2normal");
 
     // 距离场模式:/DF 开启;/DF:threshold 指定内外判定阈值(默认 128)
     params.df_mode = cp.Contains(L"/DF");
@@ -515,7 +517,7 @@ int wmain(int argc, wchar_t **argv)
     {
         const char *nm;
 
-        if(params.normal_map)
+        if(params.normal_map || params.generate_normal_map)
             nm = "BC5";
         else if(params.slot_format[i])
             nm = TexFormat_Get(params.slot_format[i])->name;
@@ -530,6 +532,13 @@ int wmain(int argc, wchar_t **argv)
     // Cubemap 模式:/cube(输入为 6 个面文件或 1 个目录)
     if(cp.Contains(L"/cube"))
     {
+        if(params.generate_normal_map)
+        {
+            printf("[CUBE] /height2normal only supports 2D image inputs.\n");
+            TexCore_Shutdown();
+            return 1;
+        }
+
         std::vector<std::wstring> inputs;
 
         for(int i = 1; i < argc; i++)

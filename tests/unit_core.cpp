@@ -97,6 +97,37 @@ static void run_case(const std::wstring &inputs, const std::wstring &ref_dir,
            got.size(), want.size());
 }
 
+static void run_color_to_normal_case(const std::wstring &inputs, const std::wstring &work)
+{
+    ++total;
+    printf("[color_to_normal]\n");
+
+    const std::wstring input_path = inputs + L"\\rgb8.png";
+    TexImageInfo source_info{};
+    CHECK(TexCore_ProbeImage(input_path.c_str(), &source_info) == TEX_OK,
+          "normal generation source probe");
+
+    const std::wstring output_path = work + L"\\color_to_normal.Tex2D";
+    DeleteFileW(output_path.c_str());
+
+    TexJobParams params{};
+    params.input_path = input_path.c_str();
+    params.output_path = output_path.c_str();
+    params.target_format = "RGBA8"; // generation must force two-channel BC5
+    params.generate_normal_map = 1;
+
+    CHECK(TexCore_RunJob(&params, nullptr, nullptr) == TEX_OK, "color to normal job");
+
+    Tex2DInfo output_info{};
+    CHECK(TexCore_ReadInfo(output_path.c_str(), &output_info) == TEX_OK,
+          "normal generation output read");
+    CHECK(output_info.width == source_info.width && output_info.height == source_info.height,
+          "normal generation dimensions");
+    CHECK(strcmp(output_info.format_name, "BC5") == 0,
+          "normal generation forces BC5 output");
+    CHECK(output_info.mip_levels == 1, "normal generation mip count");
+}
+
 static void run_octa_case(const std::wstring &inputs, const std::wstring &work)
 {
     ++total;
@@ -267,6 +298,7 @@ int main(int argc, char **argv)
 
     run_octa_case(inputs, work);
     run_laea_case(inputs, work);
+    run_color_to_normal_case(inputs, work);
 
     TexCore_Shutdown();
 

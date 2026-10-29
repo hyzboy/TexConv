@@ -197,6 +197,8 @@ void MainWindow::ApplyCommandLineOptions(const QStringList &args)
         else if(a == QStringLiteral("--gray"))    model_->SetFilesGrayscale(model_->AllRowIndexes(), true);
         else if(a == QStringLiteral("--discard")) model_->SetFilesDiscardAlpha(model_->AllRowIndexes(), true);
         else if(a == QStringLiteral("--normal"))  model_->SetFilesNormal(model_->AllRowIndexes(), true);
+        else if(a == QStringLiteral("--height2normal"))
+            model_->SetFilesGenerateNormal(model_->AllRowIndexes(), true);
         else if(a == QStringLiteral("--single"))  model_->SetFilesSingleChannel(model_->AllRowIndexes(), true);
         else if(a == QStringLiteral("--df"))      model_->SetFilesDF(model_->AllRowIndexes(), true);
         else if(a.startsWith(QStringLiteral("--df-threshold:")))
@@ -438,6 +440,7 @@ void MainWindow::OnConvert()
         job.force_grayscale = desc.force_grayscale;
         job.discard_alpha  = desc.discard_alpha;
         job.normal_map     = desc.normal_map;
+        job.generate_normal_map = desc.generate_normal_map;
         job.df_mode        = desc.df_mode;
         job.df_threshold   = desc.df_threshold;
         job.provider       = desc.provider;
@@ -480,6 +483,8 @@ void MainWindow::OnContextMenu(const QPoint &pos)
     // 参与"交集计算"的行:检测通过的行
     QModelIndexList ready_rows;
     bool any_normal = false, all_normal = false;
+    bool all_generate_normal = false;
+    bool has_2d_rows = false, generate_first = true;
     bool any_df = false, all_df = false;
     QStringList allowed;                    // 选中行有效通道数下可选格式的交集
 
@@ -495,10 +500,19 @@ void MainWindow::OnContextMenu(const QPoint &pos)
 
             ready_rows.append(idx);
 
-            any_normal |= item.normal_map;
+            any_normal |= item.normal_map && !item.generate_normal_map;
             any_df     |= item.df_mode;
-            all_normal  = first ? item.normal_map : (all_normal && item.normal_map);
+            all_normal  = first ? (item.normal_map && !item.generate_normal_map)
+                                : (all_normal && item.normal_map && !item.generate_normal_map);
             all_df      = first ? item.df_mode     : (all_df && item.df_mode);
+
+            if(!item.is_cube)
+            {
+                has_2d_rows = true;
+                all_generate_normal = generate_first ? item.generate_normal_map
+                                                     : (all_generate_normal && item.generate_normal_map);
+                generate_first = false;
+            }
 
             const QStringList af = coreapi::AllowedFormats(model_->EffectiveChannelsAt(idx.row()));
 
@@ -569,6 +583,17 @@ void MainWindow::OnContextMenu(const QPoint &pos)
     connect(normal_action, &QAction::triggered, this, [this, ready_rows, all_normal](bool)
     {
         model_->SetFilesNormal(ready_rows, !all_normal);
+    });
+
+    QAction *generate_normal_action = menu.addAction(QStringLiteral("从颜色纹理生成法线(BC5)"));
+    generate_normal_action->setCheckable(true);
+    generate_normal_action->setChecked(has_2d_rows && all_generate_normal);
+    generate_normal_action->setEnabled(has_2d_rows);
+    generate_normal_action->setToolTip(QStringLiteral("将颜色亮度作为高度,用 Sobel 梯度生成切线空间 XY 法线"));
+    connect(generate_normal_action, &QAction::triggered, this,
+            [this, ready_rows, all_generate_normal](bool)
+    {
+        model_->SetFilesGenerateNormal(ready_rows, !all_generate_normal);
     });
 
     QAction *df_action = menu.addAction(QStringLiteral("距离场"));

@@ -8,6 +8,7 @@ TexConv 是一个高性能的图像和纹理转换工具，支持将各种图像
 - 支持多种纹理压缩格式（BC1-BC7, ASTC, ETC, 等）
 - 支持 Mipmap 生成
 - 支持 Cubemap 转换、Octahedral Mapping 与 Lambert 等面积天空半球输出
+- 支持根据 2D 颜色纹理亮度生成切线空间法线贴图(BC5)
 - 支持距离场生成
 - 支持 HDR/EXR 到 PNG 转换
 
@@ -93,6 +94,9 @@ TexConv /AMD image.png
 TexConv /DF image.png
 TexConv /DF:160 image.png          # 自定义内外判定阈值(默认 128)
 TexConv /DF /R:R8 /mip image.png   # 未压缩 R8 + mipmap
+
+# 将颜色亮度视为高度,通过 Sobel 梯度生成 XY 法线并输出 BC5
+TexConv /height2normal image.png
 
 # 使用 Intel ISPC
 TexConv /Intel image.png

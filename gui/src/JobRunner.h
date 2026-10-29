@@ -56,6 +56,7 @@ struct ConvertItem
     bool    force_grayscale = false;
     bool    discard_alpha = false;
     bool    normal_map = false;
+    bool    generate_normal_map = false;
     bool    single_channel = false;     // 单通道语义(等价 灰度+丢弃Alpha)
     int     ibl_mode = 0;               // IBL 模式: 0=无 1=同时生成 Irradiance+Prefiltered
     QString ibl_format;                 // IBL 产物格式:空=自动(BC6H 优先) BC6H/BC7/RGBA16F

@@ -42,7 +42,7 @@ public:
     }
 
     /// 解析 --auto 模式的选项开关并应用到对应行:
-    ///   --mip --gray --discard --normal --df --df-threshold:N
+    ///   --mip --gray --discard --normal --height2normal --df --df-threshold:N
     ///   --provider:NAME --outdir:DIR --cube-output:cube|octa|laea
     void ApplyCommandLineOptions(const QStringList &args);
 

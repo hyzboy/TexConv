@@ -4,7 +4,7 @@
 // 转换进行中模型进入只读锁定(禁止增删),行号保持稳定,工作线程以行号回发结果。
 //
 // 全部转换选项均为"每文件"配置(非全局):
-//   * 生成 Mipmap / 转灰度 / 丢弃 Alpha / 法线 / 距离场(阈值) / 压缩后端;
+//   * 生成 Mipmap / 转灰度 / 丢弃 Alpha / 法线(含颜色转法线) / 距离场(阈值) / 压缩后端;
 //   * 法线在添加文件时按文件名自动识别(含 normal/nmap,或以 _n/-n/ n 结尾),可手动改;
 //   * 单通道语义文件名(Roughness/Displacement/Metallic/Alpha/Opacity/Luminance/
 //     Height/Bump/AO 等)自动按单通道转换(等价 灰度+丢弃Alpha);
@@ -87,6 +87,7 @@ public:
         bool     force_grayscale = false;   // 转灰度
         bool     discard_alpha = false;     // 丢弃 alpha
         bool     normal_map = false;        // 法线贴图:目标格式强制 BC5
+        bool     generate_normal_map = false; // 从颜色亮度生成法线
         bool     single_channel = false;    // 单通道语义(文件名自动识别):等价 灰度+丢弃Alpha
         int      ibl_mode = 0;              // IBL: 0=无 1=同时生成 Irradiance+Prefiltered
         QString  ibl_format;                // IBL 产物格式:空=自动(BC6H 优先) BC6H/BC7/RGBA16F
@@ -136,6 +137,7 @@ public:
     void SetFilesGrayscale(const QModelIndexList &rows, bool on);
     void SetFilesDiscardAlpha(const QModelIndexList &rows, bool on);
     void SetFilesNormal(const QModelIndexList &rows, bool on);
+    void SetFilesGenerateNormal(const QModelIndexList &rows, bool on);
     void SetFilesIBLMode(const QModelIndexList &rows, int mode);
     void SetFilesIBLFormat(const QModelIndexList &rows, const QString &format);
     void SetFilesCubeProjection(const QModelIndexList &rows, CubeProjection projection);
@@ -161,6 +163,7 @@ public:
         bool     force_grayscale;
         bool     discard_alpha;
         bool     normal_map;
+        bool     generate_normal_map;
         bool     single_channel;
         int      ibl_mode;
         QString  ibl_format;
