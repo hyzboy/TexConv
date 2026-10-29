@@ -7,6 +7,8 @@
 #include <QString>
 #include <atomic>
 
+#include "CubeProjection.h"
+
 /// 内核日志桥:TexCore_Init 的回调可能来自任意线程,
 /// 经信号(跨线程自动排队)送达 UI 线程的日志面板。
 class LogBridge : public QObject
@@ -57,6 +59,7 @@ struct ConvertItem
     bool    single_channel = false;     // 单通道语义(等价 灰度+丢弃Alpha)
     int     ibl_mode = 0;               // IBL 模式: 0=无 1=同时生成 Irradiance+Prefiltered
     QString ibl_format;                 // IBL 产物格式:空=自动(BC6H 优先) BC6H/BC7/RGBA16F
+    CubeProjection cube_projection = CubeProjection::Cubemap;
     bool    df_mode = false;
     int     df_threshold = 128;
     QString provider;           // 空 = 默认(优先 Intel)

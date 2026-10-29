@@ -27,6 +27,7 @@ add_executable(TexConvQt WIN32
     src/FormatDelegate.cpp
     src/JobRunner.h
     src/JobRunner.cpp
+    src/CubeProjection.h
     src/MainWindow.h
     src/MainWindow.cpp
 )

@@ -18,6 +18,8 @@
 #include <QStringList>
 #include <vector>
 
+#include "CubeProjection.h"
+
 class TexFileModel : public QAbstractTableModel
 {
     Q_OBJECT
@@ -78,6 +80,7 @@ public:
         // ---- Cubemap:6 张面图合并为一行 ----
         bool     is_cube = false;
         QString  face_paths[6];             // 顺序 +X,-X,+Y,-Y,+Z,-Z;path = 公共前缀
+        CubeProjection cube_projection = CubeProjection::Cubemap;
 
         // ---- 每文件转换选项 ----
         bool     gen_mipmaps = true;        // 生成 mipmap(默认开)
@@ -135,6 +138,7 @@ public:
     void SetFilesNormal(const QModelIndexList &rows, bool on);
     void SetFilesIBLMode(const QModelIndexList &rows, int mode);
     void SetFilesIBLFormat(const QModelIndexList &rows, const QString &format);
+    void SetFilesCubeProjection(const QModelIndexList &rows, CubeProjection projection);
     void SetFilesSingleChannel(const QModelIndexList &rows, bool on);
     void SetFilesDF(const QModelIndexList &rows, bool on);
     void SetFilesDFThreshold(const QModelIndexList &rows, int threshold);
@@ -160,6 +164,7 @@ public:
         bool     single_channel;
         int      ibl_mode;
         QString  ibl_format;
+        CubeProjection cube_projection;
         bool     df_mode;
         int      df_threshold;
         QString  provider;
