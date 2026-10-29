@@ -395,7 +395,7 @@ int wmain(int argc, wchar_t **argv)
                 "\t/cube : combine 6 face images into a .TexCube (pass 6 files or a directory)\n"
                 "\t          /octa : output a square 2x-face-width Octahedral Mapping .Tex2D instead\n"
                 "\t          /laea : output the +Z sky hemisphere as a Lambert equal-area .Tex2D\n"
-                "\t          /ibl[:fmt] : also bake <name>_irradiance.TexCube and <name>_prefilter.TexCube\n"
+                "\t          /ibl[:fmt] : also bake Irradiance + Prefilter; with /octa both use Octahedral .Tex2D\n"
                 "\t                       fmt = BC6H(HDR,default) | BC7(LDR,RGB8 source) | RGBA16F | RGBA8\n"
                 "\t/gray: convert to grayscale\n"
                 "\t/DF[:threshold] : generate distance field then save\n"
@@ -562,10 +562,16 @@ int wmain(int argc, wchar_t **argv)
         const bool octahedral = cp.Contains(L"/octa");
         const bool lambert_azimuthal = cp.Contains(L"/laea");
 
-        if((octahedral && lambert_azimuthal)
-         || ((octahedral || lambert_azimuthal) && cp.Contains(L"/ibl")))
+        if(octahedral && lambert_azimuthal)
         {
-            printf("[CUBE] /octa and /laea are mutually exclusive and cannot be combined with /ibl.\n");
+            printf("[CUBE] /octa and /laea are mutually exclusive.\n");
+            TexCore_Shutdown();
+            return 1;
+        }
+
+        if(lambert_azimuthal && cp.Contains(L"/ibl"))
+        {
+            printf("[CUBE] /laea cannot be combined with /ibl.\n");
             TexCore_Shutdown();
             return 1;
         }

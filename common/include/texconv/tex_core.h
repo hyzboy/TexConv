@@ -131,7 +131,7 @@ typedef struct TexCubeJobParams
 
 TEXCONV_API int  TexCore_RunCubeJob(const TexCubeJobParams *params, TexProgressFn progress, void *user);
 /// 将 6 张 Cubemap 面图投影为 2×面宽的正方形 Octahedral Mapping .Tex2D。
-/// 输入/格式参数与 TexCore_RunCubeJob 相同;不支持同时生成 IBL 产物。
+/// 输入/格式参数与 TexCore_RunCubeJob 相同;IBL 附加产物也使用 Octahedral Mapping 输出。
 TEXCONV_API int  TexCore_RunCubeToOctaJob(const TexCubeJobParams *params,
                                          TexProgressFn progress, void *user);
 /// 将 6 张 Cubemap 面图的 +Z 天空半球投影为 Lambert 等面积方位投影 .Tex2D。

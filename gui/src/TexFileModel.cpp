@@ -822,7 +822,8 @@ void TexFileModel::SetFilesIBLMode(const QModelIndexList &rows, int mode)
         Item &item = items_[size_t(idx.row())];
         item.ibl_mode = mode;
 
-        if(item.is_cube && mode)
+        if(item.is_cube && mode
+         && item.cube_projection == CubeProjection::LambertAzimuthal)
             item.cube_projection = CubeProjection::Cubemap;
 
         Q_EMIT dataChanged(index(idx.row(), 0), index(idx.row(), ColCount - 1));
@@ -843,7 +844,7 @@ void TexFileModel::SetFilesCubeProjection(const QModelIndexList &rows, CubeProje
 
         item.cube_projection = projection;
 
-        if(projection != CubeProjection::Cubemap)
+        if(projection == CubeProjection::LambertAzimuthal)
             item.ibl_mode = 0;
 
         Q_EMIT dataChanged(index(idx.row(), 0), index(idx.row(), ColCount - 1));

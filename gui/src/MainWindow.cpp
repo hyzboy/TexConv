@@ -618,7 +618,7 @@ void MainWindow::OnContextMenu(const QPoint &pos)
         }
     }
 
-    QAction *ibl_action = menu.addAction(QStringLiteral("生成 IBL (Irradiance + Prefiltered)"));
+    QAction *ibl_action = menu.addAction(QStringLiteral("生成 IBL (Irradiance + Prefiltered；Octahedral 模式输出 .Tex2D)"));
     ibl_action->setCheckable(true);
     ibl_action->setChecked(all_ibl);
     connect(ibl_action, &QAction::triggered, this, [this, selected, all_ibl](bool)

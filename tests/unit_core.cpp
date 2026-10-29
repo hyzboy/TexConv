@@ -122,6 +122,39 @@ static void run_octa_case(const std::wstring &inputs, const std::wstring &work)
     CHECK(output_info.width == source_info.width * 2, "octa output width");
     CHECK(output_info.height == source_info.width * 2, "octa output height");
     CHECK(output_info.mip_levels == 1, "octa output mip count");
+
+    TexCubeJobParams ibl_params{};
+    for(const wchar_t *&face_path : ibl_params.face_paths)
+        face_path = input_path.c_str();
+
+    const std::wstring ibl_output_path = work + L"\\octa_ibl.Tex2D";
+    const std::wstring irradiance_path = work + L"\\octa_ibl_irradiance.Tex2D";
+    const std::wstring prefilter_path = work + L"\\octa_ibl_prefilter.Tex2D";
+    DeleteFileW(ibl_output_path.c_str());
+    DeleteFileW(irradiance_path.c_str());
+    DeleteFileW(prefilter_path.c_str());
+    ibl_params.output_path = ibl_output_path.c_str();
+    ibl_params.target_format = "RGB565";
+    ibl_params.ibl_mode = 1;
+    ibl_params.ibl_format = "RGBA8";
+
+    CHECK(TexCore_RunCubeToOctaJob(&ibl_params, nullptr, nullptr) == TEX_OK,
+          "cube to octa with IBL job");
+
+    Tex2DInfo irradiance_info{};
+    CHECK(TexCore_ReadInfo(irradiance_path.c_str(), &irradiance_info) == TEX_OK,
+          "octa IBL irradiance read");
+    CHECK(irradiance_info.view_type == TEX_VIEW_2D, "octa IBL irradiance is 2D");
+    CHECK(irradiance_info.width == 64 && irradiance_info.height == 64,
+          "octa IBL irradiance dimensions");
+
+    Tex2DInfo prefilter_info{};
+    CHECK(TexCore_ReadInfo(prefilter_path.c_str(), &prefilter_info) == TEX_OK,
+          "octa IBL prefilter read");
+    CHECK(prefilter_info.view_type == TEX_VIEW_2D, "octa IBL prefilter is 2D");
+    CHECK(prefilter_info.width == source_info.width * 2
+          && prefilter_info.height == source_info.width * 2,
+          "octa IBL prefilter dimensions");
 }
 
 static void run_laea_case(const std::wstring &inputs, const std::wstring &work)

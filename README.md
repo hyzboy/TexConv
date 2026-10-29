@@ -134,10 +134,14 @@ TexConv /cube /octa /mip /out:output PosX.png NegX.png PosY.png NegY.png PosZ.pn
 
 # 只取 +Z 天空半球,输出 Lambert Azimuthal Equal-Area 圆盘投影
 TexConv /cube /laea /mip /out:sky PosX.png NegX.png PosY.png NegY.png PosZ.png NegZ.png
+
+# Octahedral 主输出及 Irradiance/Prefilter 两个 IBL 附加输出均使用 Octahedral Mapping
+TexConv /cube /octa /ibl /mip /out:sky_octa PosX.png NegX.png PosY.png NegY.png PosZ.png NegZ.png
 ```
 
 `/laea` 输出边长为 Cubemap 面宽两倍的正方形 `.Tex2D`；圆盘内映射 +Z 半球，
-圆盘外像素为零。该模式与 `/ibl`、`/octa` 互斥。
+圆盘外像素为零。该模式与 `/ibl`、`/octa` 互斥；`/octa /ibl` 会额外生成采用相同
+Octahedral Mapping 的 Irradiance 与 Prefilter `.Tex2D` 文件。
 
 ### DFGen - 距离场生成
 

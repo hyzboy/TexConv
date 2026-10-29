@@ -85,7 +85,8 @@ TexConvQt 只依赖 `common/include/texconv/tex_core.h`(C API):
 - **CLI**:`TexConv /cube [/mip] [格式槽] [/out:name] <6 个面文件 | 目录>`(目录可含多组)。
 - **GUI**:目录拖入时签名齐全的 6 面自动合并为一行(标记列含面清单),格式/Mipmap/
   后端对整组生效;右键「Cubemap 输出」可选 `.TexCube`、Octahedral `.Tex2D` 或
-  Lambert 等面积天空半球 `.Tex2D`。
+  Lambert 等面积天空半球 `.Tex2D`;启用 IBL 时,Octahedral 模式的主产物及
+  Irradiance/Prefilter 两个附加产物均输出为 `.Tex2D`。
 - **引擎加载**:`TextureManager::LoadTextureCube` 已有实现;`tests/unit_cubefile`
   用 `TextureCubeLoader` 解析产物校验类型/尺寸/mip/载荷字节数。
 - **Debug 配置可用**:TexImage.dll 恒按 Release 构建(ImageMagick 上游不支持
