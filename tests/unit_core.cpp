@@ -98,6 +98,9 @@ static void run_case(const std::wstring &inputs, const std::wstring &ref_dir,
 
 static void run_octa_case(const std::wstring &inputs, const std::wstring &work)
 {
+    ++total;
+    printf("[cube_to_octa]\n");
+
     const std::wstring input_path = inputs + L"\\rgb8.png";
     TexImageInfo source_info{};
     CHECK(TexCore_ProbeImage(input_path.c_str(), &source_info) == TEX_OK, "octa source probe");
@@ -108,7 +111,7 @@ static void run_octa_case(const std::wstring &inputs, const std::wstring &work)
 
     const std::wstring output_path = work + L"\\octa.Tex2D";
     params.output_path = output_path.c_str();
-    params.target_format = "RGBA8";
+    params.target_format = "RGB565";
 
     CHECK(TexCore_RunCubeToOctaJob(&params, nullptr, nullptr) == TEX_OK, "cube to octa job");
 

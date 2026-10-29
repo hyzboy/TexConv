@@ -109,8 +109,10 @@ namespace texcore
                     (direction[0] * cube_face_axes[face][2][0]
                    + direction[1] * cube_face_axes[face][2][1]
                    + direction[2] * cube_face_axes[face][2][2]) / denominator;
-                const uint32_t sx = (std::min)(uint32_t((s + 1.0f) * 0.5f * width), width - 1);
-                const uint32_t sy = (std::min)(uint32_t((t + 1.0f) * 0.5f * height), height - 1);
+                const uint32_t sx = (std::min)(uint32_t((std::clamp(s, -1.0f, 1.0f) + 1.0f)
+                                                        * 0.5f * width), width - 1);
+                const uint32_t sy = (std::min)(uint32_t((std::clamp(t, -1.0f, 1.0f) + 1.0f)
+                                                        * 0.5f * height), height - 1);
 
                 const size_t dst_offset = (size_t(py) * output_size + px) * bytes_per_pixel;
                 const size_t src_offset = (size_t(sy) * width + sx) * bytes_per_pixel;

@@ -390,7 +390,7 @@ int wmain(int argc, wchar_t **argv)
                 "\t/s : proc sub-directory\n"
                 "\t/mip : generate mipmaps\n"
                 "\t/cube : combine 6 face images into a .TexCube (pass 6 files or a directory)\n"
-                "\t          /octa : output a square Octahedral Mapping .Tex2D instead\n"
+                "\t          /octa : output a square 2x-face-width Octahedral Mapping .Tex2D instead\n"
                 "\t          /ibl[:fmt] : also bake <name>_irradiance.TexCube and <name>_prefilter.TexCube\n"
                 "\t                       fmt = BC6H(HDR,default) | BC7(LDR,RGB8 source) | RGBA16F | RGBA8\n"
                 "\t/gray: convert to grayscale\n"
