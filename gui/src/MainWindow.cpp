@@ -482,7 +482,7 @@ void MainWindow::OnContextMenu(const QPoint &pos)
 
     // 参与"交集计算"的行:检测通过的行
     QModelIndexList ready_rows;
-    bool any_normal = false, all_normal = false;
+    bool all_normal = false;
     bool all_generate_normal = false;
     bool has_2d_rows = false, generate_first = true;
     bool any_df = false, all_df = false;
@@ -500,7 +500,6 @@ void MainWindow::OnContextMenu(const QPoint &pos)
 
             ready_rows.append(idx);
 
-            any_normal |= item.normal_map && !item.generate_normal_map;
             any_df     |= item.df_mode;
             all_normal  = first ? (item.normal_map && !item.generate_normal_map)
                                 : (all_normal && item.normal_map && !item.generate_normal_map);

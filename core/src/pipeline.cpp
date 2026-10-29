@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <cstdint>
 #include <filesystem>
 #include <vector>
 
@@ -41,17 +42,17 @@ namespace texcore
 
         std::vector<uint8_t> normal_xy(pixel_count * 2);
 
-        auto sample = [&](int x, int y) -> float
+        auto sample = [&](int64_t x, int64_t y) -> float
         {
-            x = (std::clamp)(x, 0, int(width) - 1);
-            y = (std::clamp)(y, 0, int(height) - 1);
-            return float(height_data[size_t(y) * width + uint32_t(x)]) / 255.0f;
+            x = (std::clamp<int64_t>)(x, 0, int64_t(width) - 1);
+            y = (std::clamp<int64_t>)(y, 0, int64_t(height) - 1);
+            return float(height_data[size_t(y) * width + size_t(x)]) / 255.0f;
         };
 
         for(uint32_t y = 0; y < height; ++y)
             for(uint32_t x = 0; x < width; ++x)
             {
-                const int ix = int(x), iy = int(y);
+                const int64_t ix = x, iy = y;
                 const float gx = -sample(ix - 1, iy - 1) + sample(ix + 1, iy - 1)
                                - 2.0f * sample(ix - 1, iy) + 2.0f * sample(ix + 1, iy)
                                - sample(ix - 1, iy + 1) + sample(ix + 1, iy + 1);
