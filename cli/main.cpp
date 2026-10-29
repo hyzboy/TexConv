@@ -221,6 +221,7 @@ static int run_cube(const std::vector<std::wstring> &inputs,
                     bool gen_mipmaps,
                     bool ibl,
                     const char *ibl_format,
+                    bool octahedral,
                     const char *provider)
 {
     std::vector<std::wstring> faces;
@@ -308,7 +309,7 @@ static int run_cube(const std::vector<std::wstring> &inputs,
 
         ++group_index;
 
-        // 输出名:/out: 优先(单组);否则公共前缀 + .TexCube
+        // 输出名:/out: 优先(单组);否则公共前缀 + 对应扩展名
         // (公共前缀为空——如 px/nx/py 各自独立命名——退用目录名)
         std::wstring output;
 
@@ -330,7 +331,7 @@ static int run_cube(const std::vector<std::wstring> &inputs,
             output = g.dir + L"\\" + base;
         }
 
-        output += L".TexCube";
+        output += octahedral ? L".Tex2D" : L".TexCube";
 
         // 面通道数 → 目标格式(显式槽位优先,否则内核默认)
         TexImageInfo info{};
@@ -351,6 +352,7 @@ static int run_cube(const std::vector<std::wstring> &inputs,
         cube.gen_mipmaps   = gen_mipmaps ? 1 : 0;
         cube.ibl_mode      = ibl ? 1 : 0;   // 1 = 同时产出 _irradiance 与 _prefilter
         cube.ibl_format    = ibl_format;    // NULL = 自动(BC6H 优先)
+        cube.output_octahedral = octahedral ? 1 : 0;
 
         constexpr const char *face_name[6] = {"+X", "-X", "+Y", "-Y", "+Z", "-Z"};
 
@@ -385,6 +387,7 @@ int wmain(int argc, wchar_t **argv)
                 "\t/s : proc sub-directory\n"
                 "\t/mip : generate mipmaps\n"
                 "\t/cube : combine 6 face images into a .TexCube (pass 6 files or a directory)\n"
+                "\t          /octa : output a square Octahedral Mapping .Tex2D instead\n"
                 "\t          /ibl[:fmt] : also bake <name>_irradiance.TexCube and <name>_prefilter.TexCube\n"
                 "\t                       fmt = BC6H(HDR,default) | BC7(LDR,RGB8 source) | RGBA16F | RGBA8\n"
                 "\t/gray: convert to grayscale\n"
@@ -549,10 +552,20 @@ int wmain(int argc, wchar_t **argv)
             }
         }
 
+        const bool octahedral = cp.Contains(L"/octa");
+
+        if(octahedral && cp.Contains(L"/ibl"))
+        {
+            printf("[CUBE] /octa cannot be combined with /ibl.\n");
+            TexCore_Shutdown();
+            return 1;
+        }
+
         const int rc = run_cube(inputs, params.slot_format, params,
                                 (has_out ? out_base : nullptr),
                                 params.gen_mipmaps, cp.Contains(L"/ibl"),
                                 (ibl_fmt_utf8[0] ? ibl_fmt_utf8 : nullptr),
+                                octahedral,
                                 provider);
 
         TexCore_Shutdown();

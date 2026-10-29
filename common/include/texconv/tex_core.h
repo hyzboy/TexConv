@@ -127,6 +127,8 @@ typedef struct TexCubeJobParams
                                       ///< NULL/空=自动(优先 BC6H,编码器不支持时回退 RGBA16F);
                                       ///< 可指定 "BC6H"(HDR 半精度) / "BC7"(LDR,RGB8 源推荐)
                                       ///< / "RGBA16F" / "RGBA8";指定格式不可用时警告并回退自动
+    int            output_octahedral; ///< 非 0:输出 2×面宽的正方形 Octahedral Mapping .Tex2D;
+                                       ///< 与 ibl_mode 不可同时使用
 } TexCubeJobParams;
 
 TEXCONV_API int  TexCore_RunCubeJob(const TexCubeJobParams *params, TexProgressFn progress, void *user);
