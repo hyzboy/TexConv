@@ -88,6 +88,7 @@ public:
         bool     discard_alpha = false;     // 丢弃 alpha
         bool     normal_map = false;        // 法线贴图:目标格式强制 BC5
         bool     generate_normal_map = false; // 从颜色亮度生成法线
+        bool     generate_normal_from_heightmap = false; // 从单通道高度图生成法线
         bool     generate_roughness_map = false; // 从法线局部方向方差生成粗糙度
         bool     single_channel = false;    // 单通道语义(文件名自动识别):等价 灰度+丢弃Alpha
         int      ibl_mode = 0;              // IBL: 0=无 1=同时生成 Irradiance+Prefiltered
@@ -139,6 +140,7 @@ public:
     void SetFilesDiscardAlpha(const QModelIndexList &rows, bool on);
     void SetFilesNormal(const QModelIndexList &rows, bool on);
     void SetFilesGenerateNormal(const QModelIndexList &rows, bool on);
+    void SetFilesGenerateNormalFromHeightmap(const QModelIndexList &rows, bool on);
     void SetFilesGenerateRoughness(const QModelIndexList &rows, bool on);
     void SetFilesIBLMode(const QModelIndexList &rows, int mode);
     void SetFilesIBLFormat(const QModelIndexList &rows, const QString &format);
@@ -166,6 +168,7 @@ public:
         bool     discard_alpha;
         bool     normal_map;
         bool     generate_normal_map;
+        bool     generate_normal_from_heightmap;
         bool     generate_roughness_map;
         bool     single_channel;
         int      ibl_mode;

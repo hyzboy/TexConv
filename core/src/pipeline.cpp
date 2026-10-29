@@ -455,6 +455,9 @@ namespace texcore
             return TEX_ERR_PARAM;
 
         if((params->generate_normal_map && params->df_mode)
+         || (params->generate_normal_from_heightmap
+          && (params->generate_normal_map || params->generate_roughness_map
+           || params->normal_map || params->df_mode))
          || (params->generate_roughness_map
           && (params->generate_normal_map || params->normal_map || params->df_mode)))
         {
@@ -490,9 +493,16 @@ namespace texcore
         int layout = 0, pt = 0;
         TexImage_GetInfo(ctx.img, &ctx.width, &ctx.height, nullptr, &layout, &pt);
 
-        // 从颜色亮度生成两通道切线空间法线;后续格式固定为 BC5。
-        if(params->generate_normal_map)
+        // 从颜色亮度或单通道高度图生成切线空间法线;后续格式固定为 BC5。
+        if(params->generate_normal_map || params->generate_normal_from_heightmap)
         {
+            if(params->generate_normal_from_heightmap && TexLayoutChannels(layout) != 1)
+            {
+                CoreLog(TEX_LOG_ERROR, "heightmap-to-normal requires a single-channel source image.");
+                TexImage_Free(ctx.img);
+                return TEX_ERR_UNSUPPORTED;
+            }
+
             TexImage normal_img = nullptr;
             rc = GenerateNormalMap(ctx.img, ctx.width, ctx.height, &normal_img);
 
@@ -524,6 +534,7 @@ namespace texcore
 
         // 2. 灰度(对齐旧 ConvertImage:有 alpha 或未丢弃 alpha → 转 RG,否则转 Gray)
         if(params->force_grayscale && !params->generate_normal_map
+         && !params->generate_normal_from_heightmap
          && !params->generate_roughness_map)
         {
             if(TexImage_HasAlpha(ctx.img) || !params->discard_alpha)
@@ -536,6 +547,7 @@ namespace texcore
 
         // 3. 丢弃 alpha
         if(params->discard_alpha && !params->generate_normal_map
+         && !params->generate_normal_from_heightmap
          && !params->generate_roughness_map)
         {
             if(layout == TEX_LAYOUT_RGBA)
@@ -549,6 +561,7 @@ namespace texcore
         // 3.5 距离场模式:单通道源对灰度生成;带 Alpha 的源(RGBA/GrayAlpha)对
         //     Alpha 生成。生成后图像替换为单通道 8-bit 距离场,按 1 通道源继续。
         if(params->df_mode && !params->generate_normal_map
+         && !params->generate_normal_from_heightmap
          && !params->generate_roughness_map)
         {
             int df_layout = 0;
@@ -615,7 +628,7 @@ namespace texcore
         }
 
         // 4. 目标格式解析(槽位模式对齐旧 ParseParamFormat:名字非法回退默认)
-        if(params->generate_normal_map)
+        if(params->generate_normal_map || params->generate_normal_from_heightmap)
         {
             ctx.fmt = TexFormat_Get("BC5");
 

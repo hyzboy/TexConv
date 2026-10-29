@@ -199,6 +199,8 @@ void MainWindow::ApplyCommandLineOptions(const QStringList &args)
         else if(a == QStringLiteral("--normal"))  model_->SetFilesNormal(model_->AllRowIndexes(), true);
         else if(a == QStringLiteral("--height2normal"))
             model_->SetFilesGenerateNormal(model_->AllRowIndexes(), true);
+        else if(a == QStringLiteral("--heightmap2normal"))
+            model_->SetFilesGenerateNormalFromHeightmap(model_->AllRowIndexes(), true);
         else if(a == QStringLiteral("--normal2roughness"))
             model_->SetFilesGenerateRoughness(model_->AllRowIndexes(), true);
         else if(a == QStringLiteral("--single"))  model_->SetFilesSingleChannel(model_->AllRowIndexes(), true);
@@ -443,6 +445,7 @@ void MainWindow::OnConvert()
         job.discard_alpha  = desc.discard_alpha;
         job.normal_map     = desc.normal_map;
         job.generate_normal_map = desc.generate_normal_map;
+        job.generate_normal_from_heightmap = desc.generate_normal_from_heightmap;
         job.generate_roughness_map = desc.generate_roughness_map;
         job.df_mode        = desc.df_mode;
         job.df_threshold   = desc.df_threshold;
@@ -488,6 +491,9 @@ void MainWindow::OnContextMenu(const QPoint &pos)
     bool all_normal = false;
     bool all_generate_normal = false;
     bool has_2d_rows = false, generate_first = true;
+    bool all_heightmap_normal = false;
+    bool heightmap_first = true, has_heightmap_inputs = false;
+    QModelIndexList heightmap_rows;
     bool all_generate_roughness = false;
     bool roughness_first = true;
     bool has_roughness_inputs = false;
@@ -518,6 +524,15 @@ void MainWindow::OnContextMenu(const QPoint &pos)
                 all_generate_normal = generate_first ? item.generate_normal_map
                                                      : (all_generate_normal && item.generate_normal_map);
                 generate_first = false;
+                if(item.channels == 1)
+                {
+                    has_heightmap_inputs = true;
+                    heightmap_rows.append(idx);
+                    all_heightmap_normal = heightmap_first
+                        ? item.generate_normal_from_heightmap
+                        : (all_heightmap_normal && item.generate_normal_from_heightmap);
+                    heightmap_first = false;
+                }
                 if(item.channels >= 2 && item.channels <= 4)
                 {
                     has_roughness_inputs = true;
@@ -609,6 +624,17 @@ void MainWindow::OnContextMenu(const QPoint &pos)
             [this, ready_rows, all_generate_normal](bool)
     {
         model_->SetFilesGenerateNormal(ready_rows, !all_generate_normal);
+    });
+
+    QAction *heightmap_normal_action = menu.addAction(QStringLiteral("高度图转法线(BC5)"));
+    heightmap_normal_action->setCheckable(true);
+    heightmap_normal_action->setChecked(has_heightmap_inputs && all_heightmap_normal);
+    heightmap_normal_action->setEnabled(has_heightmap_inputs);
+    heightmap_normal_action->setToolTip(QStringLiteral("将单通道高度图经 Sobel 梯度转换为切线空间 XY 法线"));
+    connect(heightmap_normal_action, &QAction::triggered, this,
+            [this, heightmap_rows, all_heightmap_normal](bool)
+    {
+        model_->SetFilesGenerateNormalFromHeightmap(heightmap_rows, !all_heightmap_normal);
     });
 
     QAction *generate_roughness_action = menu.addAction(QStringLiteral("法线贴图转粗糙度(BC4 默认)"));

@@ -61,6 +61,7 @@ typedef struct TexJobParams
     int            df_threshold;    ///< 距离场内外判定阈值(0-255,<=0 取默认 128)
     int            generate_normal_map; ///< 从颜色亮度经 Sobel 生成切线空间 XY 法线并强制 BC5
     int            generate_roughness_map; ///< 从法线局部方向方差估算单通道粗糙度
+    int            generate_normal_from_heightmap; ///< 单通道高度图经 Sobel 生成 XY 法线并强制 BC5
 } TexJobParams;
 
 /// 快速读取源图元数据(不产生转换)。成功后 channels 可用于 GUI 预过滤格式。
