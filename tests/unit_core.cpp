@@ -96,6 +96,30 @@ static void run_case(const std::wstring &inputs, const std::wstring &ref_dir,
            got.size(), want.size());
 }
 
+static void run_octa_case(const std::wstring &inputs, const std::wstring &work)
+{
+    const std::wstring input_path = inputs + L"\\rgb8.png";
+    TexImageInfo source_info{};
+    CHECK(TexCore_ProbeImage(input_path.c_str(), &source_info) == TEX_OK, "octa source probe");
+
+    TexCubeJobParams params{};
+    for(const wchar_t *&face_path : params.face_paths)
+        face_path = input_path.c_str();
+
+    const std::wstring output_path = work + L"\\octa.Tex2D";
+    params.output_path = output_path.c_str();
+    params.target_format = "RGBA8";
+
+    CHECK(TexCore_RunCubeToOctaJob(&params, nullptr, nullptr) == TEX_OK, "cube to octa job");
+
+    Tex2DInfo output_info{};
+    CHECK(TexCore_ReadInfo(output_path.c_str(), &output_info) == TEX_OK, "octa output read");
+    CHECK(output_info.view_type == 1, "octa output is 2D");
+    CHECK(output_info.width == source_info.width * 2, "octa output width");
+    CHECK(output_info.height == source_info.width * 2, "octa output height");
+    CHECK(output_info.mip_levels == 1, "octa output mip count");
+}
+
 int main(int argc, char **argv)
 {
     if(argc < 3)
@@ -156,6 +180,8 @@ int main(int argc, char **argv)
         if(ci < from || ci > to)continue;
         run_case(inputs, ref_dir, work, cases[ci]);
     }
+
+    run_octa_case(inputs, work);
 
     TexCore_Shutdown();
 
