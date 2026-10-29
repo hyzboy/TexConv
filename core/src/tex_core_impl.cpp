@@ -276,12 +276,19 @@ extern "C"
 
     int TexCore_RunCubeJob(const TexCubeJobParams *params, TexProgressFn progress, void *user)
     {
-        return texcore::RunCubeJobImpl(params, progress, user, false);
+        return texcore::RunCubeJobImpl(params, progress, user, texcore::CubeOutputProjection::Cube);
     }
 
     int TexCore_RunCubeToOctaJob(const TexCubeJobParams *params, TexProgressFn progress, void *user)
     {
-        return texcore::RunCubeJobImpl(params, progress, user, true);
+        return texcore::RunCubeJobImpl(params, progress, user, texcore::CubeOutputProjection::Octahedral);
+    }
+
+    int TexCore_RunCubeToLambertAzimuthalJob(const TexCubeJobParams *params,
+                                             TexProgressFn progress, void *user)
+    {
+        return texcore::RunCubeJobImpl(params, progress, user,
+                                       texcore::CubeOutputProjection::LambertAzimuthal);
     }
 
     int TexCore_ReadInfo(const wchar_t *tex2d_path, Tex2DInfo *out)

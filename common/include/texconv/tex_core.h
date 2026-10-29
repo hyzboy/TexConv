@@ -134,6 +134,10 @@ TEXCONV_API int  TexCore_RunCubeJob(const TexCubeJobParams *params, TexProgressF
 /// 输入/格式参数与 TexCore_RunCubeJob 相同;不支持同时生成 IBL 产物。
 TEXCONV_API int  TexCore_RunCubeToOctaJob(const TexCubeJobParams *params,
                                          TexProgressFn progress, void *user);
+/// 将 6 张 Cubemap 面图的 +Z 天空半球投影为 Lambert 等面积方位投影 .Tex2D。
+/// 输出为边长 2×面宽的正方形,半球边界外为零值;不支持同时生成 IBL 产物。
+TEXCONV_API int  TexCore_RunCubeToLambertAzimuthalJob(const TexCubeJobParams *params,
+                                                      TexProgressFn progress, void *user);
 
 /// 读取 .Tex2D 产物信息。文件不存在/头部非法返回 TEX_ERR_IO。
 TEXCONV_API int  TexCore_ReadInfo(const wchar_t *tex2d_path, Tex2DInfo *out);
