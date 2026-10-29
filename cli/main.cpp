@@ -352,7 +352,6 @@ static int run_cube(const std::vector<std::wstring> &inputs,
         cube.gen_mipmaps   = gen_mipmaps ? 1 : 0;
         cube.ibl_mode      = ibl ? 1 : 0;   // 1 = 同时产出 _irradiance 与 _prefilter
         cube.ibl_format    = ibl_format;    // NULL = 自动(BC6H 优先)
-        cube.output_octahedral = octahedral ? 1 : 0;
 
         constexpr const char *face_name[6] = {"+X", "-X", "+Y", "-Y", "+Z", "-Z"};
 
@@ -361,7 +360,11 @@ static int run_cube(const std::vector<std::wstring> &inputs,
 
         printf("output: %ls\n", output.c_str());
 
-        if(TexCore_RunCubeJob(&cube, nullptr, nullptr) != TEX_OK)
+        const int rc = octahedral
+            ? TexCore_RunCubeToOctaJob(&cube, nullptr, nullptr)
+            : TexCore_RunCubeJob(&cube, nullptr, nullptr);
+
+        if(rc != TEX_OK)
         {
             printf("[CUBE] group %d convert failed.\n", group_index);
             exit_code = 1;

@@ -7,7 +7,7 @@ TexConv 是一个高性能的图像和纹理转换工具，支持将各种图像
 - 支持多种图像格式输入（PNG, JPG, TGA, HDR, EXR 等）
 - 支持多种纹理压缩格式（BC1-BC7, ASTC, ETC, 等）
 - 支持 Mipmap 生成
-- 支持 Cubemap 转换
+- 支持 Cubemap 转换与 Octahedral Mapping 输出
 - 支持距离场生成
 - 支持 HDR/EXR 到 PNG 转换
 
@@ -128,6 +128,9 @@ ComboTexture output 2CN Color1.png Normal1.png Color2.png Normal2.png
 ```bash
 # 将 6 个面转换为 cubemap
 CubeMapConv output.tex PosX.png NegX.png PosY.png NegY.png PosZ.png NegZ.png
+
+# TexConv 将 6 个面转换为正方形 Octahedral Mapping 2D 纹理
+TexConv /cube /octa /mip /out:output PosX.png NegX.png PosY.png NegY.png PosZ.png NegZ.png
 ```
 
 ### DFGen - 距离场生成
