@@ -7,7 +7,10 @@ TexConv 是一个高性能的图像和纹理转换工具，支持将各种图像
 - 支持多种图像格式输入（PNG, JPG, TGA, HDR, EXR 等）
 - 支持多种纹理压缩格式（BC1-BC7, ASTC, ETC, 等）
 - 支持 Mipmap 生成
-- 支持 Cubemap 转换
+- 支持 Cubemap 转换、Octahedral Mapping 与 Lambert 等面积天空半球输出
+- 支持根据 2D 颜色纹理亮度生成切线空间法线贴图(BC5)
+- 支持根据单通道高度图生成切线空间法线贴图(BC5)
+- 支持根据 2D 法线贴图的局部方向变化估算粗糙度纹理
 - 支持距离场生成
 - 支持 HDR/EXR 到 PNG 转换
 
@@ -94,6 +97,15 @@ TexConv /DF image.png
 TexConv /DF:160 image.png          # 自定义内外判定阈值(默认 128)
 TexConv /DF /R:R8 /mip image.png   # 未压缩 R8 + mipmap
 
+# 将颜色亮度视为高度,通过 Sobel 梯度生成 XY 法线并输出 BC5
+TexConv /height2normal image.png
+
+# 高度图为单通道输入;会拒绝 RGB/RGBA 颜色图
+TexConv /heightmap2normal height.png
+
+# 由法线方向的局部变化估算单通道粗糙度(默认 BC4)
+TexConv /normal2roughness normal.png
+
 # 使用 Intel ISPC
 TexConv /Intel image.png
 
@@ -128,7 +140,20 @@ ComboTexture output 2CN Color1.png Normal1.png Color2.png Normal2.png
 ```bash
 # 将 6 个面转换为 cubemap
 CubeMapConv output.tex PosX.png NegX.png PosY.png NegY.png PosZ.png NegZ.png
+
+# TexConv 将 6 个面转换为正方形 Octahedral Mapping 2D 纹理
+TexConv /cube /octa /mip /out:output PosX.png NegX.png PosY.png NegY.png PosZ.png NegZ.png
+
+# 只取 +Z 天空半球,输出 Lambert Azimuthal Equal-Area 圆盘投影
+TexConv /cube /laea /mip /out:sky PosX.png NegX.png PosY.png NegY.png PosZ.png NegZ.png
+
+# Octahedral 主输出及 Irradiance/Prefilter 两个 IBL 附加输出均使用 Octahedral Mapping
+TexConv /cube /octa /ibl /mip /out:sky_octa PosX.png NegX.png PosY.png NegY.png PosZ.png NegZ.png
 ```
+
+`/laea` 输出边长为 Cubemap 面宽两倍的正方形 `.Tex2D`；圆盘内映射 +Z 半球，
+圆盘外像素为零。该模式与 `/ibl`、`/octa` 互斥；`/octa /ibl` 会额外生成采用相同
+Octahedral Mapping 的 Irradiance 与 Prefilter `.Tex2D` 文件。
 
 ### DFGen - 距离场生成
 

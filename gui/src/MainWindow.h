@@ -41,9 +41,10 @@ public:
             QTimer::singleShot(0, this, [this] { OnDetect(); });    // 启动第一次检测
     }
 
-    /// 解析 --auto 模式的选项开关并应用到对应控件:
-    ///   --mip --gray --discard --normal --df --df-threshold:N
-    ///   --provider:NAME --outdir:DIR
+    /// 解析 --auto 模式的选项开关并应用到对应行:
+    ///   --mip --gray --discard --normal --height2normal --heightmap2normal
+    ///   --normal2roughness --df --df-threshold:N
+    ///   --provider:NAME --outdir:DIR --cube-output:cube|octa|laea
     void ApplyCommandLineOptions(const QStringList &args);
 
 protected:

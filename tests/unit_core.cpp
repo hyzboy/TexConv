@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include "texconv/tex_core.h"
+#include "texconv/tex2d_container.h"
 
 static int failures = 0;
 static int total = 0;
@@ -96,6 +97,222 @@ static void run_case(const std::wstring &inputs, const std::wstring &ref_dir,
            got.size(), want.size());
 }
 
+static void run_color_to_normal_case(const std::wstring &inputs, const std::wstring &work)
+{
+    ++total;
+    printf("[color_to_normal]\n");
+
+    const std::wstring input_path = inputs + L"\\rgb8.png";
+    TexImageInfo source_info{};
+    CHECK(TexCore_ProbeImage(input_path.c_str(), &source_info) == TEX_OK,
+          "normal generation source probe");
+
+    const std::wstring output_path = work + L"\\color_to_normal.Tex2D";
+    DeleteFileW(output_path.c_str());
+
+    TexJobParams params{};
+    params.input_path = input_path.c_str();
+    params.output_path = output_path.c_str();
+    params.target_format = "RGBA8"; // generation must force two-channel BC5
+    params.generate_normal_map = 1;
+
+    CHECK(TexCore_RunJob(&params, nullptr, nullptr) == TEX_OK, "color to normal job");
+
+    Tex2DInfo output_info{};
+    CHECK(TexCore_ReadInfo(output_path.c_str(), &output_info) == TEX_OK,
+          "normal generation output read");
+    CHECK(output_info.width == source_info.width && output_info.height == source_info.height,
+          "normal generation dimensions");
+    CHECK(strcmp(output_info.format_name, "BC5") == 0,
+          "normal generation forces BC5 output");
+    CHECK(output_info.mip_levels == 1, "normal generation mip count");
+}
+
+static void run_heightmap_to_normal_case(const std::wstring &inputs, const std::wstring &work)
+{
+    ++total;
+    printf("[heightmap_to_normal]\n");
+
+    const std::wstring input_path = inputs + L"\\g8.png";
+    TexImageInfo source_info{};
+    CHECK(TexCore_ProbeImage(input_path.c_str(), &source_info) == TEX_OK,
+          "heightmap source probe");
+    CHECK(source_info.channels == 1, "heightmap source is single-channel");
+
+    const std::wstring output_path = work + L"\\heightmap_to_normal.Tex2D";
+    DeleteFileW(output_path.c_str());
+
+    TexJobParams params{};
+    params.input_path = input_path.c_str();
+    params.output_path = output_path.c_str();
+    params.generate_normal_from_heightmap = 1;
+
+    CHECK(TexCore_RunJob(&params, nullptr, nullptr) == TEX_OK,
+          "heightmap to normal job");
+
+    Tex2DInfo output_info{};
+    CHECK(TexCore_ReadInfo(output_path.c_str(), &output_info) == TEX_OK,
+          "heightmap normal output read");
+    CHECK(output_info.width == source_info.width && output_info.height == source_info.height,
+          "heightmap normal dimensions");
+    CHECK(strcmp(output_info.format_name, "BC5") == 0,
+          "heightmap normal output uses BC5");
+
+    const std::wstring invalid_output_path = work + L"\\invalid_heightmap_to_normal.Tex2D";
+    const std::wstring color_input_path = inputs + L"\\rgb8.png";
+    DeleteFileW(invalid_output_path.c_str());
+    params.input_path = color_input_path.c_str();
+    params.output_path = invalid_output_path.c_str();
+    CHECK(TexCore_RunJob(&params, nullptr, nullptr) == TEX_ERR_UNSUPPORTED,
+          "heightmap mode rejects color input");
+    CHECK(GetFileAttributesW(invalid_output_path.c_str()) == INVALID_FILE_ATTRIBUTES,
+          "invalid heightmap input produces no output file");
+}
+
+static void run_normal_to_roughness_case(const std::wstring &inputs, const std::wstring &work)
+{
+    ++total;
+    printf("[normal_to_roughness]\n");
+
+    const wchar_t *inputs_to_check[] = {L"ga8.png", L"rgb8.png"};
+
+    for(size_t i = 0; i < sizeof(inputs_to_check) / sizeof(inputs_to_check[0]); ++i)
+    {
+        const std::wstring input_path = inputs + L"\\" + inputs_to_check[i];
+        TexImageInfo source_info{};
+        CHECK(TexCore_ProbeImage(input_path.c_str(), &source_info) == TEX_OK,
+              "roughness source probe");
+
+        const std::wstring output_path = work + L"\\normal_to_roughness_"
+                                       + std::to_wstring(i) + L".Tex2D";
+        DeleteFileW(output_path.c_str());
+
+        TexJobParams params{};
+        params.input_path = input_path.c_str();
+        params.output_path = output_path.c_str();
+        params.generate_roughness_map = 1;
+
+        CHECK(TexCore_RunJob(&params, nullptr, nullptr) == TEX_OK,
+              "normal to roughness job");
+
+        Tex2DInfo output_info{};
+        CHECK(TexCore_ReadInfo(output_path.c_str(), &output_info) == TEX_OK,
+              "roughness output read");
+        CHECK(output_info.width == source_info.width && output_info.height == source_info.height,
+              "roughness output dimensions");
+        CHECK(strcmp(output_info.format_name, "BC4") == 0,
+              "roughness output uses scalar BC4 format");
+        CHECK(output_info.mip_levels == 1, "roughness output mip count");
+    }
+}
+
+static void run_octa_case(const std::wstring &inputs, const std::wstring &work)
+{
+    ++total;
+    printf("[cube_to_octa]\n");
+
+    const std::wstring input_path = inputs + L"\\rgb8.png";
+    TexImageInfo source_info{};
+    CHECK(TexCore_ProbeImage(input_path.c_str(), &source_info) == TEX_OK, "octa source probe");
+
+    TexCubeJobParams params{};
+    for(const wchar_t *&face_path : params.face_paths)
+        face_path = input_path.c_str();
+
+    const std::wstring output_path = work + L"\\octa.Tex2D";
+    params.output_path = output_path.c_str();
+    params.target_format = "RGB565";
+
+    CHECK(TexCore_RunCubeToOctaJob(&params, nullptr, nullptr) == TEX_OK, "cube to octa job");
+
+    Tex2DInfo output_info{};
+    CHECK(TexCore_ReadInfo(output_path.c_str(), &output_info) == TEX_OK, "octa output read");
+    CHECK(output_info.view_type == 1, "octa output is 2D");
+    CHECK(output_info.width == source_info.width * 2, "octa output width");
+    CHECK(output_info.height == source_info.width * 2, "octa output height");
+    CHECK(output_info.mip_levels == 1, "octa output mip count");
+
+    TexCubeJobParams ibl_params{};
+    for(const wchar_t *&face_path : ibl_params.face_paths)
+        face_path = input_path.c_str();
+
+    const std::wstring ibl_output_path = work + L"\\octa_ibl.Tex2D";
+    const std::wstring irradiance_path = work + L"\\octa_ibl_irradiance.Tex2D";
+    const std::wstring prefilter_path = work + L"\\octa_ibl_prefilter.Tex2D";
+    DeleteFileW(ibl_output_path.c_str());
+    DeleteFileW(irradiance_path.c_str());
+    DeleteFileW(prefilter_path.c_str());
+    ibl_params.output_path = ibl_output_path.c_str();
+    ibl_params.target_format = "RGB565";
+    ibl_params.ibl_mode = 1;
+    ibl_params.ibl_format = "RGBA8";
+
+    CHECK(TexCore_RunCubeToOctaJob(&ibl_params, nullptr, nullptr) == TEX_OK,
+          "cube to octa with IBL job");
+
+    Tex2DInfo irradiance_info{};
+    CHECK(TexCore_ReadInfo(irradiance_path.c_str(), &irradiance_info) == TEX_OK,
+          "octa IBL irradiance read");
+    CHECK(irradiance_info.view_type == TEX_VIEW_2D, "octa IBL irradiance is 2D");
+    CHECK(irradiance_info.width == 64 && irradiance_info.height == 64,
+          "octa IBL irradiance dimensions");
+
+    Tex2DInfo prefilter_info{};
+    CHECK(TexCore_ReadInfo(prefilter_path.c_str(), &prefilter_info) == TEX_OK,
+          "octa IBL prefilter read");
+    CHECK(prefilter_info.view_type == TEX_VIEW_2D, "octa IBL prefilter is 2D");
+    CHECK(prefilter_info.width == source_info.width * 2
+          && prefilter_info.height == source_info.width * 2,
+          "octa IBL prefilter dimensions");
+}
+
+static void run_laea_case(const std::wstring &inputs, const std::wstring &work)
+{
+    ++total;
+    printf("[cube_to_laea]\n");
+
+    const std::wstring input_path = inputs + L"\\rgb8.png";
+    TexImageInfo source_info{};
+    CHECK(TexCore_ProbeImage(input_path.c_str(), &source_info) == TEX_OK, "laea source probe");
+
+    TexCubeJobParams params{};
+    for(const wchar_t *&face_path : params.face_paths)
+        face_path = input_path.c_str();
+
+    const std::wstring output_path = work + L"\\laea.Tex2D";
+    DeleteFileW(output_path.c_str());
+    params.output_path = output_path.c_str();
+    params.target_format = "RGB565";
+    params.gen_mipmaps = 1;
+
+    CHECK(TexCore_RunCubeToLambertAzimuthalJob(&params, nullptr, nullptr) == TEX_OK,
+          "cube to Lambert azimuthal job");
+
+    Tex2DInfo output_info{};
+    CHECK(TexCore_ReadInfo(output_path.c_str(), &output_info) == TEX_OK, "laea output read");
+    CHECK(output_info.view_type == TEX_VIEW_2D, "laea output is 2D");
+    CHECK(output_info.width == source_info.width * 2, "laea output width");
+    CHECK(output_info.height == source_info.width * 2, "laea output height");
+    CHECK(output_info.mip_levels > 1, "laea output mip chain");
+
+    std::vector<uint8_t> data;
+    CHECK(read_file(output_path, data), "laea output file read");
+
+    if(source_info.width >= 2 && output_info.width > 0 && output_info.height > 0)
+    {
+        const size_t level_bytes = size_t(output_info.width) * output_info.height * 2;
+
+        if(data.size() >= TEX2D_HEADER_SIZE + level_bytes)
+        {
+            CHECK(data[TEX2D_HEADER_SIZE] == 0 && data[TEX2D_HEADER_SIZE + 1] == 0,
+                  "laea outside-disk top-left pixel is zero");
+            const size_t last_pixel = TEX2D_HEADER_SIZE + level_bytes - 2;
+            CHECK(data[last_pixel] == 0 && data[last_pixel + 1] == 0,
+                  "laea outside-disk bottom-right pixel is zero");
+        }
+    }
+}
+
 int main(int argc, char **argv)
 {
     if(argc < 3)
@@ -156,6 +373,12 @@ int main(int argc, char **argv)
         if(ci < from || ci > to)continue;
         run_case(inputs, ref_dir, work, cases[ci]);
     }
+
+    run_octa_case(inputs, work);
+    run_laea_case(inputs, work);
+    run_color_to_normal_case(inputs, work);
+    run_heightmap_to_normal_case(inputs, work);
+    run_normal_to_roughness_case(inputs, work);
 
     TexCore_Shutdown();
 

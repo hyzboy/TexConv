@@ -221,6 +221,8 @@ static int run_cube(const std::vector<std::wstring> &inputs,
                     bool gen_mipmaps,
                     bool ibl,
                     const char *ibl_format,
+                    bool octahedral,
+                    bool lambert_azimuthal,
                     const char *provider)
 {
     std::vector<std::wstring> faces;
@@ -308,7 +310,7 @@ static int run_cube(const std::vector<std::wstring> &inputs,
 
         ++group_index;
 
-        // 输出名:/out: 优先(单组);否则公共前缀 + .TexCube
+        // 输出名:/out: 优先(单组);否则公共前缀 + 对应扩展名
         // (公共前缀为空——如 px/nx/py 各自独立命名——退用目录名)
         std::wstring output;
 
@@ -330,7 +332,7 @@ static int run_cube(const std::vector<std::wstring> &inputs,
             output = g.dir + L"\\" + base;
         }
 
-        output += L".TexCube";
+        output += (octahedral || lambert_azimuthal) ? L".Tex2D" : L".TexCube";
 
         // 面通道数 → 目标格式(显式槽位优先,否则内核默认)
         TexImageInfo info{};
@@ -359,7 +361,13 @@ static int run_cube(const std::vector<std::wstring> &inputs,
 
         printf("output: %ls\n", output.c_str());
 
-        if(TexCore_RunCubeJob(&cube, nullptr, nullptr) != TEX_OK)
+        const int rc = octahedral
+            ? TexCore_RunCubeToOctaJob(&cube, nullptr, nullptr)
+            : lambert_azimuthal
+                ? TexCore_RunCubeToLambertAzimuthalJob(&cube, nullptr, nullptr)
+                : TexCore_RunCubeJob(&cube, nullptr, nullptr);
+
+        if(rc != TEX_OK)
         {
             printf("[CUBE] group %d convert failed.\n", group_index);
             exit_code = 1;
@@ -377,15 +385,20 @@ int wmain(int argc, wchar_t **argv)
     if(argc <= 1)
     {
         printf( "Command format:\n"
-                "\tTexConv [/AMD|Intel] [/R:][/RG:][/RGB:][/RGBA:] [/normal] [/ColorKey:rrggbb] [/s] [/mip] [/gray] [/discard_alpha] [/DF[:threshold]] [/out:<new_name_without_ext>] <pathname or filename>\n"
+                "\tTexConv [/AMD|Intel] [/R:][/RG:][/RGB:][/RGBA:] [/normal] [/height2normal] [/heightmap2normal] [/normal2roughness] [/ColorKey:rrggbb] [/s] [/mip] [/gray] [/discard_alpha] [/DF[:threshold]] [/out:<new_name_without_ext>] <pathname or filename>\n"
                 "\n"
                 "Params:\n"
                 "\t/R: /RG: /RGB: /RGBA: : target compressed format for 1/2/3/4-channel source (e.g. /RGB:BC5)\n"
                 "\t/normal : normal map mode - always store as 2-channel BC5 (XY); Z is rebuilt in the shader\n"
+                "\t/height2normal : generate tangent-space XY normals from color luminance with a Sobel filter; output BC5\n"
+                "\t/heightmap2normal : generate tangent-space XY normals from a single-channel heightmap; output BC5\n"
+                "\t/normal2roughness : estimate a scalar roughness map from local normal direction variation; default BC4\n"
                 "\t/s : proc sub-directory\n"
                 "\t/mip : generate mipmaps\n"
                 "\t/cube : combine 6 face images into a .TexCube (pass 6 files or a directory)\n"
-                "\t          /ibl[:fmt] : also bake <name>_irradiance.TexCube and <name>_prefilter.TexCube\n"
+                "\t          /octa : output a square 2x-face-width Octahedral Mapping .Tex2D instead\n"
+                "\t          /laea : output the +Z sky hemisphere as a Lambert equal-area .Tex2D\n"
+                "\t          /ibl[:fmt] : also bake Irradiance + Prefilter; with /octa both use Octahedral .Tex2D\n"
                 "\t                       fmt = BC6H(HDR,default) | BC7(LDR,RGB8 source) | RGBA16F | RGBA8\n"
                 "\t/gray: convert to grayscale\n"
                 "\t/DF[:threshold] : generate distance field then save\n"
@@ -408,6 +421,9 @@ int wmain(int argc, wchar_t **argv)
     params.force_grayscale = cp.Contains(L"/gray");
     params.discard_alpha   = cp.Contains(L"/discard_alpha");
     params.normal_map      = cp.Contains(L"/normal");
+    params.generate_normal_map = cp.Contains(L"/height2normal");
+    params.generate_normal_from_heightmap = cp.Contains(L"/heightmap2normal");
+    params.generate_roughness_map = cp.Contains(L"/normal2roughness");
 
     // 距离场模式:/DF 开启;/DF:threshold 指定内外判定阈值(默认 128)
     params.df_mode = cp.Contains(L"/DF");
@@ -505,7 +521,8 @@ int wmain(int argc, wchar_t **argv)
     {
         const char *nm;
 
-        if(params.normal_map)
+        if(params.normal_map || params.generate_normal_map
+         || params.generate_normal_from_heightmap)
             nm = "BC5";
         else if(params.slot_format[i])
             nm = TexFormat_Get(params.slot_format[i])->name;
@@ -520,6 +537,14 @@ int wmain(int argc, wchar_t **argv)
     // Cubemap 模式:/cube(输入为 6 个面文件或 1 个目录)
     if(cp.Contains(L"/cube"))
     {
+        if(params.generate_normal_map || params.generate_normal_from_heightmap
+         || params.generate_roughness_map)
+        {
+            printf("[CUBE] normal conversion options only support 2D image inputs.\n");
+            TexCore_Shutdown();
+            return 1;
+        }
+
         std::vector<std::wstring> inputs;
 
         for(int i = 1; i < argc; i++)
@@ -549,10 +574,29 @@ int wmain(int argc, wchar_t **argv)
             }
         }
 
+        const bool octahedral = cp.Contains(L"/octa");
+        const bool lambert_azimuthal = cp.Contains(L"/laea");
+
+        if(octahedral && lambert_azimuthal)
+        {
+            printf("[CUBE] /octa and /laea are mutually exclusive.\n");
+            TexCore_Shutdown();
+            return 1;
+        }
+
+        if(lambert_azimuthal && cp.Contains(L"/ibl"))
+        {
+            printf("[CUBE] /laea cannot be combined with /ibl.\n");
+            TexCore_Shutdown();
+            return 1;
+        }
+
         const int rc = run_cube(inputs, params.slot_format, params,
                                 (has_out ? out_base : nullptr),
                                 params.gen_mipmaps, cp.Contains(L"/ibl"),
                                 (ibl_fmt_utf8[0] ? ibl_fmt_utf8 : nullptr),
+                                octahedral,
+                                lambert_azimuthal,
                                 provider);
 
         TexCore_Shutdown();

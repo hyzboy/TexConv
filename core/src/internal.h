@@ -43,7 +43,15 @@ namespace texcore
     // ---------------------------------------------------------------- 流水线
 
     int RunJobImpl(const TexJobParams *params, TexProgressFn progress, void *user);
-    int RunCubeJobImpl(const TexCubeJobParams *params, TexProgressFn progress, void *user);
+    enum class CubeOutputProjection
+    {
+        Cube,
+        Octahedral,
+        LambertAzimuthal,
+    };
+
+    int RunCubeJobImpl(const TexCubeJobParams *params, TexProgressFn progress, void *user,
+                       CubeOutputProjection projection);
 
     // ── IBL Bake ─────────────────────────────────────────────────────────
 

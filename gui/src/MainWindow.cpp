@@ -4,6 +4,7 @@
 
 #include <QCheckBox>
 #include <QComboBox>
+#include <QActionGroup>
 #include <QDragEnterEvent>
 #include <QFileDialog>
 #include <QSpinBox>
@@ -85,7 +86,7 @@ void MainWindow::BuildUi()
     // ---- 批次级设置行(全部转换选项均为逐文件,见右键菜单) ----
     auto options = new QHBoxLayout;
 
-    auto mode_hint = new QLabel(QStringLiteral("全部选项逐文件配置:选中行右键批量设置(法线/单通道按文件名自动识别)"), this);
+    auto mode_hint = new QLabel(QStringLiteral("全部选项逐文件配置:选中行右键批量设置(Cubemap 可选输出投影)"), this);
 
     auto outdir_label = new QLabel(QStringLiteral("输出:"), this);
     outdir_edit_ = new QLineEdit(this);
@@ -196,12 +197,24 @@ void MainWindow::ApplyCommandLineOptions(const QStringList &args)
         else if(a == QStringLiteral("--gray"))    model_->SetFilesGrayscale(model_->AllRowIndexes(), true);
         else if(a == QStringLiteral("--discard")) model_->SetFilesDiscardAlpha(model_->AllRowIndexes(), true);
         else if(a == QStringLiteral("--normal"))  model_->SetFilesNormal(model_->AllRowIndexes(), true);
+        else if(a == QStringLiteral("--height2normal"))
+            model_->SetFilesGenerateNormal(model_->AllRowIndexes(), true);
+        else if(a == QStringLiteral("--heightmap2normal"))
+            model_->SetFilesGenerateNormalFromHeightmap(model_->AllRowIndexes(), true);
+        else if(a == QStringLiteral("--normal2roughness"))
+            model_->SetFilesGenerateRoughness(model_->AllRowIndexes(), true);
         else if(a == QStringLiteral("--single"))  model_->SetFilesSingleChannel(model_->AllRowIndexes(), true);
         else if(a == QStringLiteral("--df"))      model_->SetFilesDF(model_->AllRowIndexes(), true);
         else if(a.startsWith(QStringLiteral("--df-threshold:")))
             model_->SetFilesDFThreshold(model_->AllRowIndexes(), a.mid(14).toInt());
         else if(a.startsWith(QStringLiteral("--provider:")))
             model_->SetFilesProvider(model_->AllRowIndexes(), a.mid(11));
+        else if(a == QStringLiteral("--cube-output:cube"))
+            model_->SetFilesCubeProjection(model_->AllRowIndexes(), CubeProjection::Cubemap);
+        else if(a == QStringLiteral("--cube-output:octa"))
+            model_->SetFilesCubeProjection(model_->AllRowIndexes(), CubeProjection::Octahedral);
+        else if(a == QStringLiteral("--cube-output:laea"))
+            model_->SetFilesCubeProjection(model_->AllRowIndexes(), CubeProjection::LambertAzimuthal);
         else if(a.startsWith(QStringLiteral("--outdir:")))
             outdir_edit_->setText(a.mid(9));
     }
@@ -427,9 +440,13 @@ void MainWindow::OnConvert()
         job.gen_mipmaps    = desc.gen_mipmaps;
         job.ibl_mode       = desc.ibl_mode;
         job.ibl_format     = desc.ibl_format;
+        job.cube_projection = desc.cube_projection;
         job.force_grayscale = desc.force_grayscale;
         job.discard_alpha  = desc.discard_alpha;
         job.normal_map     = desc.normal_map;
+        job.generate_normal_map = desc.generate_normal_map;
+        job.generate_normal_from_heightmap = desc.generate_normal_from_heightmap;
+        job.generate_roughness_map = desc.generate_roughness_map;
         job.df_mode        = desc.df_mode;
         job.df_threshold   = desc.df_threshold;
         job.provider       = desc.provider;
@@ -471,7 +488,16 @@ void MainWindow::OnContextMenu(const QPoint &pos)
 
     // 参与"交集计算"的行:检测通过的行
     QModelIndexList ready_rows;
-    bool any_normal = false, all_normal = false;
+    bool all_normal = false;
+    bool all_generate_normal = false;
+    bool has_2d_rows = false, generate_first = true;
+    bool all_heightmap_normal = false;
+    bool heightmap_first = true, has_heightmap_inputs = false;
+    QModelIndexList heightmap_rows;
+    bool all_generate_roughness = false;
+    bool roughness_first = true;
+    bool has_roughness_inputs = false;
+    QModelIndexList roughness_rows;
     bool any_df = false, all_df = false;
     QStringList allowed;                    // 选中行有效通道数下可选格式的交集
 
@@ -487,10 +513,38 @@ void MainWindow::OnContextMenu(const QPoint &pos)
 
             ready_rows.append(idx);
 
-            any_normal |= item.normal_map;
             any_df     |= item.df_mode;
-            all_normal  = first ? item.normal_map : (all_normal && item.normal_map);
+            all_normal  = first ? (item.normal_map && !item.generate_normal_map
+                                   && !item.generate_normal_from_heightmap)
+                                : (all_normal && item.normal_map && !item.generate_normal_map
+                                   && !item.generate_normal_from_heightmap);
             all_df      = first ? item.df_mode     : (all_df && item.df_mode);
+
+            if(!item.is_cube)
+            {
+                has_2d_rows = true;
+                all_generate_normal = generate_first ? item.generate_normal_map
+                                                     : (all_generate_normal && item.generate_normal_map);
+                generate_first = false;
+                if(item.channels == 1)
+                {
+                    has_heightmap_inputs = true;
+                    heightmap_rows.append(idx);
+                    all_heightmap_normal = heightmap_first
+                        ? item.generate_normal_from_heightmap
+                        : (all_heightmap_normal && item.generate_normal_from_heightmap);
+                    heightmap_first = false;
+                }
+                if(item.channels >= 2 && item.channels <= 4)
+                {
+                    has_roughness_inputs = true;
+                    roughness_rows.append(idx);
+                    all_generate_roughness = roughness_first ? item.generate_roughness_map
+                                                             : (all_generate_roughness
+                                                                && item.generate_roughness_map);
+                    roughness_first = false;
+                }
+            }
 
             const QStringList af = coreapi::AllowedFormats(model_->EffectiveChannelsAt(idx.row()));
 
@@ -563,6 +617,39 @@ void MainWindow::OnContextMenu(const QPoint &pos)
         model_->SetFilesNormal(ready_rows, !all_normal);
     });
 
+    QAction *generate_normal_action = menu.addAction(QStringLiteral("从颜色纹理生成法线(BC5)"));
+    generate_normal_action->setCheckable(true);
+    generate_normal_action->setChecked(has_2d_rows && all_generate_normal);
+    generate_normal_action->setEnabled(has_2d_rows);
+    generate_normal_action->setToolTip(QStringLiteral("将颜色亮度作为高度,用 Sobel 梯度生成切线空间 XY 法线"));
+    connect(generate_normal_action, &QAction::triggered, this,
+            [this, ready_rows, all_generate_normal](bool)
+    {
+        model_->SetFilesGenerateNormal(ready_rows, !all_generate_normal);
+    });
+
+    QAction *heightmap_normal_action = menu.addAction(QStringLiteral("高度图转法线(BC5)"));
+    heightmap_normal_action->setCheckable(true);
+    heightmap_normal_action->setChecked(has_heightmap_inputs && all_heightmap_normal);
+    heightmap_normal_action->setEnabled(has_heightmap_inputs);
+    heightmap_normal_action->setToolTip(QStringLiteral("将单通道高度图经 Sobel 梯度转换为切线空间 XY 法线"));
+    connect(heightmap_normal_action, &QAction::triggered, this,
+            [this, heightmap_rows, all_heightmap_normal](bool)
+    {
+        model_->SetFilesGenerateNormalFromHeightmap(heightmap_rows, !all_heightmap_normal);
+    });
+
+    QAction *generate_roughness_action = menu.addAction(QStringLiteral("法线贴图转粗糙度(BC4 默认)"));
+    generate_roughness_action->setCheckable(true);
+    generate_roughness_action->setChecked(has_roughness_inputs && all_generate_roughness);
+    generate_roughness_action->setEnabled(has_roughness_inputs);
+    generate_roughness_action->setToolTip(QStringLiteral("依据法线邻域方向变化估算粗糙度；支持 RG/RGB/RGBA 法线贴图"));
+    connect(generate_roughness_action, &QAction::triggered, this,
+            [this, roughness_rows, all_generate_roughness](bool)
+    {
+        model_->SetFilesGenerateRoughness(roughness_rows, !all_generate_roughness);
+    });
+
     QAction *df_action = menu.addAction(QStringLiteral("距离场"));
     df_action->setCheckable(true);
     df_action->setChecked(all_df);
@@ -610,13 +697,68 @@ void MainWindow::OnContextMenu(const QPoint &pos)
         }
     }
 
-    QAction *ibl_action = menu.addAction(QStringLiteral("生成 IBL (Irradiance + Prefiltered)"));
+    QAction *ibl_action = menu.addAction(QStringLiteral("生成 IBL (Irradiance + Prefiltered；Octahedral 模式输出 .Tex2D)"));
     ibl_action->setCheckable(true);
     ibl_action->setChecked(all_ibl);
     connect(ibl_action, &QAction::triggered, this, [this, selected, all_ibl](bool)
     {
         model_->SetFilesIBLMode(selected, all_ibl ? 0 : 1);
     });
+
+    // ---- Cubemap 输出投影(仅对已就绪的 Cubemap 行生效)----
+    QModelIndexList ready_cube_rows;
+    CubeProjection current_projection = CubeProjection::Cubemap;
+    bool projection_first = true;
+    bool projection_uniform = true;
+
+    for(const QModelIndex &idx : selected)
+    {
+        const auto &item = model_->At(idx.row());
+
+        if(item.state != TexFileModel::Ready || !item.is_cube)
+            continue;
+
+        ready_cube_rows.append(idx);
+
+        if(projection_first)
+        {
+            current_projection = item.cube_projection;
+            projection_first = false;
+        }
+        else if(item.cube_projection != current_projection)
+        {
+            projection_uniform = false;
+        }
+    }
+
+    QMenu *projection_menu = menu.addMenu(QStringLiteral("Cubemap 输出"));
+    projection_menu->setEnabled(!ready_cube_rows.isEmpty());
+    QActionGroup *projection_group = new QActionGroup(projection_menu);
+    projection_group->setExclusive(true);
+
+    const struct ProjectionEntry
+    {
+        const char *label;
+        CubeProjection projection;
+    } projection_entries[] =
+    {
+        {"Cubemap (.TexCube)", CubeProjection::Cubemap},
+        {"Octahedral Mapping (.Tex2D)", CubeProjection::Octahedral},
+        {"Lambert 等面积天空半球 (.Tex2D)", CubeProjection::LambertAzimuthal},
+    };
+
+    for(const ProjectionEntry &entry : projection_entries)
+    {
+        QAction *action = projection_menu->addAction(QString::fromUtf8(entry.label));
+        action->setCheckable(true);
+        action->setChecked(projection_uniform && current_projection == entry.projection);
+        projection_group->addAction(action);
+
+        connect(action, &QAction::triggered, this, [this, ready_cube_rows, entry](bool)
+        {
+            model_->SetFilesCubeProjection(ready_cube_rows, entry.projection);
+        });
+    }
 
     // ---- IBL 输出格式(逐文件;仅生成 IBL 时生效)----
     {

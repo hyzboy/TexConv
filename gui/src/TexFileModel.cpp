@@ -65,7 +65,14 @@ namespace
         if(item.single_channel) flags << QStringLiteral("单通道");
         if(item.force_grayscale) flags << QStringLiteral("灰度");
         if(item.discard_alpha)  flags << QStringLiteral("去α");
-        if(item.normal_map)     flags << QStringLiteral("法线");
+        if(item.generate_normal_map)
+            flags << QStringLiteral("颜色转法线");
+        else if(item.generate_normal_from_heightmap)
+            flags << QStringLiteral("高度图转法线");
+        else if(item.generate_roughness_map)
+            flags << QStringLiteral("法线转粗糙度");
+        else if(item.normal_map)
+            flags << QStringLiteral("法线BC5");
 
         if(item.df_mode)
             flags << QStringLiteral("距离场(%1)").arg(item.df_threshold);
@@ -74,6 +81,14 @@ namespace
             flags << (item.ibl_format.isEmpty()
                         ? QStringLiteral("IBL")
                         : QStringLiteral("IBL:%1").arg(item.ibl_format));
+
+        if(item.is_cube)
+        {
+            if(item.cube_projection == CubeProjection::Octahedral)
+                flags << QStringLiteral("Octahedral");
+            else if(item.cube_projection == CubeProjection::LambertAzimuthal)
+                flags << QStringLiteral("Lambert 天空");
+        }
 
         if(!item.provider.isEmpty())
             flags << item.provider;
@@ -334,7 +349,8 @@ QVariant TexFileModel::data(const QModelIndex &index, int role) const
         case StateRole:             return int(item.state);
         case PathRole:              return item.path;
         case EffectiveChannelsRole: return EffectiveChannels(item);
-        case NormalLockedRole:      return item.normal_map;
+        case NormalLockedRole:          return item.normal_map || item.generate_normal_map
+                                                || item.generate_normal_from_heightmap;
     }
 
     return QVariant();
@@ -588,7 +604,8 @@ void TexFileModel::Clear()
 QString TexFileModel::DeriveTarget(const Item &item) const
 {
     return coreapi::DefaultSlotFormat(EffectiveChannels(item),
-                                      item.normal_map, item.df_mode);
+                                      item.normal_map || item.generate_normal_map
+                                          || item.generate_normal_from_heightmap, item.df_mode);
 }
 
 /// 对齐内核 ConvertImage 的预处理顺序:
@@ -599,6 +616,12 @@ int TexFileModel::EffectiveChannels(const Item &item) const
 {
     if(item.channels < 1)
         return 0;
+
+    if(item.generate_normal_map || item.generate_normal_from_heightmap)
+        return 2;
+
+    if(item.generate_roughness_map)
+        return 1;
 
     int ch = item.channels;
 
@@ -699,7 +722,9 @@ void TexFileModel::SetConvertDone(int row, qint64 output_size)
 
     item.result_text = QStringLiteral("%1 -> %2 (%3 字节)")
                            .arg(item.target_format,
-                                QFileInfo(item.path).completeBaseName() + ".Tex2D")
+                                QFileInfo(item.path).completeBaseName()
+                                    + (item.is_cube && item.cube_projection == CubeProjection::Cubemap
+                                           ? QStringLiteral(".TexCube") : QStringLiteral(".Tex2D")))
                            .arg(output_size);
 
     RefreshItem(row);
@@ -759,6 +784,16 @@ void TexFileModel::SetFilesGrayscale(const QModelIndexList &rows, bool on)
 
         if(item.is_cube)continue;
 
+        if(on && (item.generate_normal_map || item.generate_normal_from_heightmap))
+        {
+            item.generate_normal_map = false;
+            item.generate_normal_from_heightmap = false;
+            item.normal_map = false;
+        }
+
+        if(on)
+            item.generate_roughness_map = false;
+
         item.force_grayscale = on;
         item.target_format = DeriveTarget(item);    // 通道数可能变化,重推默认
 
@@ -779,6 +814,16 @@ void TexFileModel::SetFilesDiscardAlpha(const QModelIndexList &rows, bool on)
         Item &item = items_[size_t(idx.row())];
 
         if(item.is_cube)continue;
+
+        if(on && (item.generate_normal_map || item.generate_normal_from_heightmap))
+        {
+            item.generate_normal_map = false;
+            item.generate_normal_from_heightmap = false;
+            item.normal_map = false;
+        }
+
+        if(on)
+            item.generate_roughness_map = false;
 
         item.discard_alpha = on;
         item.target_format = DeriveTarget(item);    // 通道数可能变化,重推默认
@@ -809,7 +854,34 @@ void TexFileModel::SetFilesIBLMode(const QModelIndexList &rows, int mode)
     for(const QModelIndex &idx : rows)
     {
         if(!idx.isValid() || idx.row() >= int(items_.size()))continue;
-        items_[size_t(idx.row())].ibl_mode = mode;
+        Item &item = items_[size_t(idx.row())];
+        item.ibl_mode = mode;
+
+        if(item.is_cube && mode
+         && item.cube_projection == CubeProjection::LambertAzimuthal)
+            item.cube_projection = CubeProjection::Cubemap;
+
+        Q_EMIT dataChanged(index(idx.row(), 0), index(idx.row(), ColCount - 1));
+    }
+}
+
+void TexFileModel::SetFilesCubeProjection(const QModelIndexList &rows, CubeProjection projection)
+{
+    if(locked_)return;
+    for(const QModelIndex &idx : rows)
+    {
+        if(!idx.isValid() || idx.row() >= int(items_.size()))continue;
+
+        Item &item = items_[size_t(idx.row())];
+
+        if(!item.is_cube)
+            continue;
+
+        item.cube_projection = projection;
+
+        if(projection == CubeProjection::LambertAzimuthal)
+            item.ibl_mode = 0;
+
         Q_EMIT dataChanged(index(idx.row(), 0), index(idx.row(), ColCount - 1));
     }
 }
@@ -839,9 +911,111 @@ void TexFileModel::SetFilesNormal(const QModelIndexList &rows, bool on)
 
         if(item.is_cube)continue;
 
+        item.generate_normal_map = false;
+        item.generate_normal_from_heightmap = false;
+        item.generate_roughness_map = false;
         item.normal_map = on;
         item.target_format = DeriveTarget(item);    // 开→BC5;关→重推默认
 
+        RefreshItem(idx.row());
+    }
+}
+
+void TexFileModel::SetFilesGenerateNormal(const QModelIndexList &rows, bool on)
+{
+    if(locked_)
+        return;
+
+    for(const QModelIndex &idx : rows)
+    {
+        if(!idx.isValid() || idx.row() >= int(items_.size()))
+            continue;
+
+        Item &item = items_[size_t(idx.row())];
+
+        if(item.is_cube)
+            continue;
+
+        item.generate_normal_map = on;
+        item.generate_normal_from_heightmap = false;
+        item.generate_roughness_map = false;
+        item.normal_map = on;
+
+        if(on)
+        {
+            item.force_grayscale = false;
+            item.discard_alpha = false;
+            item.single_channel = false;
+            item.df_mode = false;
+        }
+
+        item.target_format = DeriveTarget(item);
+        RefreshItem(idx.row());
+    }
+}
+
+void TexFileModel::SetFilesGenerateNormalFromHeightmap(const QModelIndexList &rows, bool on)
+{
+    if(locked_)
+        return;
+
+    for(const QModelIndex &idx : rows)
+    {
+        if(!idx.isValid() || idx.row() >= int(items_.size()))
+            continue;
+
+        Item &item = items_[size_t(idx.row())];
+
+        if(item.is_cube || (item.channels != 0 && item.channels != 1))
+            continue;
+
+        item.generate_normal_from_heightmap = on;
+        item.generate_normal_map = false;
+        item.generate_roughness_map = false;
+        item.normal_map = on;
+
+        if(on)
+        {
+            item.force_grayscale = false;
+            item.discard_alpha = false;
+            item.single_channel = false;
+            item.df_mode = false;
+        }
+
+        item.target_format = DeriveTarget(item);
+        RefreshItem(idx.row());
+    }
+}
+
+void TexFileModel::SetFilesGenerateRoughness(const QModelIndexList &rows, bool on)
+{
+    if(locked_)
+        return;
+
+    for(const QModelIndex &idx : rows)
+    {
+        if(!idx.isValid() || idx.row() >= int(items_.size()))
+            continue;
+
+        Item &item = items_[size_t(idx.row())];
+
+        if(item.is_cube || item.channels < 2 || item.channels > 4)
+            continue;
+
+        item.generate_roughness_map = on;
+        item.generate_normal_map = false;
+        item.generate_normal_from_heightmap = false;
+        item.normal_map = false;
+
+        if(on)
+        {
+            item.force_grayscale = false;
+            item.discard_alpha = false;
+            item.single_channel = false;
+            item.df_mode = false;
+        }
+
+        item.target_format = DeriveTarget(item);
         RefreshItem(idx.row());
     }
 }
@@ -859,6 +1033,16 @@ void TexFileModel::SetFilesSingleChannel(const QModelIndexList &rows, bool on)
         Item &item = items_[size_t(idx.row())];
 
         if(item.is_cube)continue;
+
+        if(on && (item.generate_normal_map || item.generate_normal_from_heightmap))
+        {
+            item.generate_normal_map = false;
+            item.generate_normal_from_heightmap = false;
+            item.normal_map = false;
+        }
+
+        if(on)
+            item.generate_roughness_map = false;
 
         item.single_channel = on;
         item.target_format = DeriveTarget(item);    // 有效通道数变为 1,重推默认(BC4)
@@ -880,6 +1064,16 @@ void TexFileModel::SetFilesDF(const QModelIndexList &rows, bool on)
         Item &item = items_[size_t(idx.row())];
 
         if(item.is_cube)continue;
+
+        if(on && (item.generate_normal_map || item.generate_normal_from_heightmap))
+        {
+            item.generate_normal_map = false;
+            item.generate_normal_from_heightmap = false;
+            item.normal_map = false;
+        }
+
+        if(on)
+            item.generate_roughness_map = false;
 
         item.df_mode = on;
         item.target_format = DeriveTarget(item);    // 开→按 1 通道重推;关→恢复
@@ -957,9 +1151,13 @@ std::vector<TexFileModel::JobDesc> TexFileModel::CollectReadyJobs() const
         job.gen_mipmaps    = item.gen_mipmaps;
         job.ibl_mode       = item.ibl_mode;
         job.ibl_format     = item.ibl_format;
+        job.cube_projection = item.cube_projection;
         job.force_grayscale = item.force_grayscale;
         job.discard_alpha  = item.discard_alpha;
         job.normal_map     = item.normal_map;
+        job.generate_normal_map = item.generate_normal_map;
+        job.generate_normal_from_heightmap = item.generate_normal_from_heightmap;
+        job.generate_roughness_map = item.generate_roughness_map;
         job.single_channel = item.single_channel;
         job.df_mode        = item.df_mode;
         job.df_threshold   = item.df_threshold;

@@ -9,12 +9,23 @@
 #include "texconv/tex_distance_field.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstring>
 #include <filesystem>
+#include <limits>
 
 namespace texcore
 {
     static const char *cube_default_slot_name[4] = {"BC4", "BC5", "BC7", "BC7"};
+    static constexpr float cube_face_axes[6][3][3] =
+    {
+        {{  1, 0, 0},{ 0, 0,-1},{ 0,-1, 0}},    // +X
+        {{ -1, 0, 0},{ 0, 0, 1},{ 0,-1, 0}},    // -X
+        {{  0, 1, 0},{ 1, 0, 0},{ 0, 0, 1}},    // +Y
+        {{  0,-1, 0},{ 1, 0, 0},{ 0, 0,-1}},    // -Y
+        {{  0, 0, 1},{ 1, 0, 0},{ 0,-1, 0}},    // +Z
+        {{  0, 0,-1},{-1, 0, 0},{ 0,-1, 0}},    // -Z
+    };
 
     namespace
     {
@@ -28,6 +39,181 @@ namespace texcore
                 return BuildCompressedLevel(face, provider, fmt, layout, pt, payload);
 
             return BuildUncompressedLevel(face, fmt, layout, pt, payload);
+        }
+
+        /// 投影旋转归一化后的 6 面立方体为正方形 2D 投影图像。
+        bool BuildProjectedImage(TexImage faces[6], uint32_t width, uint32_t height,
+                                 int channels, int layout, int pixel_type,
+                                 CubeOutputProjection projection, TexImage &output)
+        {
+            if(width == 0 || height == 0)
+                return false;
+
+            const uint32_t output_size = width * 2;
+            const size_t bytes_per_pixel = size_t(channels) * size_t(TexPixelTypeBytes(pixel_type));
+
+            if(width != height || width > (std::numeric_limits<uint32_t>::max)() / 2
+             || bytes_per_pixel == 0
+             || size_t(output_size) > (std::numeric_limits<size_t>::max)() / output_size
+             || size_t(output_size) * output_size
+                > (std::numeric_limits<size_t>::max)() / bytes_per_pixel)
+                return false;
+
+            std::vector<std::vector<uint8_t>> source(6);
+
+            for(int i = 0; i < 6; i++)
+            {
+                const size_t size = TexImage_GetBufferSize(faces[i], layout, pixel_type);
+                source[i].resize(size);
+
+                if(size == 0 || TexImage_GetData(faces[i], source[i].data(), size,
+                                                 layout, pixel_type) != TEX_OK)
+                    return false;
+            }
+
+            const size_t output_bytes = size_t(output_size) * output_size * bytes_per_pixel;
+            std::vector<uint8_t> pixels(output_bytes);
+
+            for(uint32_t py = 0; py < output_size; py++)
+            for(uint32_t px = 0; px < output_size; px++)
+            {
+                float x = 2.0f * (float(px) + 0.5f) / output_size - 1.0f;
+                float y = 2.0f * (float(py) + 0.5f) / output_size - 1.0f;
+                float z = 0.0f;
+
+                if(projection == CubeOutputProjection::LambertAzimuthal)
+                {
+                    const float radius_squared = x * x + y * y;
+
+                    if(radius_squared > 1.0f)
+                        continue;
+
+                    const float horizontal_scale = std::sqrt((std::max)(0.0f, 2.0f - radius_squared));
+                    x *= horizontal_scale;
+                    y *= horizontal_scale;
+                    z = 1.0f - radius_squared;
+                }
+                else
+                {
+                    z = 1.0f - std::fabs(x) - std::fabs(y);
+
+                    if(z < 0.0f)
+                    {
+                        const float old_x = x;
+                        x = (1.0f - std::fabs(y)) * (old_x >= 0.0f ? 1.0f : -1.0f);
+                        y = (1.0f - std::fabs(old_x)) * (y >= 0.0f ? 1.0f : -1.0f);
+                    }
+                }
+
+                const float abs_dir[3] = {std::fabs(x), std::fabs(y), std::fabs(z)};
+                int face;
+
+                if(abs_dir[0] >= abs_dir[1] && abs_dir[0] >= abs_dir[2])
+                    face = x >= 0.0f ? 0 : 1;
+                else if(abs_dir[1] >= abs_dir[2])
+                    face = y >= 0.0f ? 2 : 3;
+                else
+                    face = z >= 0.0f ? 4 : 5;
+
+                const float direction[3] = {x, y, z};
+                const float denominator =
+                    direction[0] * cube_face_axes[face][0][0]
+                  + direction[1] * cube_face_axes[face][0][1]
+                  + direction[2] * cube_face_axes[face][0][2];
+                const float s =
+                    (direction[0] * cube_face_axes[face][1][0]
+                   + direction[1] * cube_face_axes[face][1][1]
+                   + direction[2] * cube_face_axes[face][1][2]) / denominator;
+                const float t =
+                    (direction[0] * cube_face_axes[face][2][0]
+                   + direction[1] * cube_face_axes[face][2][1]
+                   + direction[2] * cube_face_axes[face][2][2]) / denominator;
+                const uint32_t sx = (std::min)(uint32_t((std::clamp(s, -1.0f, 1.0f) + 1.0f)
+                                                        * 0.5f * width), width - 1);
+                const uint32_t sy = (std::min)(uint32_t((std::clamp(t, -1.0f, 1.0f) + 1.0f)
+                                                        * 0.5f * height), height - 1);
+
+                const size_t dst_offset = (size_t(py) * output_size + px) * bytes_per_pixel;
+                const size_t src_offset = (size_t(sy) * width + sx) * bytes_per_pixel;
+                memcpy(pixels.data() + dst_offset, source[face].data() + src_offset,
+                       bytes_per_pixel);
+            }
+
+            return TexImage_CreateFromData(&output, output_size, output_size,
+                                           channels, pixel_type, pixels.data()) == TEX_OK;
+        }
+
+        bool ProjectFloatCubeToOctahedral(const std::vector<float> src[6],
+                                          uint32_t width, uint32_t height,
+                                          std::vector<float> &output)
+        {
+            if(width == 0 || width != height
+             || width > (std::numeric_limits<uint32_t>::max)() / 2)
+                return false;
+
+            const uint32_t output_size = width * 2;
+            const size_t max_size = (std::numeric_limits<size_t>::max)();
+
+            if(size_t(output_size) > max_size / output_size
+             || size_t(output_size) * output_size > max_size / (4 * sizeof(float)))
+                return false;
+
+            const size_t source_pixel_count = size_t(width) * height;
+
+            for(int face = 0; face < 6; face++)
+                if(src[face].size() != source_pixel_count * 4)
+                    return false;
+
+            output.resize(size_t(output_size) * output_size * 4);
+
+            for(uint32_t py = 0; py < output_size; py++)
+            for(uint32_t px = 0; px < output_size; px++)
+            {
+                float x = 2.0f * (float(px) + 0.5f) / output_size - 1.0f;
+                float y = 2.0f * (float(py) + 0.5f) / output_size - 1.0f;
+                const float z = 1.0f - std::fabs(x) - std::fabs(y);
+
+                if(z < 0.0f)
+                {
+                    const float old_x = x;
+                    x = (1.0f - std::fabs(y)) * (old_x >= 0.0f ? 1.0f : -1.0f);
+                    y = (1.0f - std::fabs(old_x)) * (y >= 0.0f ? 1.0f : -1.0f);
+                }
+
+                const float direction[3] = {x, y, z};
+                const float abs_dir[3] = {std::fabs(x), std::fabs(y), std::fabs(z)};
+                int face;
+
+                if(abs_dir[0] >= abs_dir[1] && abs_dir[0] >= abs_dir[2])
+                    face = x >= 0.0f ? 0 : 1;
+                else if(abs_dir[1] >= abs_dir[2])
+                    face = y >= 0.0f ? 2 : 3;
+                else
+                    face = z >= 0.0f ? 4 : 5;
+
+                const float denominator =
+                    direction[0] * cube_face_axes[face][0][0]
+                  + direction[1] * cube_face_axes[face][0][1]
+                  + direction[2] * cube_face_axes[face][0][2];
+                const float s =
+                    (direction[0] * cube_face_axes[face][1][0]
+                   + direction[1] * cube_face_axes[face][1][1]
+                   + direction[2] * cube_face_axes[face][1][2]) / denominator;
+                const float t =
+                    (direction[0] * cube_face_axes[face][2][0]
+                   + direction[1] * cube_face_axes[face][2][1]
+                   + direction[2] * cube_face_axes[face][2][2]) / denominator;
+                const uint32_t sx = (std::min)(uint32_t((std::clamp(s, -1.0f, 1.0f) + 1.0f)
+                                                        * 0.5f * width), width - 1);
+                const uint32_t sy = (std::min)(uint32_t((std::clamp(t, -1.0f, 1.0f) + 1.0f)
+                                                        * 0.5f * height), height - 1);
+                const size_t dst_offset = (size_t(py) * output_size + px) * 4;
+                const size_t src_offset = (size_t(sy) * width + sx) * 4;
+                memcpy(output.data() + dst_offset, src[face].data() + src_offset,
+                       4 * sizeof(float));
+            }
+
+            return true;
         }
     }//namespace
 
@@ -66,11 +252,16 @@ namespace texcore
                                           std::vector<float>*, uint32_t, uint32_t),
                           const TexEncoderProvider *provider,
                           const char *ibl_format,
+                          bool output_octahedral,
                           TexProgressFn progress, void *user);
 
-    int RunCubeJobImpl(const TexCubeJobParams *params, TexProgressFn progress, void *user)
+    int RunCubeJobImpl(const TexCubeJobParams *params, TexProgressFn progress, void *user,
+                       CubeOutputProjection projection)
     {
         if(!params)
+            return TEX_ERR_PARAM;
+
+        if(projection == CubeOutputProjection::LambertAzimuthal && params->ibl_mode)
             return TEX_ERR_PARAM;
 
         for(int i = 0; i < 6; i++)
@@ -157,24 +348,13 @@ namespace texcore
                 }
             }
 
-            // 每面的 (法线, s+方向, t+方向),与 OpenGL/Vulkan cubemap 约定一致
-            static constexpr float face_axes[6][3][3] =
-            {
-                {{  1, 0, 0},{ 0, 0,-1},{ 0,-1, 0}},    // +X
-                {{ -1, 0, 0},{ 0, 0, 1},{ 0,-1, 0}},    // -X
-                {{  0, 1, 0},{ 1, 0, 0},{ 0, 0, 1}},    // +Y
-                {{  0,-1, 0},{ 1, 0, 0},{ 0, 0,-1}},    // -Y
-                {{  0, 0, 1},{ 1, 0, 0},{ 0,-1, 0}},    // +Z
-                {{  0, 0,-1},{-1, 0, 0},{ 0,-1, 0}},    // -Z
-            };
-
             std::vector<std::vector<uint8_t>> rotated(6);
 
             for(int dst = 0; dst < 6; dst++)
             {
                 rotated[dst].resize(src[0].size());
 
-                const auto &axes = face_axes[dst];
+                const auto &axes = cube_face_axes[dst];
 
                 for(uint32_t py = 0; py < height; py++)
                 for(uint32_t px = 0; px < width;  px++)
@@ -252,6 +432,39 @@ namespace texcore
             TexImage_GetInfo(faces[0], &width, &height, nullptr, &layout, &pt);
         }
 
+        if(projection != CubeOutputProjection::Cube)
+        {
+            if(width != height || width > (std::numeric_limits<uint32_t>::max)() / 2)
+            {
+                CoreLog(TEX_LOG_ERROR, "2D cubemap projections require square cube faces.");
+                for(int i = 0; i < 6; i++)TexImage_Free(faces[i]);
+                return TEX_ERR_UNSUPPORTED;
+            }
+
+            TexImage octahedral = nullptr;
+
+            if(!BuildProjectedImage(faces, width, height, channels, layout, pt,
+                                    projection, octahedral))
+            {
+                CoreLog(TEX_LOG_ERROR, "Cubemap 2D projection failed.");
+                for(int i = 0; i < 6; i++)TexImage_Free(faces[i]);
+                return TEX_ERR_INTERNAL;
+            }
+
+            for(int i = 0; i < 6; i++)
+            {
+                TexImage_Free(faces[i]);
+                faces[i] = nullptr;
+            }
+
+            faces[0] = octahedral;
+            width *= 2;
+            height *= 2;
+            TexImage_GetInfo(faces[0], &width, &height, nullptr, &layout, &pt);
+        }
+
+        const int output_face_count = projection == CubeOutputProjection::Cube ? 6 : 1;
+
         // 3. 目标格式(显式指定或按面通道数取默认槽位)
         const TexPixelFormat *fmt = nullptr;
 
@@ -316,7 +529,7 @@ namespace texcore
         // 面转换到所需布局/类型(压缩:编码器要求;非压缩:按面通道数)
         if(is_compress)
         {
-            for(int i = 0; i < 6; i++)
+            for(int i = 0; i < output_face_count; i++)
                 if(data_layout != layout || data_pt != pt)
                     TexImage_Convert(faces[i], data_layout, data_pt);
         }
@@ -327,7 +540,7 @@ namespace texcore
                 TEX_LAYOUT_Alpha, TEX_LAYOUT_GrayAlpha, TEX_LAYOUT_RGB, TEX_LAYOUT_RGBA
             };
 
-            for(int i = 0; i < 6; i++)
+            for(int i = 0; i < output_face_count; i++)
             {
                 if(TexImage_Convert(faces[i], layout_by_channel[channels - 1], data_pt) != TEX_OK)
                 {
@@ -364,7 +577,7 @@ namespace texcore
             }
         }
 
-        // 6. 输出路径(补 .TexCube 后缀)
+        // 6. 输出路径(补对应容器后缀)
         std::filesystem::path out(params->output_path);
 
         {
@@ -373,8 +586,11 @@ namespace texcore
             for(wchar_t &c : ext)
                 c = (c >= L'A' && c <= L'Z') ? c + 32 : c;
 
-            if(ext != L".texcube")
-                out += L".TexCube";
+            const wchar_t *expected_ext = projection == CubeOutputProjection::Cube
+                ? L".texcube" : L".tex2d";
+
+            if(ext != expected_ext)
+                out += projection == CubeOutputProjection::Cube ? L".TexCube" : L".Tex2D";
         }
 
         const std::wstring output_path = out.wstring();
@@ -389,10 +605,16 @@ namespace texcore
             return TEX_ERR_IO;
         }
 
-        CoreLog(TEX_LOG_INFO, "Convert 6 cube faces to <"
-              + std::filesystem::path(output_path).string() + ">.");
+        const char *description = projection == CubeOutputProjection::Octahedral
+            ? "Convert cube faces to Octahedral Mapping <"
+            : projection == CubeOutputProjection::LambertAzimuthal
+                ? "Convert sky hemisphere to Lambert Azimuthal Equal-Area <"
+                : "Convert 6 cube faces to <";
+        CoreLog(TEX_LOG_INFO, std::string(description)
+                              + std::filesystem::path(output_path).string() + ">.");
 
-        if(!ContainerWriteHeader(f, TEX_VIEW_CUBE)
+        if(!ContainerWriteHeader(f, projection == CubeOutputProjection::Cube
+                                   ? TEX_VIEW_CUBE : TEX_VIEW_2D)
          ||!ContainerWriteSize2D(f, width, height)
          ||!ContainerWriteFormatBlock(f, fmt, miplevel))
         {
@@ -404,14 +626,14 @@ namespace texcore
 
         fflush(f);  // 头部立刻落盘,崩溃残留与 2D 行为一致
 
-        // 8. mip-major 循环:每级 6 面(+X,-X,+Y,-Y,+Z,-Z),每面 8 字节补齐
+        // 8. mip-major 循环;Cubemap 每级 6 面,Octahedral 每级 1 张 2D 图
         uint32_t total = 0;
         const uint32_t min_size = is_compress ? 4 : 1;
         uint32_t cw = width, ch = height;
 
         for(int level = 0; level < miplevel; level++)
         {
-            for(int face = 0; face < 6; face++)
+            for(int face = 0; face < output_face_count; face++)
             {
                 std::vector<uint8_t> payload;
 
@@ -435,7 +657,8 @@ namespace texcore
 
                 total += bytes;
 
-                if(progress && progress(user, float(level * 6 + face + 1) / float(miplevel * 6)))
+                if(progress && progress(user, float(level * output_face_count + face + 1)
+                                               / float(miplevel * output_face_count)))
                 {
                     ContainerClose(f);
                     ContainerDelete(output_path);
@@ -451,7 +674,7 @@ namespace texcore
                 if(cw > min_size)cw >>= 1;
                 if(ch > min_size)ch >>= 1;
 
-                for(int i = 0; i < 6; i++)
+                for(int i = 0; i < output_face_count; i++)
                     TexImage_Resize(faces[i], cw, ch);
             }
         }
@@ -468,14 +691,16 @@ namespace texcore
                                     std::vector<float> d[6], uint32_t dw, uint32_t dh)
                              {
                                  return BakeDiffuseIrradiance(s, sw, sh, d, dw, dh, 256);
-                             }, provider, params->ibl_format, progress, user);
+                             }, provider, params->ibl_format,
+                             projection == CubeOutputProjection::Octahedral, progress, user);
 
             WriteIBLCubeFile(out, L"_prefilter", ibl_src, width, height,
                              [](const std::vector<float> s[6], uint32_t sw, uint32_t sh,
                                     std::vector<float> d[6], uint32_t dw, uint32_t dh)
                              {
                                  return BakeGGXPrefilter(s, sw, sh, d, dw, dh, 0.5f, 256);
-                             }, provider, params->ibl_format, progress, user);
+                             }, provider, params->ibl_format,
+                             projection == CubeOutputProjection::Octahedral, progress, user);
         }
 
         for(int i = 0; i < 6; i++)TexImage_Free(faces[i]);
@@ -495,6 +720,7 @@ namespace texcore
                                           std::vector<float>*, uint32_t, uint32_t),
                           const TexEncoderProvider *provider,
                           const char *ibl_format,
+                          bool output_octahedral,
                           TexProgressFn progress, void *user)
     {
         const uint32_t dst_w = (suffix[1] == L'i') ? 32 : src_w;    // _irradiance=32, _prefilter=src
@@ -589,6 +815,24 @@ namespace texcore
             return;
         }
 
+        uint32_t output_w = dst_w;
+        uint32_t output_h = dst_h;
+        int output_face_count = 6;
+        std::vector<float> octahedral_pixels;
+
+        if(output_octahedral)
+        {
+            if(!ProjectFloatCubeToOctahedral(baked, dst_w, dst_h, octahedral_pixels))
+            {
+                CoreLog(TEX_LOG_ERROR, "IBL Octahedral Mapping requires square cube faces.");
+                return;
+            }
+
+            output_w *= 2;
+            output_h *= 2;
+            output_face_count = 1;
+        }
+
         // float32 → half(简化截断转换,精度对 IBL 天空值足够)
         auto f32_to_f16 = [](float v) -> uint16_t
         {
@@ -611,18 +855,20 @@ namespace texcore
             return uint8_t(v * 255.0f + 0.5f);
         };
 
-        const size_t pixel_count = size_t(dst_w) * dst_h;
+        const size_t pixel_count = size_t(output_w) * output_h;
 
         std::vector<uint16_t> half_faces[6];
         std::vector<uint8_t>  u8_faces[6];
+        const std::vector<float> *quant_source[6] = {};
 
         if(quant_u8)
         {
-            for(int face = 0; face < 6; face++)
+            for(int face = 0; face < output_face_count; face++)
             {
+                quant_source[face] = output_octahedral ? &octahedral_pixels : &baked[face];
                 u8_faces[face].resize(pixel_count * 4);
 
-                const float *fp = baked[face].data();
+                const float *fp = quant_source[face]->data();
                 uint8_t    *up = u8_faces[face].data();
 
                 for(size_t p = 0; p < pixel_count; p++)
@@ -636,11 +882,12 @@ namespace texcore
         }
         else
         {
-            for(int face = 0; face < 6; face++)
+            for(int face = 0; face < output_face_count; face++)
             {
+                quant_source[face] = output_octahedral ? &octahedral_pixels : &baked[face];
                 half_faces[face].resize(pixel_count * 4);
 
-                const float *fp = baked[face].data();
+                const float *fp = quant_source[face]->data();
                 uint16_t   *hp = half_faces[face].data();
 
                 for(size_t p = 0; p < pixel_count; p++)
@@ -657,11 +904,11 @@ namespace texcore
         // 编码器支持 BC6H 且声明接受 RGBA 半精度源 → 压缩,否则未压缩
         // (try_format 已在上面完成解析)
 
-        // 输出路径:<base> 去扩展名 + 后缀 + .TexCube(sky34 → sky34_irradiance.TexCube;
+        // 输出路径:<base> 去扩展名 + 后缀 + 对应容器扩展名。
         // 注意 replace_extension 会在无点前缀时自动补点,得到 "xxx._irradiance" 错误命名)
         std::filesystem::path out = base_path;
         out.replace_extension();
-        out += std::wstring(suffix) + L".TexCube";
+        out += std::wstring(suffix) + (output_octahedral ? L".Tex2D" : L".TexCube");
 
         const std::wstring out_w = out.wstring();
 
@@ -673,8 +920,8 @@ namespace texcore
             return;
         }
 
-        if(!ContainerWriteHeader(f, TEX_VIEW_CUBE)
-         ||!ContainerWriteSize2D(f, dst_w, dst_h)
+        if(!ContainerWriteHeader(f, output_octahedral ? TEX_VIEW_2D : TEX_VIEW_CUBE)
+         ||!ContainerWriteSize2D(f, output_w, output_h)
          ||!ContainerWriteFormatBlock(f, fmt, 1))
         {
             ContainerClose(f);
@@ -684,7 +931,7 @@ namespace texcore
 
         uint32_t total = 0;
 
-        for(int face = 0; face < 6; face++)
+        for(int face = 0; face < output_face_count; face++)
         {
             uint32_t bytes = 0;
 
@@ -697,8 +944,8 @@ namespace texcore
                 req.src            = quant_u8
                                    ? reinterpret_cast<const uint8_t *>(u8_faces[face].data())
                                    : reinterpret_cast<const uint8_t *>(half_faces[face].data());
-                req.width          = dst_w;
-                req.height         = dst_h;
+                req.width          = output_w;
+                req.height         = output_h;
                 req.src_layout     = TEX_LAYOUT_RGBA;
                 req.src_pixel_type = quant_u8 ? TEX_PT_UInt8 : TEX_PT_Float16;
                 req.target_format  = fmt->name;
@@ -741,7 +988,7 @@ namespace texcore
 
             total += bytes;
 
-            if(progress && progress(user, float(face + 1) / 6.0f))
+            if(progress && progress(user, float(face + 1) / float(output_face_count)))
             {
                 ContainerClose(f);
                 ContainerDelete(out_w);
