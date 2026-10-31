@@ -5,14 +5,19 @@ TexConv 是一个高性能的图像和纹理转换工具，支持将各种图像
 ## 功能特性
 
 - 支持多种图像格式输入（PNG, JPG, TGA, HDR, EXR 等）
-- 支持多种纹理压缩格式（BC1-BC7, ASTC, ETC, 等）
+- 支持 BC1–BC7 块压缩（含 BC6H / BC6H_SF），以及 R8–RGBA32F 等未压缩格式
 - 支持 Mipmap 生成
 - 支持 Cubemap 转换、Octahedral Mapping 与 Lambert 等面积天空半球输出
 - 支持根据 2D 颜色纹理亮度生成切线空间法线贴图(BC5)
 - 支持根据单通道高度图生成切线空间法线贴图(BC5)
 - 支持根据 2D 法线贴图的局部方向变化估算粗糙度纹理
 - 支持距离场生成
-- 支持 HDR/EXR 到 PNG 转换
+
+> ⚠️ 平台限制：当前 `core/` 与 `cli/` 实现依赖 Win32 API
+> （`__ImageBase` 模块基址、`WIN32_FIND_DATAW` 目录枚举、`_wfopen_s`/`_fseeki64`、
+> 宽字符路径与 `wmain`），**只能在 Windows + MSVC 下构建**。
+> 仓库中的 `download_linux_ispc.sh` 仅用于在 Linux 上生成 ISPC kernel 目标文件，
+> 并不能让 TexConv 本身在 Linux 上编译。
 
 ## 图像处理库
 
@@ -29,31 +34,21 @@ ImageMagick 是一个活跃维护的图像处理库，提供：
 
 ## 构建说明
 
-### 使用 ImageMagick
+仅支持 **Windows + MSVC**，需要 **C++20**（`core/`、`cli/`、`common/` 使用 `std::filesystem` 等 C++17/20 特性）。
 
-```bash
-# 1. 安装 ImageMagick 开发库
+两种配置方式：
 
-# Windows:
-# 下载并安装 ImageMagick from https://imagemagick.org/script/download.php
-# 确保选择安装开发头文件和库（Magick++）
+1. **从引擎根工程配置**（推荐日常开发）：根 `CMakeLists.txt` 已包含本目录，
+   hgl 目标（`CMCore` 等）已存在时自动链接，无需额外参数。
+2. **独立配置**（发布工具时不构建整个 ULRE）：`if(NOT TARGET CMCore)` 分支会从
+   `${ULRE_ROOT}/build/out/Windows_64_{Debug,Release}` 导入**预编译**的
+   `CMCoreType` / `CMPlatform` / `CMUtil` / `CMCore` 静态库，absl 默认取自
+   `E:/vcpkg/installed/x64-windows`。
+   **前提**：根工程至少构建过一次，且 hgl 静态库的运行时库设置（`/MT` 或 `/MD`）
+   与本工程一致，否则会 `LNK2038`。
 
-# Ubuntu/Debian:
-sudo apt-get install libmagick++-dev
-
-# CentOS/RHEL:
-sudo yum install ImageMagick-c++-devel
-
-# macOS:
-brew install imagemagick
-
-# 2. 构建项目
-mkdir build
-cd build
-cmake ..
-cmake --build .
-```
-
+其余细节见 **DEPLOY.md**（ImageMagick 运行时部署、插件发现、`TexImage.dll` 恒为
+Release 的约束、Qt GUI 的独立部署步骤等）。
 
 ## 模块化架构(2026-09 重构)
 
@@ -113,35 +108,13 @@ TexConv /Intel image.png
 TexConv /RGB:BC1 /RGBA:BC3 image.png
 ```
 
-### HDR2PNG - HDR/EXR 转 PNG
+### Cubemap / Octahedral / IBL（TexConv 内建）
 
 ```bash
-# 将 HDR 或 EXR 文件转换为 PNG
-HDR2PNG input.hdr
+# 将 6 个面转换为 cubemap(.TexCube)
+TexConv /cube /mip /out:output PosX.png NegX.png PosY.png NegY.png PosZ.png NegZ.png
 
-# 输出: input.png
-```
-
-### ComboTexture - 组合纹理
-
-```bash
-# 材质贴图打包（颜色+法线+金属度+粗糙度）
-ComboTexture output MPBR Color.png Normal.png Metallic.png Roughness.png
-
-# 多通道 RGB 打包
-ComboTexture output 4RGB Color1.png Color2.png Color3.png Color4.png
-
-# 双通道颜色+法线打包
-ComboTexture output 2CN Color1.png Normal1.png Color2.png Normal2.png
-```
-
-### CubeMapConv - Cubemap 转换
-
-```bash
-# 将 6 个面转换为 cubemap
-CubeMapConv output.tex PosX.png NegX.png PosY.png NegY.png PosZ.png NegZ.png
-
-# TexConv 将 6 个面转换为正方形 Octahedral Mapping 2D 纹理
+# 转换为正方形 Octahedral Mapping 2D 纹理
 TexConv /cube /octa /mip /out:output PosX.png NegX.png PosY.png NegY.png PosZ.png NegZ.png
 
 # 只取 +Z 天空半球,输出 Lambert Azimuthal Equal-Area 圆盘投影
@@ -155,36 +128,45 @@ TexConv /cube /octa /ibl /mip /out:sky_octa PosX.png NegX.png PosY.png NegY.png 
 圆盘外像素为零。该模式与 `/ibl`、`/octa` 互斥；`/octa /ibl` 会额外生成采用相同
 Octahedral Mapping 的 Irradiance 与 Prefilter `.Tex2D` 文件。
 
-### DFGen - 距离场生成
+`/cube` 也可只给一个目录：目录会被递归扫描，按面文件名分组，凑齐 6 面的组才会转换
+（输出写在输入同目录，`/out:` 在目录模式下无效）。
 
-```bash
-# 从灰度图生成距离场
-DFGen input.png
+## 未参与构建的附加工具
 
-# 从 Alpha 通道生成距离场
-DFGen input.png alpha
-```
+以下工具的历史源码仍保留在工程根目录，但**未加入任何 CMake 目标**，
+因此构建产物中不存在对应可执行文件（见根 `CMakeLists.txt` 的说明注释）：
+
+| 源码 | 原用途 | 现状 |
+|---|---|---|
+| `HDR2PNG.cpp` | HDR/EXR 转 PNG | 未构建；TexConv 只输出 `.Tex2D` / `.TexCube` |
+| `ComboTexture.cpp` | 材质贴图通道打包 | 未构建 |
+| `CubemapConvert.cpp` | 独立 6 面转 cubemap 工具 | 未构建；请改用 `TexConv /cube` |
+| `DistanceFieldGenerater.cpp` | 独立距离场工具 | 未构建；请改用 `TexConv /DF` |
+| `NormalTest.cpp` / `SpheremapNormal.cpp` | 法线/球面贴图试验 | 未构建 |
+
+这些源码需要在迁移到 `TexImage.dll` 之上后才能重新启用，目前保留仅为参考。
 
 ## CMake 选项
 
 - `CMAKE_BUILD_TYPE` - 构建类型（Debug/Release）
-- `HGL_BITS` - 目标架构位数（32/64）
+- `HGL_BITS` - 目标架构位数（32/64），独立配置时用于定位预建 hgl 库
 
 ## 依赖项
 
 ### 必需依赖
 
-- CMake 3.28+
-- C++17 或更高版本编译器
-- CMCore, CMPlatform, CMUtil 库
-- ImageMagick
+- Windows + MSVC，CMake 3.28+
+- C++20
+- ImageMagick（需含 Magick++ 开发头文件）
+- 独立配置额外需要：预编译的 `CMCore` / `CMPlatform` / `CMUtil` / `CMCoreType` 静态库、
+  vcpkg 提供的 `absl`、GLM
 
 ### 可选依赖
 
-- AMD Compressonator（用于 AMD 压缩）
-- Intel ISPC Texture Compressor（用于 Intel 压缩）
-- Qt5/Qt6（用于 GUI 工具）
-- GLM（向量数学库）
+- AMD Compressonator（用于 AMD 压缩后端，`TexEncAMD.dll`）
+- Intel ISPC Texture Compressor（用于 Intel 压缩后端，`TexEncIntel.dll`；
+  需预先用 `download_win_ispc.bat` 生成 `kernel*.obj`，否则该插件不会被构建）
+- Qt6 Widgets（用于 `TexConvQt` GUI，找不到 Qt 时自动跳过）
 
 ## Windows 特定说明
 
@@ -196,16 +178,13 @@ DFGen input.png alpha
    - "Add application directory to your system path"
 3. 重启命令提示符或 PowerShell 以使环境变量生效
 
-## Linux/macOS 说明
+## 跨平台说明
 
-确保已安装 ImageMagick 开发包：
+本工程当前**不支持** Linux/macOS 构建。`core` 的目录枚举、文件读写、模块自定位
+均直接调用 Win32 API，且公共 API 使用 `wchar_t` 宽字符路径。
 
-```bash
-# 验证安装
-Magick++-config --version
-Magick++-config --cxxflags
-Magick++-config --libs
-```
+仓库中的 `download_linux_ispc.sh` 只用于在 Linux 上生成 ISPC kernel 目标文件
+（供 CI 交叉取得 `.obj`），与 TexConv 自身的可编译性无关。
 
 ## 技术细节
 
@@ -222,7 +201,8 @@ Magick++-config --libs
 
 #### 输出格式
 - 未压缩：R8/R16/R32, RG8/RG16/RG32, RGB8/RGB16/RGB32, RGBA8/RGBA16/RGBA32
-- 压缩格式：BC1-BC7, ASTC, ETC, 等
+- 压缩：BC1RGB, BC1RGBA, BC2, BC3, BC4, BC5, BC6H, BC6H_SF, BC7
+  （不支持 ASTC / ETC）
 
 ### 像素数据类型支持
 
@@ -240,9 +220,22 @@ CMake Error: ImageMagick not found
 ```
 
 **解决方案：**
-- Windows: 确保安装了 ImageMagick 并包含开发库
-- Linux: 安装 `libmagick++-dev` 或 `ImageMagick-c++-devel`
-- macOS: 使用 `brew install imagemagick`
+- Windows: 确保安装了 ImageMagick 并包含开发库（Magick++）
+- 独立配置时还需保证 `absl_DIR`、`HGL_OUT_*` 指向的预建库存在
+
+### 解码时提示 "no decode delegate"
+
+ImageMagick 只拷贝了 `Magick++` DLL 而漏了运行时组件。构建脚本的
+`texconv_deploy_im_runtime` 会把 `*.xml` 配置与 `modules/` 编解码器目录一起部署；
+手工拷贝时也必须一并复制，否则 HDR/EXR/PSD 等格式无法读取。
+
+### 提示 "Intel ISPC texture compressor is not available"
+
+`enc_intel` 只有在
+`ISPCTextureCompressor/ISPC Texture Compressor/x64/{Debug,Release}/kernel.obj`
+存在时才会被构建。缺失时 `TexEncIntel.dll` 不存在，内核会回落到 AMD 后端
+（AMD BC7 在部分 512×512 RGBA 内容上存在死锁问题，因此默认优先后端是 Intel）。
+需要 Intel 后端时先运行 `download_win_ispc.bat` 生成 kernel 目标文件再重新配置。
 
 ### 链接错误
 
