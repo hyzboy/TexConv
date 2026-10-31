@@ -177,16 +177,48 @@ namespace
                                : (req->src_layout == TEX_LAYOUT_GrayAlpha) ? 2
                                : 1;
 
+        // Compressonator 的 BC 驱动在 8 位单/双通道源(R_8/RG_8)上会越界写栈,
+        // 触发 stack cookie 校验失败(0xC0000409)。这类源在本工程里只出现在
+        // 内部生成的图像(法线图 2 通道、粗糙度图 1 通道)上,提升为 RGBA_8888
+        // 后编码,R/G 通道语义不变。
+        CMP_FORMAT encode_fmt      = source_fmt;
+        const CMP_BYTE *encode_src = (const CMP_BYTE *)req->src;
+        const int encode_channels  = (pixel_bytes == 1 && src_channels < 3) ? 4 : src_channels;
+        CMP_BYTE *promoted         = nullptr;
+
+        if(encode_channels != src_channels)
+        {
+            const size_t count = size_t(req->width) * size_t(req->height);
+
+            promoted = (CMP_BYTE *)malloc(count * 4);
+
+            if(!promoted)
+                return TEX_ERR_INTERNAL;
+
+            const CMP_BYTE *raw = (const CMP_BYTE *)req->src;
+
+            for(size_t i = 0; i < count; i++)
+            {
+                promoted[i * 4 + 0] = raw[i * src_channels];
+                promoted[i * 4 + 1] = (src_channels > 1) ? raw[i * src_channels + 1] : 0;
+                promoted[i * 4 + 2] = 0;
+                promoted[i * 4 + 3] = 255;
+            }
+
+            encode_src = promoted;
+            encode_fmt = CMP_FORMAT_RGBA_8888;
+        }
+
         CMP_Texture src_tex;
         memset(&src_tex, 0, sizeof(src_tex));
 
         src_tex.dwSize      = sizeof(CMP_Texture);
         src_tex.dwWidth     = req->width;
         src_tex.dwHeight    = req->height;
-        src_tex.dwPitch     = req->width * pixel_bytes * src_channels;
-        src_tex.format      = source_fmt;
+        src_tex.dwPitch     = req->width * pixel_bytes * encode_channels;
+        src_tex.format      = encode_fmt;
         src_tex.dwDataSize  = src_tex.dwPitch * req->height;
-        src_tex.pData       = (CMP_BYTE *)req->src;
+        src_tex.pData       = (CMP_BYTE *)encode_src;
 
         // 注意:不复刻 dwDataSize==0 的防护——旧版遇到 CMP_CalculateBufferSize 返回 0
         // 时照样"成功"并写出 0 字节载荷(容器补齐 8 字节),基线要求保持一致。
@@ -202,7 +234,10 @@ namespace
         dst_tex.pData       = (CMP_BYTE *)malloc(dst_tex.dwDataSize);
 
         if(!dst_tex.pData)
+        {
+            free(promoted);
             return TEX_ERR_INTERNAL;
+        }
 
         CMP_CompressOptions options;
         memset(&options, 0, sizeof(options));
@@ -223,6 +258,8 @@ namespace
             options.nEncodeWith = CMP_CPU;
             cmp_result = CMP_ConvertTexture(&src_tex, &dst_tex, &options, nullptr);
         }
+
+        free(promoted);
 
         // 编码失败必须报错返回:否则 dst_tex 里是"已按目标格式申请、从未写入"的内存,落盘即垃圾
         if(cmp_result != CMP_OK)
