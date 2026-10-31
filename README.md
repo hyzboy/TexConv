@@ -151,6 +151,49 @@ Octahedral Mapping 的 Irradiance 与 Prefilter `.Tex2D` 文件。
 - `CMAKE_BUILD_TYPE` - 构建类型（Debug/Release）
 - `HGL_BITS` - 目标架构位数（32/64），独立配置时用于定位预建 hgl 库
 
+## 回归测试
+
+`tests/regression.py` 是一套纯 Python（仅标准库）的 CLI 回归套件，分两个阶段：
+先跑一遍记录产物哈希，之后再跑一遍与基线比对。
+
+```bash
+# 1) 首次生成输入图（需要 ImageMagick）
+python tests/regression.py gen-inputs
+
+# 2) 记录基线
+python tests/regression.py run --exe TexConv.exe --out tests/baseline/new
+
+# 3) 与已有基线比对
+python tests/regression.py compare --exe TexConv.exe --against tests/baseline/old/manifest.json
+```
+
+覆盖范围：
+
+- **单图转换**：灰度 / 灰度+alpha / RGB / RGBA / TGA / 16bit / EXR / HDR，
+  未压缩格式与 BC 系列压缩、mipmap、AMD 后端、距离场、法线图、Intel 后端缺失负例
+- **目录模式**：`/s` 递归枚举（含跳过既有 `.Tex2D`）
+- **Cubemap / 投影 / IBL**：`/cube`、`/octa`、`/laea`、`/ibl` 及其组合，
+  以及 `/octa`+`/laea`、`/laea`+`/ibl` 互斥负例
+
+Cubemap 用例**不依赖基线**，改为校验与实现无关的不变量，因此换机器/换压缩库也能用：
+
+- 容器几何：`TexCube` 必为 `view=3` 且 6 面 32×32，2D 投影必为 `view=1` 且 64×64
+- 白炉（6 面全白）：漫反射辐照度与 GGX 预滤波必须恒为 255（能量守恒）
+- 单面点亮：辐照度/预滤波的 4 个相邻面必须旋转对称（偏差 ≤2%），对侧面最暗，
+  且预滤波峰值高于辐照度峰值（波瓣更收束）——切线基或采样权重写错时这里会失败
+
+ImageMagick 与输入图源目录可通过参数或环境变量覆盖，便于在其他机器上运行：
+
+```bash
+python tests/regression.py --magick /usr/bin/magick --res /path/to/res/image \
+    compare --exe TexConv.exe --against tests/baseline/old/manifest.json
+```
+
+对应环境变量：`TEXCONV_MAGICK`、`TEXCONV_RES_IMAGE`。
+
+已知缺口：Intel ISPC 后端未构建时，`intel_ispc` 用例会失败（`TexEncIntel.dll` 缺失），
+这是环境问题而非回归；补齐 ISPC kernel 后即可通过。
+
 ## 依赖项
 
 ### 必需依赖
