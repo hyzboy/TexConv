@@ -96,33 +96,13 @@ namespace
         return flags.join(QStringLiteral(" · "));
     }
 
-    /// 面签名:主文件名首字母 P/N + 尾字母 X/Y/Z(大小写不敏感)→ 面序 0..5
-    /// (+X,-X,+Y,-Y,+Z,-Z);兜底:首/末 token 为 PX 形(2 字符)或 PosX 形(4 字符)
+    /// 面签名:首/末 token 为 PX 形(2 字符)或 PosX 形(4 字符)→ 面序 0..5
+    /// (+X,-X,+Y,-Y,+Z,-Z)。不再用“整名首字母+尾字母”猜测,那会把
+    /// noisy / navy / phony / proxy 之类普通单词误判成面。
     int CubeFaceIndex(const QString &path)
     {
-        auto index_from = [](const QString &name) -> int
-        {
-            if(name.size() < 2)
-                return -1;
-
-            const QChar f = name.front().toLower();
-            const QChar l = name.back().toLower();
-
-            const int sign = (f == QLatin1Char('p')) ? 0 : (f == QLatin1Char('n')) ? 1 : -1;
-            const int axis = (l == QLatin1Char('x')) ? 0
-                           : (l == QLatin1Char('y')) ? 1
-                           : (l == QLatin1Char('z')) ? 2 : -1;
-
-            return (sign < 0 || axis < 0) ? -1 : axis * 2 + sign;
-        };
-
         const QString base = QFileInfo(path).completeBaseName();
 
-        const int direct = index_from(base);            // 规则 1:整体 首字母+尾字母
-        if(direct >= 0)
-            return direct;
-
-        // 规则 2(兜底):首/末 token 是面缩写(PX 形 2 字符 / PosX 形 4 字符)
         QStringList tokens = base.split(QRegularExpression(QStringLiteral("[_\\-. ]")),
                                         Qt::SkipEmptyParts);
 

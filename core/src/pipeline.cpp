@@ -217,10 +217,25 @@ namespace texcore
             return nullptr;     // 指定的后端不存在(旧版 /Intel 缺失 → 报错退出)
         }
 
-        // 未指定:优先 Intel(AMD BC7 对部分内容存在死锁/极慢问题),否则取第一个
+        // 未指定:优先 Intel(AMD BC7 对部分内容存在死锁/极慢问题),否则退回 AMD。
         for(auto &p : list)
             if(strcmp(p.provider->short_name, "Intel") == 0)
                 return p.provider;
+
+        // Intel 插件缺失(enc_intel 在 kernel*.obj 不存在时根本不参与构建)时,
+        // 回落到 AMD 等于重新暴露已知的 BC7 死锁风险 —— 不能静默,只告警一次。
+        struct FallbackWarn
+        {
+            FallbackWarn()
+            {
+                CoreLog(TEX_LOG_WARN,
+                        "encoder: Intel plugin not found, defaulting to AMD backend "
+                        "(BC7 may deadlock on some content; build TexEncIntel to avoid this)");
+            }
+        };
+
+        static FallbackWarn warn_once;      // C++11 起函数内静态初始化是线程安全的
+        (void)warn_once;
 
         for(auto &p : list)
             if(strcmp(p.provider->short_name, "AMD") == 0)

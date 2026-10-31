@@ -218,6 +218,8 @@ extern "C"
             return TEX_ERR_PARAM;
 
         int count = 0;
+        bool stopped = false;
+
         const auto lower_ext = [](const fs::path &p)
         {
             std::wstring ext = p.extension().wstring();
@@ -226,18 +228,37 @@ extern "C"
             return ext;
         };
 
+        // 只接受 ImageMagick 能解码的常见图像扩展名。目录里混入的说明文件、备份、
+        // 临时文件若也交给转换,必然失败并把批处理退出码拖成 1(.Tex2D 也因此被
+        // 自然排除,不再需要单独判断)。
+        static const wchar_t *k_image_ext[] =
+        {
+            L".png",  L".jpg",  L".jpeg", L".bmp", L".tga",  L".gif",
+            L".tif",  L".tiff", L".psd",  L".webp", L".hdr", L".exr",
+            L".dds",  L".jxl",  L".ppm",  L".pgm", L".pbm",  L".avif",
+            L".qoi",  L".ico",  L".pcx",  L".xpm",
+        };
+
+        const auto is_image_ext = [](const std::wstring &ext)
+        {
+            for(const wchar_t *e : k_image_ext)
+                if(ext == e)
+                    return true;
+            return false;
+        };
+
         auto emit = [&](const fs::directory_entry &entry)
         {
-            if(!entry.is_regular_file())
+            if(stopped || !entry.is_regular_file())
                 return;
 
-            if(lower_ext(entry.path()) == L".tex2d")    // 已是纹理文件,跳过(对齐旧 EnumConvertImage)
+            if(!is_image_ext(lower_ext(entry.path())))
                 return;
+
+            ++count;                    // 已交给回调,按约定计入返回值
 
             if(cb(user, entry.path().c_str()))
-                count = -count - 1;     // 回调要求停止
-
-            ++count;
+                stopped = true;         // 回调要求停止
         };
 
         std::error_code ec;
@@ -248,7 +269,7 @@ extern "C"
                 !ec && it != fs::recursive_directory_iterator();
                 it.increment(ec))
             {
-                if(count < 0)break;
+                if(stopped)break;
                 emit(*it);
             }
         }
@@ -258,13 +279,10 @@ extern "C"
                 !ec && it != fs::directory_iterator();
                 it.increment(ec))
             {
-                if(count < 0)break;
+                if(stopped)break;
                 emit(*it);
             }
         }
-
-        if(count < 0)
-            count = -count - 1;
 
         return count;
     }

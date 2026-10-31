@@ -83,20 +83,27 @@ static bool provider_available(const char *short_name)
     return false;
 }
 
-/// 面签名:主文件名首字母 P/N + 尾字母 X/Y/Z(大小写不敏感)→ 面序 0..5(+X,-X,+Y,-Y,+Z,-Z)
-static int face_index_from_name(const std::wstring &name)
+/// 面签名 token:2 字符 PX/NY 形 或 4 字符 PosX/NegZ 形(大小写不敏感)
+static int face_token_index(const wchar_t *t, size_t len)
 {
-    if(name.size() < 2)return -1;
+    if(len == 2)
+    {
+        const int sign = (t[0] == L'p') ? 0 : (t[0] == L'n') ? 1 : -1;
+        const int axis = (t[1] == L'x') ? 0 : (t[1] == L'y') ? 1 : (t[1] == L'z') ? 2 : -1;
 
-    const wchar_t f = towlower(name.front());
-    const wchar_t l = towlower(name.back());
+        return (sign < 0 || axis < 0) ? -1 : axis * 2 + sign;
+    }
 
-    const int sign = (f == L'p') ? 0 : (f == L'n') ? 1 : -1;
-    const int axis = (l == L'x') ? 0 : (l == L'y') ? 1 : (l == L'z') ? 2 : -1;
+    if(len == 4)
+    {
+        const int sign = (t[0] == L'p' && t[1] == L'o' && t[2] == L's') ? 0
+                       : (t[0] == L'n' && t[1] == L'e' && t[2] == L'g') ? 1 : -1;
+        const int axis = (t[3] == L'x') ? 0 : (t[3] == L'y') ? 1 : (t[3] == L'z') ? 2 : -1;
 
-    if(sign < 0 || axis < 0)return -1;
+        return (sign < 0 || axis < 0) ? -1 : axis * 2 + sign;
+    }
 
-    return axis * 2 + sign;
+    return -1;
 }
 
 static int cube_face_index(const std::wstring &path)
@@ -109,12 +116,9 @@ static int cube_face_index(const std::wstring &path)
     const size_t dot = name.find_last_of(L'.');
     if(dot != std::wstring::npos)name = name.substr(0, dot);
 
-    // 规则 1:整个主文件名的 首字母+尾字母(PosX / NY 等直接命中)
-    const int direct = face_index_from_name(name);
-    if(direct >= 0)return direct;
-
-    // 规则 2(兜底):首 token 或末 token 是面缩写 —— 2 字符(PX/NY/...)
-    // 或 4 字符(PosX/NegZ/...),避免 noisy 之类误含 n..y 的词误报
+    // 只按 token 判定面缩写(2 字符 PX/NY 或 4 字符 PosX/NegZ)。
+    // 不使用“整名首字母 P/N + 尾字母 X/Y/Z”猜测:那会把 noisy / navy / phony /
+    // proxy 之类普通单词误判成面,而真正的面缩写本来就落在单个 token 上。
     std::wstring first_token, last_token;
     std::wstring token;
 
@@ -137,36 +141,15 @@ static int cube_face_index(const std::wstring &path)
         }
     }
 
-    auto token_face = [](const std::wstring &t) -> int
-    {
-        if(t.size() == 2)
-        {
-            const int sign = (t[0] == L'p') ? 0 : (t[0] == L'n') ? 1 : -1;
-            const int axis = (t[1] == L'x') ? 0 : (t[1] == L'y') ? 1 : (t[1] == L'z') ? 2 : -1;
-            return (sign >= 0 && axis >= 0) ? axis * 2 + sign : -1;
-        }
-
-        if(t.size() == 4)
-        {
-            const int sign = (t.compare(0, 3, L"pos") == 0) ? 0
-                           : (t.compare(0, 3, L"neg") == 0) ? 1 : -1;
-            const int axis = (t[3] == L'x') ? 0 : (t[3] == L'y') ? 1 : (t[3] == L'z') ? 2 : -1;
-            return (sign >= 0 && axis >= 0) ? axis * 2 + sign : -1;
-        }
-
-        return -1;
-    };
-
     if(!first_token.empty())
     {
-        const int r = token_face(first_token);
+        const int r = face_token_index(first_token.c_str(), first_token.size());
         if(r >= 0)return r;
-
     }
 
     if(!last_token.empty())
     {
-        const int r = token_face(last_token);
+        const int r = face_token_index(last_token.c_str(), last_token.size());
         if(r >= 0)return r;
     }
 
@@ -361,13 +344,13 @@ static int run_cube(const std::vector<std::wstring> &inputs,
 
         printf("output: %ls\n", output.c_str());
 
-        const int rc = octahedral
+        const int cube_rc = octahedral
             ? TexCore_RunCubeToOctaJob(&cube, nullptr, nullptr)
             : lambert_azimuthal
                 ? TexCore_RunCubeToLambertAzimuthalJob(&cube, nullptr, nullptr)
                 : TexCore_RunCubeJob(&cube, nullptr, nullptr);
 
-        if(rc != TEX_OK)
+        if(cube_rc != TEX_OK)
         {
             printf("[CUBE] group %d convert failed.\n", group_index);
             exit_code = 1;

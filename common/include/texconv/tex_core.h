@@ -102,7 +102,9 @@ TEXCONV_API int  TexCore_EnumProviders(TexProviderInfo *out, int out_count);
 /// 读取源图元数据(快速,失败返回错误码)。
 TEXCONV_API int  TexCore_ProbeImage(const wchar_t *path, TexImageInfo *out);
 
-/// 枚举目录下的图像文件(跳过 .Tex2D;recursive 非 0 时含子目录)。
+/// 枚举目录下的图像文件(recursive 非 0 时含子目录)。
+/// 仅返回常见图像扩展名(png/jpg/bmp/tga/gif/tif/psd/webp/hdr/exr/dds 等),
+/// 其它文件(说明文件、备份、已是纹理的 .Tex2D)一律跳过。
 /// cb 对每个文件调用一次,返回非 0 停止枚举;返回实际交给 cb 的文件数。
 TEXCONV_API int  TexCore_EnumDirectory(const wchar_t *dir, int recursive,
                                        int (*cb)(void *user, const wchar_t *path),
