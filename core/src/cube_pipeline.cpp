@@ -432,6 +432,33 @@ namespace texcore
             TexImage_GetInfo(faces[0], &width, &height, nullptr, &layout, &pt);
         }
 
+        // 5.5 IBL:提取 RGBA float32 源数据。必须在 2D 投影(会释放 6 面)与主转换
+        //     的 mip 循环(会缩放 faces)之前取走原始分辨率数据。
+        //     注意:2D 投影会把 width/height 改成投影图尺寸,故单独记录源面尺寸。
+        std::vector<float> ibl_src[6];
+        uint32_t ibl_src_w = 0, ibl_src_h = 0;
+
+        if(params->ibl_mode)
+        {
+            const size_t buf_sz = TexImage_GetBufferSize(faces[0], TEX_LAYOUT_RGBA, TEX_PT_Float32);
+
+            ibl_src_w = width;
+            ibl_src_h = height;
+
+            for(int i = 0; i < 6; i++)
+            {
+                ibl_src[i].resize(buf_sz / sizeof(float));
+
+                if(TexImage_GetData(faces[i], ibl_src[i].data(), buf_sz,
+                                    TEX_LAYOUT_RGBA, TEX_PT_Float32) != TEX_OK)
+                {
+                    CoreLog(TEX_LOG_ERROR, "IBL: face data fetch failed.");
+                    for(int j = 0; j < 6; j++)TexImage_Free(faces[j]);
+                    return TEX_ERR_INTERNAL;
+                }
+            }
+        }
+
         if(projection != CubeOutputProjection::Cube)
         {
             if(width != height || width > (std::numeric_limits<uint32_t>::max)() / 2)
@@ -555,28 +582,6 @@ namespace texcore
             TexImage_GetInfo(faces[0], nullptr, nullptr, nullptr, &data_layout, nullptr);
         }
 
-        // 5.5 IBL:提取 RGBA float32 源数据(主转换的 mip 循环会缩放 faces,
-        //     所以必须在循环前取走原始分辨率数据)
-        std::vector<float> ibl_src[6];
-
-        if(params->ibl_mode)
-        {
-            const size_t buf_sz = TexImage_GetBufferSize(faces[0], TEX_LAYOUT_RGBA, TEX_PT_Float32);
-
-            for(int i = 0; i < 6; i++)
-            {
-                ibl_src[i].resize(buf_sz / sizeof(float));
-
-                if(TexImage_GetData(faces[i], ibl_src[i].data(), buf_sz,
-                                    TEX_LAYOUT_RGBA, TEX_PT_Float32) != TEX_OK)
-                {
-                    CoreLog(TEX_LOG_ERROR, "IBL: face data fetch failed.");
-                    for(int j = 0; j < 6; j++)TexImage_Free(faces[j]);
-                    return TEX_ERR_INTERNAL;
-                }
-            }
-        }
-
         // 6. 输出路径(补对应容器后缀)
         std::filesystem::path out(params->output_path);
 
@@ -686,7 +691,7 @@ namespace texcore
         // 9. IBL 后处理:原始 cubemap 已写出,再生成 _irradiance 和 _prefilter
         if(params->ibl_mode)
         {
-            WriteIBLCubeFile(out, L"_irradiance", ibl_src, width, height,
+            WriteIBLCubeFile(out, L"_irradiance", ibl_src, ibl_src_w, ibl_src_h,
                              [](const std::vector<float> s[6], uint32_t sw, uint32_t sh,
                                     std::vector<float> d[6], uint32_t dw, uint32_t dh)
                              {
@@ -694,7 +699,7 @@ namespace texcore
                              }, provider, params->ibl_format,
                              projection == CubeOutputProjection::Octahedral, progress, user);
 
-            WriteIBLCubeFile(out, L"_prefilter", ibl_src, width, height,
+            WriteIBLCubeFile(out, L"_prefilter", ibl_src, ibl_src_w, ibl_src_h,
                              [](const std::vector<float> s[6], uint32_t sw, uint32_t sh,
                                     std::vector<float> d[6], uint32_t dw, uint32_t dh)
                              {
