@@ -150,6 +150,8 @@ Octahedral Mapping 的 Irradiance 与 Prefilter `.Tex2D` 文件。
 
 - `CMAKE_BUILD_TYPE` - 构建类型（Debug/Release）
 - `HGL_BITS` - 目标架构位数（32/64），独立配置时用于定位预建 hgl 库
+- `TEXCONV_ISPC_EXE` - ISPC 编译器路径（`enc_intel` 构建期用它编译 kernel；
+  默认查环境变量 `ISPC_EXE`，再退回 `ISPCTextureCompressor/ISPC/win/ispc.exe`）
 
 ## 回归测试
 
@@ -191,8 +193,13 @@ python tests/regression.py --magick /usr/bin/magick --res /path/to/res/image \
 
 对应环境变量：`TEXCONV_MAGICK`、`TEXCONV_RES_IMAGE`。
 
-已知缺口：Intel ISPC 后端未构建时，`intel_ispc` 用例会失败（`TexEncIntel.dll` 缺失），
-这是环境问题而非回归；补齐 ISPC kernel 后即可通过。
+已知环境差异：`intel_ispc` 用例需要 `TexEncIntel.dll` 与 `TexConv.exe` 同目录；ISPC 不可用时
+该插件不参与构建，用例会失败（这是环境问题而非回归）。
+
+另外 `tests/baseline/old/manifest.json` 记录于「默认后端为 AMD」的时期（早于改为默认 Intel
+的提交），因此补齐 Intel 后端后，凡是**未显式指定后端**的压缩用例（`*_default`、`rgb8_bc7`、
+`rgb8_gray`、`dir_mode_s` 等）产物哈希必然与旧基线不同——要核对后端一致性请用 `/AMD`、
+`/Intel` 显式指定（`rgb8_amd`、`intel_ispc` 两个用例就是为此保留的）。
 
 ## 依赖项
 
@@ -208,7 +215,8 @@ python tests/regression.py --magick /usr/bin/magick --res /path/to/res/image \
 
 - AMD Compressonator（用于 AMD 压缩后端，`TexEncAMD.dll`）
 - Intel ISPC Texture Compressor（用于 Intel 压缩后端，`TexEncIntel.dll`；
-  需预先用 `download_win_ispc.bat` 生成 `kernel*.obj`，否则该插件不会被构建）
+  需先用 `download_win_ispc.bat` 装好 `ispc.exe`，构建期由 CMake 调用它把
+  `kernel*.ispc` 编译到构建树，找不到编译器时该插件不参与构建）
 - Qt6 Widgets（用于 `TexConvQt` GUI，找不到 Qt 时自动跳过）
 
 ## Windows 特定说明
@@ -247,12 +255,30 @@ python tests/regression.py --magick /usr/bin/magick --res /path/to/res/image \
 - 压缩：BC1RGB, BC1RGBA, BC2, BC3, BC4, BC5, BC6H, BC6H_SF, BC7
   （不支持 ASTC / ETC）
 
+#### BC6H 源数据要求
+
+BC6H/BC6H_SF 是 HDR 三通道格式，Alpha 不参与压缩：
+
+- 源图必须是 **3 或 4 通道**；1/2 通道源直接报错（退出码 1），日志为：
+
+  ```
+  encoder Intel can not encode BC6H from 1 channel source.
+  ```
+
+- 4 通道源只取 R/G/B，Alpha 被丢弃。
+- 非半精度源会自动转成半精度后再编码：Intel 后端向核心声明「需要 RGBA + Float32」，
+  再由插件内部做 float32 → float16 位模式转换（`enc_intel/half_float.h`，就近舍入到偶数，
+  含 Inf/NaN/上溢/非规格化处理），因此 8/16 位整数源与 float32/EXR/HDR 源都可直接使用。
+  因为显式要求 Float32，EXR/HDR 中 >1.0 的亮度也完整保留（旧实现按图像标称像素类型取值，
+  depth≤16 的 EXR 会被压到 1.0）。
+
 ### 像素数据类型支持
 
 - `ImagePixelType::UInt8` - 8位无符号整数
 - `ImagePixelType::UInt16` - 16位无符号整数
 - `ImagePixelType::Float32` - 32位浮点数
-- `ImagePixelType::Float16` - 16位半精度浮点数
+- `ImagePixelType::Float16` - 16 位整数存储（映射 Magick `ShortPixel`），不是 IEEE 半精度位模式；
+  需要真正的 half 位模式时须显式转换（BC6H 的转换在 `enc_intel/half_float.h`）
 
 ## 故障排除
 
@@ -274,11 +300,20 @@ ImageMagick 只拷贝了 `Magick++` DLL 而漏了运行时组件。构建脚本�
 
 ### 提示 "Intel ISPC texture compressor is not available"
 
-`enc_intel` 只有在
-`ISPCTextureCompressor/ISPC Texture Compressor/x64/{Debug,Release}/kernel.obj`
-存在时才会被构建。缺失时 `TexEncIntel.dll` 不存在，内核会回落到 AMD 后端
+`enc_intel` 只有在能找到 `ispc.exe` 时才会被构建：`enc_intel/CMakeLists.txt` 在构建期用
+`add_custom_command` 直接调用它把 `ISPCTextureCompressor/ispc_texcomp/kernel{,_astc}.ispc`
+编译成 obj 与头文件（产物落在构建树 `enc_intel/ispc_kernels/`，不污染源码树），
+**不需要先 msbuild 上游的 `ispc_texcomp.vcxproj`**。
+
+编译器查找顺序：CMake 变量 `TEXCONV_ISPC_EXE` → 环境变量 `ISPC_EXE` →
+`ISPCTextureCompressor/ISPC/win/ispc.exe`。都找不到时 configure 阶段会打印提示并跳过
+`TexEncIntel.dll`，内核会回落到 AMD 后端
 （AMD BC7 在部分 512×512 RGBA 内容上存在死锁问题，因此默认优先后端是 Intel）。
-需要 Intel 后端时先运行 `download_win_ispc.bat` 生成 kernel 目标文件再重新配置。
+需要 Intel 后端时先运行 `download_win_ispc.bat`，或手工指定：
+
+```bash
+cmake -DTEXCONV_ISPC_EXE="D:/ispc/ispc.exe" -S . -B build
+```
 
 ### 链接错误
 
