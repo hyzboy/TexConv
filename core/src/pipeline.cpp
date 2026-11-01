@@ -523,6 +523,9 @@ namespace texcore
 
             if(rc != TEX_OK)
             {
+                CoreLog(TEX_LOG_ERROR, std::string("encoder ") + provider->short_name
+                                      + " can not encode " + ctx.fmt->name + " from "
+                                      + std::to_string(ctx.channels) + " channel source.");
                 TexImage_Free(ctx.img);
                 return rc;
             }
@@ -538,6 +541,9 @@ namespace texcore
 
             if(rc != TEX_OK)
             {
+                CoreLog(TEX_LOG_ERROR, std::string("encoder ") + provider->short_name
+                                      + " can not encode " + ctx.fmt->name + " from "
+                                      + std::to_string(ctx.channels) + " channel source.");
                 TexImage_Free(ctx.img);
                 return rc;
             }
@@ -711,6 +717,9 @@ namespace texcore
 
             if(rc != TEX_OK)
             {
+                CoreLog(TEX_LOG_ERROR, std::string("encoder ") + provider->short_name
+                                      + " can not encode " + ctx.fmt->name + " from "
+                                      + std::to_string(ctx.channels) + " channel source.");
                 TexImage_Free(ctx.img);
                 return rc == TEX_ERR_UNSUPPORTED ? TEX_ERR_UNSUPPORTED : rc;
             }

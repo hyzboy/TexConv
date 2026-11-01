@@ -1,12 +1,14 @@
 ﻿// TexEncIntel.dll —— Intel ISPC Texture Compressor 编码器插件。
 // 编码逻辑逐行迁自原 TextureFileCreaterCompressIntel.cpp。
-// 本 DLL 仅在 ISPCTextureCompressor kernel*.obj 存在时构建(CMake 探测)。
+// 本 DLL 仅在找到 ispc.exe 时构建(见 enc_intel/CMakeLists.txt)。
 
 #include "texconv/texenc_plugin.h"
 #include "texconv/tex_formats.h"
 #include "texconv/tex_pixel.h"
 
 #include "ispc_texcomp/ispc_texcomp.h"
+
+#include "half_float.h"
 
 #include <cstring>
 #include <cstdlib>
@@ -21,6 +23,11 @@ namespace
     bool is_bc4(const char *name)
     {
         return strcmp(name, "BC4") == 0;
+    }
+
+    bool is_bc6h(const char *name)
+    {
+        return strcmp(name, "BC6H") == 0 || strcmp(name, "BC6H_SF") == 0;
     }
 
     int pixel_bytes_of(int src_pixel_type)
@@ -66,6 +73,9 @@ namespace
                                 int src_channels, int src_pixel_type,
                                 int *out_layout, int *out_pixel_type)
     {
+        if(!target_format || !out_layout || !out_pixel_type)
+            return TEX_ERR_PARAM;
+
         const TexPixelFormat *pf = TexFormat_Get(target_format);
 
         if(!pf || !TexFormat_IsCompress(pf))
@@ -74,7 +84,23 @@ namespace
         if(pixel_bytes_of(src_pixel_type) <= 0)
             return TEX_ERR_UNSUPPORTED;
 
-        // 旧版语义:1通道→Gray,2通道→GrayAlpha,3/4通道→RGBA;像素类型保持不变
+        // BC6H/BC6H_SF:kernel 的 load_block_interleaved_16bit 固定按 4 通道 16 位
+        // 交错读取且只用 R/G/B,1/2 通道源凑不出三通道数据 → 直接报错,不静默出图。
+        // 4 通道源的第 4 通道被读取后丢弃,语义上等同「只取前 3 通道」。
+        if(is_bc6h(target_format))
+        {
+            if(src_channels < 3)
+                return TEX_ERR_PARAM;
+
+            *out_layout = TEX_LAYOUT_RGBA;
+
+            // TEX_PT_Float16 在图像层是 16 位整数存储(Magick ShortPixel),不是半精度
+            // 位模式;故向图像层要 Float32,由本插件内部转半精度后再送 kernel
+            *out_pixel_type = TEX_PT_Float32;
+            return TEX_OK;
+        }
+
+        // 其它格式沿用旧版语义:1通道→Gray,2通道→GrayAlpha,3/4通道→RGBA;像素类型保持不变
         switch(src_channels)
         {
             case 1: *out_layout = TEX_LAYOUT_Gray;      break;
@@ -109,14 +135,41 @@ namespace
                                : (req->src_layout == TEX_LAYOUT_GrayAlpha) ? 2
                                : 1;
 
+        // BC6H/BC6H_SF:kernel 的 load_block_interleaved_16bit 按 RGBA16F 交错读取,
+        // 直接喂 Float32 会把浮点位模式当成半精度 → 先把源转成半精度 RGBA
+        uint8_t *bc6h_source = nullptr;
+
+        if(is_bc6h(target))
+        {
+            // 源布局/像素类型由 QuerySourceLayout 约定,不符说明调用方绕过了约定
+            if(req->src_layout != TEX_LAYOUT_RGBA || req->src_pixel_type != TEX_PT_Float32)
+                return TEX_ERR_PARAM;
+
+            const size_t pixel_total = size_t(req->width) * size_t(req->height);
+
+            bc6h_source = new uint8_t[pixel_total * 8];
+
+            const float *src_pixel  = reinterpret_cast<const float *>(req->src);
+            uint16_t    *half_pixel = reinterpret_cast<uint16_t *>(bc6h_source);
+
+            for(size_t i = 0; i < pixel_total; i++, src_pixel += 4, half_pixel += 4)
+            {
+                half_pixel[0] = TexFloatToHalfBits(src_pixel[0]);
+                half_pixel[1] = TexFloatToHalfBits(src_pixel[1]);
+                half_pixel[2] = TexFloatToHalfBits(src_pixel[2]);
+                half_pixel[3] = TexFloatToHalfBits(src_pixel[3]);
+            }
+        }
+
         // ISPC 压缩器输入表面
         rgba_surface src;
         memset(&src, 0, sizeof(src));
 
-        src.ptr    = const_cast<uint8_t *>(req->src);
+        src.ptr    = bc6h_source ? bc6h_source : const_cast<uint8_t *>(req->src);
         src.width  = int(req->width);
         src.height = int(req->height);
-        src.stride = int(req->width) * (pixel_bytes * src_channels);
+        src.stride = bc6h_source ? int(req->width) * 8
+                                 : int(req->width) * (pixel_bytes * src_channels);
 
         // 4x4 块;BC1/BC4 每块 8 字节,其余 16 字节
         const int block_x = (src.width  + 3) / 4;
@@ -148,7 +201,7 @@ namespace
         {
             CompressBlocksBC5(&src, dst);
         }
-        else if(strcmp(target, "BC6H") == 0 || strcmp(target, "BC6H_SF") == 0)
+        else if(is_bc6h(target))
         {
             bc6h_enc_settings settings;
             memset(&settings, 0, sizeof(settings));
@@ -169,9 +222,12 @@ namespace
         }
         else
         {
+            delete[] bc6h_source;
             delete[] dst;
             return TEX_ERR_UNSUPPORTED;
         }
+
+        delete[] bc6h_source;
 
         *out_data  = dst;
         *out_bytes = dst_size;

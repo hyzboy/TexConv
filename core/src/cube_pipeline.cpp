@@ -529,6 +529,9 @@ namespace texcore
 
             if(rc != TEX_OK)
             {
+                CoreLog(TEX_LOG_ERROR, std::string("encoder ") + provider->short_name
+                                      + " can not encode " + fmt->name + " from "
+                                      + std::to_string(channels) + " channel source.");
                 for(int i = 0; i < 6; i++)TexImage_Free(faces[i]);
                 return rc == TEX_ERR_UNSUPPORTED ? TEX_ERR_UNSUPPORTED : rc;
             }
