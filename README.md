@@ -131,6 +131,19 @@ Octahedral Mapping 的 Irradiance 与 Prefilter `.Tex2D` 文件。
 `/cube` 也可只给一个目录：目录会被递归扫描，按面文件名分组，凑齐 6 面的组才会转换
 （输出写在输入同目录，`/out:` 在目录模式下无效）。
 
+#### IBL Prefilter 的 mip 链约定
+
+`/ibl` 生成的 Prefilter Cubemap 是**完整 mip 链**（不是单张），镜面反射的粗糙度梯度由
+mip 级承载：
+
+- 第 `i` 级对应的粗糙度 = `i / (级数 - 1)`，因此第 0 级恒为 `r = 0`（镜面直通，直接拷贝
+  原始方向采样，与 GGX 收敛结果逐位等价，省掉 `r=0` 时的 255 次重复采样）。
+- 级数由 `WriteIBLCubeFile` 自行按逐级减半推出，下限为 `4×4`（压缩格式的最小块），
+  与写入循环严格一致，避免引擎按头部 `mip_level` 摊算字节数时错位。
+- 引擎侧按同一映射反向换算 LOD：`lod = roughness * (级数 - 1)`，级数由
+  `AmbientEnvInfo::env_tex.w` 下发（0/1 表示只有一级，退化为常量采样）。
+  **两端映射互逆，必须同时修改。**
+
 ## 未参与构建的附加工具
 
 以下工具的历史源码仍保留在工程根目录，但**未加入任何 CMake 目标**，
@@ -267,7 +280,7 @@ BC6H/BC6H_SF 是 HDR 三通道格式，Alpha 不参与压缩：
 
 - 4 通道源只取 R/G/B，Alpha 被丢弃。
 - 非半精度源会自动转成半精度后再编码：Intel 后端向核心声明「需要 RGBA + Float32」，
-  再由插件内部做 float32 → float16 位模式转换（`enc_intel/half_float.h`，就近舍入到偶数，
+  再由插件内部做 float32 → float16 位模式转换（`common/include/texconv/half_float.h`，就近舍入到偶数，
   含 Inf/NaN/上溢/非规格化处理），因此 8/16 位整数源与 float32/EXR/HDR 源都可直接使用。
   因为显式要求 Float32，EXR/HDR 中 >1.0 的亮度也完整保留（旧实现按图像标称像素类型取值，
   depth≤16 的 EXR 会被压到 1.0）。
@@ -278,7 +291,7 @@ BC6H/BC6H_SF 是 HDR 三通道格式，Alpha 不参与压缩：
 - `ImagePixelType::UInt16` - 16位无符号整数
 - `ImagePixelType::Float32` - 32位浮点数
 - `ImagePixelType::Float16` - 16 位整数存储（映射 Magick `ShortPixel`），不是 IEEE 半精度位模式；
-  需要真正的 half 位模式时须显式转换（BC6H 的转换在 `enc_intel/half_float.h`）
+  需要真正的 half 位模式时须显式转换（BC6H 的转换在 `common/include/texconv/half_float.h`）
 
 ## 故障排除
 
