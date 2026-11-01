@@ -80,7 +80,6 @@ if(TEXCONV_ISPC_EXE AND EXISTS "${TEXCONV_ISPC_EXE}")
 
     add_library(TexEncIntel SHARED
         texenc_intel.cpp
-        half_float.h
         ${ISPC_TC_SRC}/ispc_texcomp.cpp
         ${ISPC_TC_SRC}/ispc_texcomp.h
         ${ISPC_TC_SRC}/ispc_texcomp_astc.cpp

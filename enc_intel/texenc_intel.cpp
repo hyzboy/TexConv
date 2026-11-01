@@ -8,7 +8,7 @@
 
 #include "ispc_texcomp/ispc_texcomp.h"
 
-#include "half_float.h"
+#include "../../common/include/texconv/half_float.h"
 
 #include <cstring>
 #include <cstdlib>
