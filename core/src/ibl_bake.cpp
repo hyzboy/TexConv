@@ -201,11 +201,46 @@ namespace texcore
         return true;
     }
 
+    float PrefilterRoughness(int level, int level_count)
+    {
+        if(level_count <= 1)
+            return 0.0f;
+
+        const int l = (std::clamp)(level, 0, level_count - 1);
+        return float(l) / float(level_count - 1);
+    }
+
     bool BakeGGXPrefilter(const std::vector<float> src[6], uint32_t src_w, uint32_t src_h,
                           std::vector<float> dst[6], uint32_t dst_w, uint32_t dst_h,
                           float roughness, int sample_count)
     {
-        if(!src_w || !src_h || roughness < 0 || sample_count <= 0) return false;
+        if(!src_w || !src_h || !dst_w || !dst_h
+         || roughness < 0 || sample_count <= 0) return false;
+
+        // roughness=0 时 a=0 ⇒ ct=1、st=0,半向量恒等于反射方向 R(所有采样点重合),
+        // 加权平均退化为单次采样,与 256 次采样的差异只落在浮点末位。
+        // mip 链第 0 级正是 r=0,在此直接直通,省掉最高分辨率一级的 255 倍重复采样。
+        if(roughness <= 0.0f)
+        {
+            for(int face = 0; face < 6; face++)
+            {
+                for(uint32_t py = 0; py < dst_h; py++)
+                for(uint32_t px = 0; px < dst_w; px++)
+                {
+                    float rd[3];
+                    CubeFaceToDir(face, (float(px)+.5f)/dst_w*2-1, (float(py)+.5f)/dst_h*2-1, rd);
+                    float rl = std::sqrt(rd[0]*rd[0]+rd[1]*rd[1]+rd[2]*rd[2]);
+                    for(int i=0;i<3;i++) rd[i]/=rl;
+
+                    float c[3] = {};
+                    SampleCubeRGB(src, src_w, src_h, rd, c);
+
+                    float *dp = &dst[face][(size_t(py)*dst_w+px)*4];
+                    dp[0]=c[0]; dp[1]=c[1]; dp[2]=c[2]; dp[3]=1;
+                }
+            }
+            return true;
+        }
 
         for(int face = 0; face < 6; face++)
         {

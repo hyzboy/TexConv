@@ -63,6 +63,12 @@ namespace texcore
                           std::vector<float> dst[6], uint32_t dst_w, uint32_t dst_h,
                           float roughness, int sample_count);
 
+    /// prefiltered cubemap mip 链的粗糙度映射:第 level 级 = level/(level_count-1),
+    /// 即第 0 级 = 0(镜面)、最后一级 = 1(全粗糙)。引擎侧
+    /// (ShaderLibrary/module/provider/ambient_light/ambient_light_ibl.glsl)按同一映射
+    /// 把材质 roughness 换算成 LOD,两端约定必须一致。
+    float PrefilterRoughness(int level, int level_count);
+
     /// 按名称选择编码后端(空=优先 Intel,AMD BC7 对部分内容有死锁/极慢问题);不存在返回 nullptr
     const TexEncoderProvider *SelectProvider(const char *short_name);
 

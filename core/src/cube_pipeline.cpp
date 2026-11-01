@@ -7,6 +7,7 @@
 
 #include "internal.h"
 #include "texconv/tex_distance_field.h"
+#include "texconv/half_float.h"
 
 #include <algorithm>
 #include <cmath>
@@ -249,7 +250,9 @@ namespace texcore
                           const std::vector<float> src[6],
                           uint32_t src_w, uint32_t src_h,
                           bool (*bake_fn)(const std::vector<float>*, uint32_t, uint32_t,
-                                          std::vector<float>*, uint32_t, uint32_t),
+                                          std::vector<float>*, uint32_t, uint32_t,
+                                          float roughness, int level, int level_count),
+                          bool bake_mip_chain,
                           const TexEncoderProvider *provider,
                           const char *ibl_format,
                           bool output_octahedral,
@@ -694,20 +697,26 @@ namespace texcore
         // 9. IBL 后处理:原始 cubemap 已写出,再生成 _irradiance 和 _prefilter
         if(params->ibl_mode)
         {
+            // _irradiance:漫反射预卷积,固定 32x32 单级(漫反射无粗糙度梯度)
             WriteIBLCubeFile(out, L"_irradiance", ibl_src, ibl_src_w, ibl_src_h,
                              [](const std::vector<float> s[6], uint32_t sw, uint32_t sh,
-                                    std::vector<float> d[6], uint32_t dw, uint32_t dh)
+                                    std::vector<float> d[6], uint32_t dw, uint32_t dh,
+                                    float, int, int)
                              {
                                  return BakeDiffuseIrradiance(s, sw, sh, d, dw, dh, 256);
-                             }, provider, params->ibl_format,
+                             }, false, provider, params->ibl_format,
                              projection == CubeOutputProjection::Octahedral, progress, user);
 
+            // _prefilter:镜面预过滤,烘成完整 mip 链(第 i 级 roughness = i/(级数-1)),
+            // 引擎按材质 roughness 换算 LOD 采样;
+            // 旧行为(单张 r=0.5)在任何 roughness 上都用同一张,高光粗糙度响应是平的
             WriteIBLCubeFile(out, L"_prefilter", ibl_src, ibl_src_w, ibl_src_h,
                              [](const std::vector<float> s[6], uint32_t sw, uint32_t sh,
-                                    std::vector<float> d[6], uint32_t dw, uint32_t dh)
+                                    std::vector<float> d[6], uint32_t dw, uint32_t dh,
+                                    float roughness, int, int)
                              {
-                                 return BakeGGXPrefilter(s, sw, sh, d, dw, dh, 0.5f, 256);
-                             }, provider, params->ibl_format,
+                                 return BakeGGXPrefilter(s, sw, sh, d, dw, dh, roughness, 256);
+                             }, true, provider, params->ibl_format,
                              projection == CubeOutputProjection::Octahedral, progress, user);
         }
 
@@ -716,16 +725,20 @@ namespace texcore
     }
 
     /// IBL 产物写出:烘焙 → half16 或 u8 → BC6H/BC7 压缩或未压缩 .TexCube
-    /// 输出分辨率:irradiance 固定 32x32;prefilter 与源同尺寸
+    /// 输出分辨率:irradiance 固定 32x32(单级);prefilter 与源同尺寸并带 mip 链
     /// 输出格式:ibl_format 非空 = 显式指定(BC6H/BC7/RGBA16F/RGBA8),校验失败
     ///          警告后回退自动;空 = 自动(BC6H 优先,不支持时 RGBA16F)。
     /// 编码源量化:BC6H/RGBA16F → half16(HDR);BC7/RGBA8 → u8(LDR,RGB8 源推荐)
+    /// mip 链:bake_mip_chain=true 时逐级减半至压缩块下界 4x4(非压缩至 1x1),
+    ///         第 i 级粗糙度 = PrefilterRoughness(i, 级数),引擎按同一约定取 LOD
     void WriteIBLCubeFile(const std::filesystem::path &base_path,
                           const wchar_t *suffix,
                           const std::vector<float> src[6],
                           uint32_t src_w, uint32_t src_h,
                           bool (*bake_fn)(const std::vector<float>*, uint32_t, uint32_t,
-                                          std::vector<float>*, uint32_t, uint32_t),
+                                          std::vector<float>*, uint32_t, uint32_t,
+                                          float roughness, int level, int level_count),
+                          bool bake_mip_chain,
                           const TexEncoderProvider *provider,
                           const char *ibl_format,
                           bool output_octahedral,
@@ -747,9 +760,10 @@ namespace texcore
 
             if(TexFormat_IsCompress(out_fmt))
             {
+                // BC6H 插件约定源为 RGBA32F(内部再转半精度),BC7 为 RGBA8
                 const bool half_src = (strcmp(name, "BC6H") == 0
                                     || strcmp(name, "BC6H_SF") == 0);
-                const int src_pt = half_src ? TEX_PT_Float16 : TEX_PT_UInt8;
+                const int src_pt = half_src ? TEX_PT_Float32 : TEX_PT_UInt8;
 
                 if(provider)
                 {
@@ -812,48 +826,21 @@ namespace texcore
             return;
         }
 
-        std::vector<float> baked[6];
+        // mip 链下界:压缩格式受 BC 4x4 块约束,非压缩收到 1x1
+        const uint32_t min_size = is_compress ? 4 : 1;
 
-        for(int i = 0; i < 6; i++)
-            baked[i].resize(size_t(dst_w) * dst_h * 4);
+        // 级数自行推导而不是调 CalcMipLevels:必须与下面的逐级减半严格对齐。
+        // 引擎读文件时按头部 mip_level 用同一规则摊算各级字节数,两端不一致即数据错位。
+        int level_count = 1;
 
-        if(!bake_fn(src, src_w, src_h, baked, dst_w, dst_h))
+        if(bake_mip_chain)
         {
-            CoreLog(TEX_LOG_ERROR, "IBL bake failed.");
-            return;
-        }
-
-        uint32_t output_w = dst_w;
-        uint32_t output_h = dst_h;
-        int output_face_count = 6;
-        std::vector<float> octahedral_pixels;
-
-        if(output_octahedral)
-        {
-            if(!ProjectFloatCubeToOctahedral(baked, dst_w, dst_h, octahedral_pixels))
+            for(uint32_t w = dst_w, h = dst_h; w > min_size || h > min_size; ++level_count)
             {
-                CoreLog(TEX_LOG_ERROR, "IBL Octahedral Mapping requires square cube faces.");
-                return;
+                if(w > min_size)w = (std::max)(w >> 1, min_size);
+                if(h > min_size)h = (std::max)(h >> 1, min_size);
             }
-
-            output_w *= 2;
-            output_h *= 2;
-            output_face_count = 1;
         }
-
-        // float32 → half(简化截断转换,精度对 IBL 天空值足够)
-        auto f32_to_f16 = [](float v) -> uint16_t
-        {
-            union { float f; uint32_t u; } fu;
-            fu.f = v;
-            const uint32_t sign = (fu.u >> 16) & 0x8000;
-            int32_t exp = int32_t((fu.u >> 23) & 0xFF) - 127 + 15;
-            uint32_t mant = (fu.u >> 13) & 0x3FF;
-
-            if(exp <= 0)   return uint16_t(sign);
-            if(exp >= 31)  return uint16_t(sign | 0x7C00);
-            return uint16_t(sign | (uint32_t(exp) << 10) | mant);
-        };
 
         // float32 → u8(UNORM,clamp 到 0-1;LDR 目标格式用)
         auto f32_to_u8 = [](float v) -> uint8_t
@@ -862,55 +849,6 @@ namespace texcore
             if(v >= 1.0f)  return 255;
             return uint8_t(v * 255.0f + 0.5f);
         };
-
-        const size_t pixel_count = size_t(output_w) * output_h;
-
-        std::vector<uint16_t> half_faces[6];
-        std::vector<uint8_t>  u8_faces[6];
-        const std::vector<float> *quant_source[6] = {};
-
-        if(quant_u8)
-        {
-            for(int face = 0; face < output_face_count; face++)
-            {
-                quant_source[face] = output_octahedral ? &octahedral_pixels : &baked[face];
-                u8_faces[face].resize(pixel_count * 4);
-
-                const float *fp = quant_source[face]->data();
-                uint8_t    *up = u8_faces[face].data();
-
-                for(size_t p = 0; p < pixel_count; p++)
-                {
-                    up[p*4+0] = f32_to_u8(fp[p*4+0]);
-                    up[p*4+1] = f32_to_u8(fp[p*4+1]);
-                    up[p*4+2] = f32_to_u8(fp[p*4+2]);
-                    up[p*4+3] = f32_to_u8(fp[p*4+3]);
-                }
-            }
-        }
-        else
-        {
-            for(int face = 0; face < output_face_count; face++)
-            {
-                quant_source[face] = output_octahedral ? &octahedral_pixels : &baked[face];
-                half_faces[face].resize(pixel_count * 4);
-
-                const float *fp = quant_source[face]->data();
-                uint16_t   *hp = half_faces[face].data();
-
-                for(size_t p = 0; p < pixel_count; p++)
-                {
-                    hp[p*4+0] = f32_to_f16(fp[p*4+0]);
-                    hp[p*4+1] = f32_to_f16(fp[p*4+1]);
-                    hp[p*4+2] = f32_to_f16(fp[p*4+2]);
-                    hp[p*4+3] = f32_to_f16(fp[p*4+3]);
-                }
-            }
-        }
-
-        // 输出格式:显式指定(BC6H/BC7/RGBA16F/RGBA8)或自动(BC6H→RGBA16F);
-        // 编码器支持 BC6H 且声明接受 RGBA 半精度源 → 压缩,否则未压缩
-        // (try_format 已在上面完成解析)
 
         // 输出路径:<base> 去扩展名 + 后缀 + 对应容器扩展名。
         // 注意 replace_extension 会在无点前缀时自动补点,得到 "xxx._irradiance" 错误命名)
@@ -928,86 +866,193 @@ namespace texcore
             return;
         }
 
+        // 头部尺寸恒为第 0 级(octahedral 展开图是面的 2 倍边长)
+        const uint32_t header_w = output_octahedral ? dst_w * 2 : dst_w;
+        const uint32_t header_h = output_octahedral ? dst_h * 2 : dst_h;
+
         if(!ContainerWriteHeader(f, output_octahedral ? TEX_VIEW_2D : TEX_VIEW_CUBE)
-         ||!ContainerWriteSize2D(f, output_w, output_h)
-         ||!ContainerWriteFormatBlock(f, fmt, 1))
+         ||!ContainerWriteSize2D(f, header_w, header_h)
+         ||!ContainerWriteFormatBlock(f, fmt, level_count))
         {
             ContainerClose(f);
             ContainerDelete(out_w);
             return;
         }
 
+        std::vector<float> baked[6];
+
         uint32_t total = 0;
+        uint32_t cube_w = dst_w;
+        uint32_t cube_h = dst_h;
 
-        for(int face = 0; face < output_face_count; face++)
+        for(int level = 0; level < level_count; level++)
         {
-            uint32_t bytes = 0;
+            const float roughness = PrefilterRoughness(level, level_count);
 
-            if(is_compress)
+            for(int i = 0; i < 6; i++)
+                baked[i].assign(size_t(cube_w) * cube_h * 4, 0.0f);
+
+            if(!bake_fn(src, src_w, src_h, baked, cube_w, cube_h, roughness, level, level_count))
             {
-                // 直接进编码器:RGBA 源(BC6H=half 8B/px,BC7=u8 4B/px)→ 块序列
-                TexEncodeRequest req;
-                memset(&req, 0, sizeof(req));
+                CoreLog(TEX_LOG_ERROR, "IBL: bake failed at mip " + std::to_string(level) + ".");
+                ContainerClose(f);
+                ContainerDelete(out_w);
+                return;
+            }
 
-                req.src            = quant_u8
-                                   ? reinterpret_cast<const uint8_t *>(u8_faces[face].data())
-                                   : reinterpret_cast<const uint8_t *>(half_faces[face].data());
-                req.width          = output_w;
-                req.height         = output_h;
-                req.src_layout     = TEX_LAYOUT_RGBA;
-                req.src_pixel_type = quant_u8 ? TEX_PT_UInt8 : TEX_PT_Float16;
-                req.target_format  = fmt->name;
-                req.quality        = 100;
-                req.thread_count   = 0;
+            uint32_t output_w = cube_w;
+            uint32_t output_h = cube_h;
+            int output_face_count = 6;
+            std::vector<float> octahedral_pixels;
 
-                uint8_t *out_data = nullptr;
-                size_t   out_bytes = 0;
-
-                if(provider->Encode(&req, &out_data, &out_bytes) == TEX_OK
-                 && out_data && out_bytes > 0)
+            if(output_octahedral)
+            {
+                // 每级都要重新展开:octahedral 图同样按级减半,与 cubemap 的 mip 语义一致
+                if(!ProjectFloatCubeToOctahedral(baked, cube_w, cube_h, octahedral_pixels))
                 {
-                    bytes = ContainerWriteLevel(f, out_data, uint32_t(out_bytes));
-                    provider->FreeResult(out_data);
+                    CoreLog(TEX_LOG_ERROR, "IBL Octahedral Mapping requires square cube faces.");
+                    ContainerClose(f);
+                    ContainerDelete(out_w);
+                    return;
+                }
+
+                output_w *= 2;
+                output_h *= 2;
+                output_face_count = 1;
+            }
+
+            const size_t pixel_count = size_t(output_w) * output_h;
+
+            std::vector<uint16_t> half_faces[6];
+            std::vector<uint8_t>  u8_faces[6];
+
+            // 压缩 BC6H 直接把 float32 交给插件,只有非压缩 half 输出才自己量化成半精度位
+            const bool quant_half = !quant_u8 && !is_compress;
+
+            if(quant_u8)
+            {
+                for(int face = 0; face < output_face_count; face++)
+                {
+                    const std::vector<float> &qs = output_octahedral ? octahedral_pixels : baked[face];
+
+                    u8_faces[face].resize(pixel_count * 4);
+
+                    const float *fp = qs.data();
+                    uint8_t    *up = u8_faces[face].data();
+
+                    for(size_t p = 0; p < pixel_count; p++)
+                    {
+                        up[p*4+0] = f32_to_u8(fp[p*4+0]);
+                        up[p*4+1] = f32_to_u8(fp[p*4+1]);
+                        up[p*4+2] = f32_to_u8(fp[p*4+2]);
+                        up[p*4+3] = f32_to_u8(fp[p*4+3]);
+                    }
+                }
+            }
+            else if(quant_half)
+            {
+                for(int face = 0; face < output_face_count; face++)
+                {
+                    const std::vector<float> &qs = output_octahedral ? octahedral_pixels : baked[face];
+
+                    half_faces[face].resize(pixel_count * 4);
+
+                    const float *fp = qs.data();
+                    uint16_t   *hp = half_faces[face].data();
+
+                    for(size_t p = 0; p < pixel_count; p++)
+                    {
+                        hp[p*4+0] = TexFloatToHalfBits(fp[p*4+0]);
+                        hp[p*4+1] = TexFloatToHalfBits(fp[p*4+1]);
+                        hp[p*4+2] = TexFloatToHalfBits(fp[p*4+2]);
+                        hp[p*4+3] = TexFloatToHalfBits(fp[p*4+3]);
+                    }
+                }
+            }
+
+            for(int face = 0; face < output_face_count; face++)
+            {
+                uint32_t bytes = 0;
+
+                if(is_compress)
+                {
+                    // 直接进编码器:BC7 源 = u8 4B/px;BC6H 源 = float32 16B/px
+                    // (插件内部再转半精度位模式)
+                    TexEncodeRequest req;
+                    memset(&req, 0, sizeof(req));
+
+                    // 压缩源:BC7 用 u8,BC6H 用 float32(源布局由 QuerySourceLayout 约定)
+                    const std::vector<float> &src_px = output_octahedral ? octahedral_pixels : baked[face];
+
+                    req.src            = quant_u8
+                                       ? reinterpret_cast<const uint8_t *>(u8_faces[face].data())
+                                       : reinterpret_cast<const uint8_t *>(src_px.data());
+                    req.width          = output_w;
+                    req.height         = output_h;
+                    req.src_layout     = TEX_LAYOUT_RGBA;
+                    req.src_pixel_type = quant_u8 ? TEX_PT_UInt8 : TEX_PT_Float32;
+                    req.target_format  = fmt->name;
+                    req.quality        = 100;
+                    req.thread_count   = 0;
+
+                    uint8_t *out_data = nullptr;
+                    size_t   out_bytes = 0;
+
+                    if(provider->Encode(&req, &out_data, &out_bytes) == TEX_OK
+                     && out_data && out_bytes > 0)
+                    {
+                        bytes = ContainerWriteLevel(f, out_data, uint32_t(out_bytes));
+                        provider->FreeResult(out_data);
+                    }
+                    else
+                    {
+                        if(out_data)provider->FreeResult(out_data);
+                        CoreLog(TEX_LOG_ERROR, "IBL: block encode failed.");
+                    }
+                }
+                else if(quant_u8)
+                {
+                    bytes = ContainerWriteLevel(f, u8_faces[face].data(),
+                                                uint32_t(pixel_count * 4));
                 }
                 else
                 {
-                    if(out_data)provider->FreeResult(out_data);
-                    CoreLog(TEX_LOG_ERROR, "IBL: block encode failed.");
+                    bytes = ContainerWriteLevel(f, half_faces[face].data(),
+                                                uint32_t(pixel_count * 4 * 2));
+                }
+
+                if(bytes <= 0)
+                {
+                    ContainerClose(f);
+                    ContainerDelete(out_w);
+                    CoreLog(TEX_LOG_ERROR, "IBL: write face data failed.");
+                    return;
+                }
+
+                total += bytes;
+
+                if(progress && progress(user,
+                                        float(level * output_face_count + face + 1)
+                                        / float(level_count * output_face_count)))
+                {
+                    ContainerClose(f);
+                    ContainerDelete(out_w);
+                    CoreLog(TEX_LOG_WARN, "IBL: cancelled.");
+                    return;
                 }
             }
-            else if(quant_u8)
-            {
-                bytes = ContainerWriteLevel(f, u8_faces[face].data(),
-                                            uint32_t(pixel_count * 4));
-            }
-            else
-            {
-                bytes = ContainerWriteLevel(f, half_faces[face].data(),
-                                            uint32_t(pixel_count * 4 * 2));
-            }
 
-            if(bytes <= 0)
+            if(level + 1 < level_count)
             {
-                ContainerClose(f);
-                ContainerDelete(out_w);
-                CoreLog(TEX_LOG_ERROR, "IBL: write face data failed.");
-                return;
-            }
-
-            total += bytes;
-
-            if(progress && progress(user, float(face + 1) / float(output_face_count)))
-            {
-                ContainerClose(f);
-                ContainerDelete(out_w);
-                CoreLog(TEX_LOG_WARN, "IBL: cancelled.");
-                return;
+                cube_w = (cube_w > min_size) ? (std::max)(cube_w >> 1, min_size) : min_size;
+                cube_h = (cube_h > min_size) ? (std::max)(cube_h >> 1, min_size) : min_size;
             }
         }
 
         ContainerClose(f);
 
         CoreLog(TEX_LOG_INFO, "IBL: " + std::filesystem::path(out_w).string()
-                              + " (" + fmt->name + ", " + std::to_string(total) + " bytes).");
+                              + " (" + fmt->name + ", " + std::to_string(level_count)
+                              + " mip, " + std::to_string(total) + " bytes).");
     }
 }//namespace texcore
