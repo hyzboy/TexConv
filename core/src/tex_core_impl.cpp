@@ -229,7 +229,7 @@ extern "C"
         };
 
         // 只接受 ImageMagick 能解码的常见图像扩展名。目录里混入的说明文件、备份、
-        // 临时文件若也交给转换,必然失败并把批处理退出码拖成 1(.Tex2D 也因此被
+        // 临时文件若也交给转换,必然失败并把批处理退出码拖成 1(.Tex2D/.TexOct 也因此被
         // 自然排除,不再需要单独判断)。
         static const wchar_t *k_image_ext[] =
         {
@@ -309,14 +309,14 @@ extern "C"
                                        texcore::CubeOutputProjection::LambertAzimuthal);
     }
 
-    int TexCore_ReadInfo(const wchar_t *tex2d_path, Tex2DInfo *out)
+    int TexCore_ReadInfo(const wchar_t *texture_path, Tex2DInfo *out)
     {
-        if(!tex2d_path || !out)
+        if(!texture_path || !out)
             return TEX_ERR_PARAM;
 
         FILE *f = nullptr;
 
-        if(_wfopen_s(&f, tex2d_path, L"rb") != 0 || !f)
+        if(_wfopen_s(&f, texture_path, L"rb") != 0 || !f)
             return TEX_ERR_IO;
 
         uint8_t header[TEX2D_HEADER_SIZE];

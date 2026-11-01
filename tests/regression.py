@@ -182,12 +182,12 @@ CUBE_CASES = {
                    "cubedir_prefilter.TexCube"],
         "invariant": "face_symmetry",
     },
-    # 2D 投影:/octa 与 /laea 都必须产出 2*FACE_SIZE 见方的单张 Tex2D
+    # 2D 投影:/octa 与 /laea 都是 2*FACE_SIZE 见方,扩展名区分 .TexOct / .Tex2D
     "cube_octa": {
         "gradient": True,
         "args": ["/cube", "/RGBA:RGBA8", "/octa"],
         "out": "cubeocta",
-        "expect": ["cubeocta.Tex2D"],
+        "expect": ["cubeocta.TexOct"],
     },
     "cube_laea": {
         "gradient": True,
@@ -195,14 +195,14 @@ CUBE_CASES = {
         "out": "cubelaea",
         "expect": ["cubelaea.Tex2D"],
     },
-    # /octa + /ibl:三个产物都是 Tex2D(投影在释放 6 面之前不得丢掉 IBL 源数据)
+    # /octa + /ibl:三个产物都是 TexOct(投影在释放 6 面之前不得丢掉 IBL 源数据)
     "cube_octa_ibl": {
         "gradient": True,
         "args": ["/cube", "/RGBA:RGBA8", "/octa", "/ibl:RGBA8"],
         "out": "cubeoctaibl",
-        "expect": ["cubeoctaibl.Tex2D",
-                   "cubeoctaibl_irradiance.Tex2D",
-                   "cubeoctaibl_prefilter.Tex2D"],
+        "expect": ["cubeoctaibl.TexOct",
+                   "cubeoctaibl_irradiance.TexOct",
+                   "cubeoctaibl_prefilter.TexOct"],
     },
     # 负例:互斥参数必须直接拒绝,不产出任何文件
     "neg_laea_ibl": {
@@ -547,4 +547,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-

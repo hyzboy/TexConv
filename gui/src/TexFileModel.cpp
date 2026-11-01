@@ -703,8 +703,12 @@ void TexFileModel::SetConvertDone(int row, qint64 output_size)
     item.result_text = QStringLiteral("%1 -> %2 (%3 字节)")
                            .arg(item.target_format,
                                 QFileInfo(item.path).completeBaseName()
-                                    + (item.is_cube && item.cube_projection == CubeProjection::Cubemap
-                                           ? QStringLiteral(".TexCube") : QStringLiteral(".Tex2D")))
+                                    + (!item.is_cube ? QStringLiteral(".Tex2D")
+                                       : item.cube_projection == CubeProjection::Cubemap
+                                           ? QStringLiteral(".TexCube")
+                                           : item.cube_projection == CubeProjection::Octahedral
+                                               ? QStringLiteral(".TexOct")
+                                               : QStringLiteral(".Tex2D")))
                            .arg(output_size);
 
     RefreshItem(row);

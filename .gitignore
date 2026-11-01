@@ -13,4 +13,5 @@
 # 测试临时产物
 tests/__pycache__/
 tests/_compare_work/
+tests/ref_full/_work/
 /ispc-trunk-windows.zip

@@ -107,9 +107,10 @@ void JobRunner::RunConvert(QList<ConvertItem> jobs, ConvertOptions opts)
         const QByteArray provider = job.provider.toLatin1();    // 空 = 内核默认(优先 Intel)
 
         const bool is_cube = job.is_cube;
-        const bool cube_projection = is_cube
-            && job.cube_projection != CubeProjection::Cubemap;
-        const QString out_ext = is_cube && !cube_projection ? ".TexCube" : ".Tex2D";
+        const QString out_ext = !is_cube ? ".Tex2D"
+            : job.cube_projection == CubeProjection::Cubemap ? ".TexCube"
+            : job.cube_projection == CubeProjection::Octahedral ? ".TexOct"
+            : ".Tex2D";
 
         // 输出目录:空 = 与源图同目录(内核 output_path=NULL 语义);
         // 非空 = 显式路径(这里直接拼全后缀,所见即所得)

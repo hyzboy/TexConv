@@ -219,9 +219,10 @@ static void run_octa_case(const std::wstring &inputs, const std::wstring &work)
     for(const wchar_t *&face_path : params.face_paths)
         face_path = input_path.c_str();
 
-    const std::wstring output_path = work + L"\\octa.Tex2D";
+    const std::wstring output_path = work + L"\\octa.TexOct";
     params.output_path = output_path.c_str();
     params.target_format = "RGB565";
+    DeleteFileW(output_path.c_str());
 
     CHECK(TexCore_RunCubeToOctaJob(&params, nullptr, nullptr) == TEX_OK, "cube to octa job");
 
@@ -236,9 +237,9 @@ static void run_octa_case(const std::wstring &inputs, const std::wstring &work)
     for(const wchar_t *&face_path : ibl_params.face_paths)
         face_path = input_path.c_str();
 
-    const std::wstring ibl_output_path = work + L"\\octa_ibl.Tex2D";
-    const std::wstring irradiance_path = work + L"\\octa_ibl_irradiance.Tex2D";
-    const std::wstring prefilter_path = work + L"\\octa_ibl_prefilter.Tex2D";
+    const std::wstring ibl_output_path = work + L"\\octa_ibl.TexOct";
+    const std::wstring irradiance_path = work + L"\\octa_ibl_irradiance.TexOct";
+    const std::wstring prefilter_path = work + L"\\octa_ibl_prefilter.TexOct";
     DeleteFileW(ibl_output_path.c_str());
     DeleteFileW(irradiance_path.c_str());
     DeleteFileW(prefilter_path.c_str());

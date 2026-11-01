@@ -7,12 +7,13 @@ TexCommon.lib     公共 C 接口头(common/include/texconv/*.h)+ 像素格式�
 TexImage.dll      图像核心:ImageMagick++ 加载/预处理/通道转换(hgl 仅链入此 DLL)
 TexEncAMD.dll     AMD Compressonator 编码器插件(CMP_ConvertTexture)
 TexEncIntel.dll   Intel ISPC 编码器插件(ispc_texcomp;kernel*.obj 缺失时不构建)
-TexConvCore.dll   编排核心:转换流水线 / .Tex2D 容器 / 运行时加载 texenc*.dll 插件
+TexConvCore.dll   编排核心:转换流水线 / .Tex2D、.TexOct、.TexCube 容器 / 运行时加载 texenc*.dll 插件
 TexConv.exe       CLI 外壳(参数解析 + 调用 TexCore,零 hgl)
 ```
 
-数据流:外壳 → TexCore_RunJob → TexImage(加载/预处理/归一)→ 编码器插件(BC 压缩)→ .Tex2D 容器写出。
+数据流:外壳 → TexCore_RunJob → TexImage(加载/预处理/归一)→ 编码器插件(BC 压缩)→ 纹理容器写出。
 `.Tex2D` 文件格式与旧版完全一致(32 字节头),引擎零改动。
+`.TexOct` 是相同 2D 容器格式的八面体投影命名扩展名,头部 view type 仍为 2D。
 
 ## 发布包清单
 
@@ -93,9 +94,9 @@ TexConvQt 只依赖 `common/include/texconv/tex_core.h`(C API):
   同目录下 6 面签名齐全自动成组,输出名 = 公共前缀 + .TexCube。
 - **CLI**:`TexConv /cube [/mip] [格式槽] [/out:name] <6 个面文件 | 目录>`(目录可含多组)。
 - **GUI**:目录拖入时签名齐全的 6 面自动合并为一行(标记列含面清单),格式/Mipmap/
-  后端对整组生效;右键「Cubemap 输出」可选 `.TexCube`、Octahedral `.Tex2D` 或
+  后端对整组生效;右键「Cubemap 输出」可选 `.TexCube`、Octahedral `.TexOct` 或
   Lambert 等面积天空半球 `.Tex2D`;启用 IBL 时,Octahedral 模式的主产物及
-  Irradiance/Prefilter 两个附加产物均输出为 `.Tex2D`。
+  Irradiance/Prefilter 两个附加产物均输出为 `.TexOct`。
 - **引擎加载**:`TextureManager::LoadTextureCube` 已有实现;`tests/unit_cubefile`
   用 `TextureCubeLoader` 解析产物校验类型/尺寸/mip/载荷字节数。
 - **Debug 配置可用**:TexImage.dll 恒按 Release 构建(ImageMagick 上游不支持

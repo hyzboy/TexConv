@@ -212,7 +212,7 @@ static int run_cube(const std::vector<std::wstring> &inputs,
 
     if(inputs.size() == 1)
     {
-        // 目录扫描(/cube 忽略 /s,恒递归;内核跳过 .Tex2D)
+        // 目录扫描(/cube 忽略 /s,恒递归;内核只枚举常见源图扩展名)
         TexCore_EnumDirectory(inputs[0].c_str(), 1,
                               [](void *user, const wchar_t *path) -> int
                               {
@@ -315,7 +315,8 @@ static int run_cube(const std::vector<std::wstring> &inputs,
             output = g.dir + L"\\" + base;
         }
 
-        output += (octahedral || lambert_azimuthal) ? L".Tex2D" : L".TexCube";
+        output += octahedral ? L".TexOct"
+               : lambert_azimuthal ? L".Tex2D" : L".TexCube";
 
         // 面通道数 → 目标格式(显式槽位优先,否则内核默认)
         TexImageInfo info{};
@@ -379,9 +380,9 @@ int wmain(int argc, wchar_t **argv)
                 "\t/s : proc sub-directory\n"
                 "\t/mip : generate mipmaps\n"
                 "\t/cube : combine 6 face images into a .TexCube (pass 6 files or a directory)\n"
-                "\t          /octa : output a square 2x-face-width Octahedral Mapping .Tex2D instead\n"
+                "\t          /octa : output a square 2x-face-width Octahedral Mapping .TexOct instead\n"
                 "\t          /laea : output the +Z sky hemisphere as a Lambert equal-area .Tex2D\n"
-                "\t          /ibl[:fmt] : also bake Irradiance + Prefilter; with /octa both use Octahedral .Tex2D\n"
+                "\t          /ibl[:fmt] : also bake Irradiance + Prefilter; with /octa both use Octahedral .TexOct\n"
                 "\t                       fmt = BC6H(HDR,default) | BC7(LDR,RGB8 source) | RGBA16F | RGBA8\n"
                 "\t/gray: convert to grayscale\n"
                 "\t/DF[:threshold] : generate distance field then save\n"

@@ -66,7 +66,7 @@ void MainWindow::BuildUi()
     detect_btn_ = new QPushButton(QStringLiteral("检测"), this);
     detect_btn_->setToolTip(QStringLiteral("扫描列表中的文件是否为图片,获取宽高/通道/像素类型,并填入默认目标格式"));
     convert_btn_ = new QPushButton(QStringLiteral("转换"), this);
-    convert_btn_->setToolTip(QStringLiteral("按每行的目标格式批量转换,产物与源图同目录(.Tex2D)"));
+    convert_btn_->setToolTip(QStringLiteral("按每行的目标格式批量转换,产物扩展名由纹理类型/投影决定"));
     cancel_btn_ = new QPushButton(QStringLiteral("取消"), this);
     cancel_btn_->setVisible(false);
     remove_btn_ = new QPushButton(QStringLiteral("移除选中"), this);
@@ -697,7 +697,7 @@ void MainWindow::OnContextMenu(const QPoint &pos)
         }
     }
 
-    QAction *ibl_action = menu.addAction(QStringLiteral("生成 IBL (Irradiance + Prefiltered；Octahedral 模式输出 .Tex2D)"));
+    QAction *ibl_action = menu.addAction(QStringLiteral("生成 IBL (Irradiance + Prefiltered；Octahedral 模式输出 .TexOct)"));
     ibl_action->setCheckable(true);
     ibl_action->setChecked(all_ibl);
     connect(ibl_action, &QAction::triggered, this, [this, selected, all_ibl](bool)
@@ -743,7 +743,7 @@ void MainWindow::OnContextMenu(const QPoint &pos)
     } projection_entries[] =
     {
         {"Cubemap (.TexCube)", CubeProjection::Cubemap},
-        {"Octahedral Mapping (.Tex2D)", CubeProjection::Octahedral},
+        {"Octahedral Mapping (.TexOct)", CubeProjection::Octahedral},
         {"Lambert 等面积天空半球 (.Tex2D)", CubeProjection::LambertAzimuthal},
     };
 

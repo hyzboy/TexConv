@@ -59,7 +59,7 @@ Release 的约束、Qt GUI 的独立部署步骤等）。
 | TexCommon(静态库) | 公共 C 接口头 + 像素格式表 |
 | TexImage.dll | ImageMagick++ 图像加载/预处理 |
 | TexEncAMD.dll / TexEncIntel.dll | 块压缩编码器插件(运行时加载) |
-| TexConvCore.dll | 转换流水线 / .Tex2D 容器 / 插件管理 |
+| TexConvCore.dll | 转换流水线 / .Tex2D、.TexOct、.TexCube 容器 / 插件管理 |
 | TexConv.exe | CLI 外壳 |
 
 Qt GUI 等未来外壳只需链接 `common/include/texconv/tex_core.h` 暴露的 C API
@@ -114,7 +114,7 @@ TexConv /RGB:BC1 /RGBA:BC3 image.png
 # 将 6 个面转换为 cubemap(.TexCube)
 TexConv /cube /mip /out:output PosX.png NegX.png PosY.png NegY.png PosZ.png NegZ.png
 
-# 转换为正方形 Octahedral Mapping 2D 纹理
+# 转换为正方形 Octahedral Mapping 纹理(.TexOct)
 TexConv /cube /octa /mip /out:output PosX.png NegX.png PosY.png NegY.png PosZ.png NegZ.png
 
 # 只取 +Z 天空半球,输出 Lambert Azimuthal Equal-Area 圆盘投影
@@ -124,9 +124,13 @@ TexConv /cube /laea /mip /out:sky PosX.png NegX.png PosY.png NegY.png PosZ.png N
 TexConv /cube /octa /ibl /mip /out:sky_octa PosX.png NegX.png PosY.png NegY.png PosZ.png NegZ.png
 ```
 
+`/octa` 输出使用 `.TexOct` 扩展名，避免与普通 2D 纹理及 `/laea` 投影的 `.Tex2D`
+命名冲突；文件头仍是 2D view，内容布局与 `.Tex2D` 相同，可通过 `TexCore_ReadInfo`
+及 2D 纹理加载接口读取。
+
 `/laea` 输出边长为 Cubemap 面宽两倍的正方形 `.Tex2D`；圆盘内映射 +Z 半球，
 圆盘外像素为零。该模式与 `/ibl`、`/octa` 互斥；`/octa /ibl` 会额外生成采用相同
-Octahedral Mapping 的 Irradiance 与 Prefilter `.Tex2D` 文件。
+Octahedral Mapping 的 Irradiance 与 Prefilter `.TexOct` 文件。
 
 `/cube` 也可只给一个目录：目录会被递归扫描，按面文件名分组，凑齐 6 面的组才会转换
 （输出写在输入同目录，`/out:` 在目录模式下无效）。
@@ -151,7 +155,7 @@ mip 级承载：
 
 | 源码 | 原用途 | 现状 |
 |---|---|---|
-| `HDR2PNG.cpp` | HDR/EXR 转 PNG | 未构建；TexConv 只输出 `.Tex2D` / `.TexCube` |
+| `HDR2PNG.cpp` | HDR/EXR 转 PNG | 未构建；TexConv 输出 `.Tex2D` / `.TexOct` / `.TexCube` |
 | `ComboTexture.cpp` | 材质贴图通道打包 | 未构建 |
 | `CubemapConvert.cpp` | 独立 6 面转 cubemap 工具 | 未构建；请改用 `TexConv /cube` |
 | `DistanceFieldGenerater.cpp` | 独立距离场工具 | 未构建；请改用 `TexConv /DF` |
@@ -186,7 +190,7 @@ python tests/regression.py compare --exe TexConv.exe --against tests/baseline/ol
 
 - **单图转换**：灰度 / 灰度+alpha / RGB / RGBA / TGA / 16bit / EXR / HDR，
   未压缩格式与 BC 系列压缩、mipmap、AMD 后端、距离场、法线图、Intel 后端缺失负例
-- **目录模式**：`/s` 递归枚举（含跳过既有 `.Tex2D`）
+- **目录模式**：`/s` 递归枚举（只接受源图扩展名，`.Tex2D`、`.TexOct`、`.TexCube` 等容器自动跳过）
 - **Cubemap / 投影 / IBL**：`/cube`、`/octa`、`/laea`、`/ibl` 及其组合，
   以及 `/octa`+`/laea`、`/laea`+`/ibl` 互斥负例
 

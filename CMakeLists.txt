@@ -220,7 +220,7 @@ endfunction()
 #   TexImage     图像核心(ImageMagick++;hgl 仅链入此 DLL)
 #   TexEncAMD    AMD Compressonator 编码器插件
 #   TexEncIntel  Intel ISPC 编码器插件(kernel*.obj 缺失时自动跳过构建)
-#   TexConvCore  编排核心:流水线 / .Tex2D 容器 / 插件管理(运行时加载编码器)
+#   TexConvCore  编排核心:流水线 / .Tex2D/.TexOct/.TexCube 容器 / 插件管理(运行时加载编码器)
 #   TexConv      CLI 外壳
 # 必须在 Compressonator 探测之后 add_subdirectory,子目录才能取到
 # COMPRESSONATOR_ROOT / AMD_COM_LIB。

@@ -76,7 +76,7 @@ typedef struct TexImageInfo
     int         has_alpha;
 } TexImageInfo;
 
-/// .Tex2D 产物读回信息(供 GUI 校验/预览)
+/// 2D 纹理容器产物读回信息(供 GUI 校验/预览;包括 .Tex2D 与 .TexOct)
 typedef struct Tex2DInfo
 {
     uint32_t    width;
@@ -104,7 +104,7 @@ TEXCONV_API int  TexCore_ProbeImage(const wchar_t *path, TexImageInfo *out);
 
 /// 枚举目录下的图像文件(recursive 非 0 时含子目录)。
 /// 仅返回常见图像扩展名(png/jpg/bmp/tga/gif/tif/psd/webp/hdr/exr/dds 等),
-/// 其它文件(说明文件、备份、已是纹理的 .Tex2D)一律跳过。
+/// 其它文件(说明文件、备份、已是纹理的 .Tex2D/.TexOct/.TexCube)一律跳过。
 /// cb 对每个文件调用一次,返回非 0 停止枚举;返回实际交给 cb 的文件数。
 TEXCONV_API int  TexCore_EnumDirectory(const wchar_t *dir, int recursive,
                                        int (*cb)(void *user, const wchar_t *path),
@@ -121,7 +121,7 @@ TEXCONV_API int  TexCore_RunJob(const TexJobParams *params, TexProgressFn progre
 typedef struct TexCubeJobParams
 {
     const wchar_t *face_paths[6];   ///< 必填,顺序固定:+X,-X,+Y,-Y,+Z,-Z
-    const wchar_t *output_path;     ///< 必填:.TexCube 输出路径(建议显式给出完整路径)
+    const wchar_t *output_path;     ///< 必填:按投影选择 .TexCube/.TexOct/.Tex2D 输出路径
 
     const char    *target_format;   ///< NULL = 按面通道数取默认槽位(BC4/BC5/BC7/BC7)
     const char    *provider;        ///< NULL = 默认(优先 Intel,AMD BC7 对部分内容有死锁/极慢问题)
@@ -136,8 +136,8 @@ typedef struct TexCubeJobParams
 } TexCubeJobParams;
 
 TEXCONV_API int  TexCore_RunCubeJob(const TexCubeJobParams *params, TexProgressFn progress, void *user);
-/// 将 6 张 Cubemap 面图投影为 2×面宽的正方形 Octahedral Mapping .Tex2D。
-/// 输入/格式参数与 TexCore_RunCubeJob 相同;IBL 附加产物也使用 Octahedral Mapping 输出。
+/// 将 6 张 Cubemap 面图投影为 2×面宽的正方形 Octahedral Mapping .TexOct。
+/// 输入/格式参数与 TexCore_RunCubeJob 相同;IBL 附加产物也使用 .TexOct 扩展名。
 TEXCONV_API int  TexCore_RunCubeToOctaJob(const TexCubeJobParams *params,
                                          TexProgressFn progress, void *user);
 /// 将 6 张 Cubemap 面图的 +Z 天空半球投影为 Lambert 等面积方位投影 .Tex2D。
@@ -145,8 +145,8 @@ TEXCONV_API int  TexCore_RunCubeToOctaJob(const TexCubeJobParams *params,
 TEXCONV_API int  TexCore_RunCubeToLambertAzimuthalJob(const TexCubeJobParams *params,
                                                       TexProgressFn progress, void *user);
 
-/// 读取 .Tex2D 产物信息。文件不存在/头部非法返回 TEX_ERR_IO。
-TEXCONV_API int  TexCore_ReadInfo(const wchar_t *tex2d_path, Tex2DInfo *out);
+/// 读取 2D 纹理容器产物信息(.Tex2D/.TexOct)。文件不存在/头部非法返回 TEX_ERR_IO。
+TEXCONV_API int  TexCore_ReadInfo(const wchar_t *texture_path, Tex2DInfo *out);
 
 #ifdef __cplusplus
 }

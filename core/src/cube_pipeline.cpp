@@ -1,6 +1,6 @@
 ﻿// TexConvCore —— Cubemap 转换流水线。
 // 6 张面图合并为一个 .TexCube:
-//   * 文件头与 .Tex2D 相同,type = CUBE(VkImageViewType 3)
+//   * 文件头格式与 .Tex2D/.TexOct 共用;本输出 type = CUBE(VkImageViewType 3)
 //   * 数据布局 mip-major:每级 6 面连续,面序 +X,-X,+Y,-Y,+Z,-Z(Vulkan 层 0..5),
 //     每面数据不足 8 字节补 0 —— 与引擎 CommitTextureCubeMipmaps 的读取步进一致
 //   * 6 面须尺寸/像素类型一致;每面独立缩放生成 mip 链
@@ -598,10 +598,14 @@ namespace texcore
                 c = (c >= L'A' && c <= L'Z') ? c + 32 : c;
 
             const wchar_t *expected_ext = projection == CubeOutputProjection::Cube
-                ? L".texcube" : L".tex2d";
+                ? L".texcube"
+                : projection == CubeOutputProjection::Octahedral
+                    ? L".texoct" : L".tex2d";
 
             if(ext != expected_ext)
-                out += projection == CubeOutputProjection::Cube ? L".TexCube" : L".Tex2D";
+                out += projection == CubeOutputProjection::Cube ? L".TexCube"
+                     : projection == CubeOutputProjection::Octahedral ? L".TexOct"
+                     : L".Tex2D";
         }
 
         const std::wstring output_path = out.wstring();
@@ -724,7 +728,7 @@ namespace texcore
         return TEX_OK;
     }
 
-    /// IBL 产物写出:烘焙 → half16 或 u8 → BC6H/BC7 压缩或未压缩 .TexCube
+    /// IBL 产物写出:烘焙 → half16 或 u8 → BC6H/BC7 压缩或未压缩纹理容器
     /// 输出分辨率:irradiance 固定 32x32(单级);prefilter 与源同尺寸并带 mip 链
     /// 输出格式:ibl_format 非空 = 显式指定(BC6H/BC7/RGBA16F/RGBA8),校验失败
     ///          警告后回退自动;空 = 自动(BC6H 优先,不支持时 RGBA16F)。
@@ -854,7 +858,7 @@ namespace texcore
         // 注意 replace_extension 会在无点前缀时自动补点,得到 "xxx._irradiance" 错误命名)
         std::filesystem::path out = base_path;
         out.replace_extension();
-        out += std::wstring(suffix) + (output_octahedral ? L".Tex2D" : L".TexCube");
+        out += std::wstring(suffix) + (output_octahedral ? L".TexOct" : L".TexCube");
 
         const std::wstring out_w = out.wstring();
 
