@@ -130,7 +130,8 @@ CASES = [
     ("rgb8_amd",          [I("rgb8.png"), "/AMD"],               ["rgb8.Tex2D"]),
     ("ga8_gray",          [I("ga8.png"), "/gray", "/discard_alpha"], ["ga8.Tex2D"]),
 
-    # Intel ISPC 编码器(根构建 kernel*.obj 存在,ISPC 可用):应产出与 AMD 不同的 BC7 数据
+    # Intel ISPC 编码器(构建期由 ispc.exe 编译 kernel,需 TexEncIntel.dll 与 exe 同目录):
+    # 应产出与 AMD 不同的 BC7 数据
     ("intel_ispc",        [I("rgb8.png"), "/Intel"],             ["rgb8.Tex2D"]),
 
     # 负例:损坏文件 → 加载失败;无有效产物

@@ -5,8 +5,8 @@
 #
 # 为什么要它：ISPCTextureCompressor 的 kernel*.ispc 必须由 ispc 编译成 kernel*.obj，
 # 而上游仓库既不含预编译产物、也不含编译器（ISPC/win、ISPC/linux 里的内容都被 .gitignore
-# 忽略），所以缺它时 TexConv 的 Intel 编码器只能关掉（见 TexConv/CMakeLists.txt 的自动探测）。
-# Windows 侧对称：download_win_ispc.bat（vcxproj 调 ..\ISPC\win\ispc.exe）。
+# 忽略），所以缺它时 TexConv 的 Intel 编码器只能关掉（见 enc_intel/CMakeLists.txt 的探测）。
+# Windows 侧对称：download_win_ispc.bat（CMake 构建期调 ..\ISPC\win\ispc.exe）。
 #
 # 拿到之后按上游 Makefile.linux 编译 kernel（该文件里 ISPC ?= ISPC/linux/ispc）：
 #     cd ISPCTextureCompressor && ISPC=ISPC/linux/ispc make -f Makefile.linux

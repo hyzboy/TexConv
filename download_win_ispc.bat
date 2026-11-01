@@ -3,12 +3,10 @@ rem ===========================================================================
 rem  Download and unpack ISPC (Intel SPMD Program Compiler, Windows x64) into
 rem      ISPCTextureCompressor\ISPC\win\
 rem
-rem  Why: the custom build steps of ISPCTextureCompressor invoke
-rem      ..\ISPC\win\ispc.exe        (see ispc_texcomp\ispc_texcomp.vcxproj)
-rem  to compile kernel*.ispc into kernel*.obj, and the upstream repository
-rem  ships neither the compiler nor the generated kernels. Without them
-rem  TexConv's Intel encoder stays disabled - see the auto-detect block in
-rem  TexConv\CMakeLists.txt (it looks for x64\{Debug,Release}\kernel.obj).
+rem  Why: TexConv's enc_intel\CMakeLists.txt compiles kernel*.ispc with
+rem      ISPCTextureCompressor\ISPC\win\ispc.exe at build time (add_custom_command)
+rem      and the upstream repository ships neither the compiler nor the generated
+rem      kernels. Without them TexConv's Intel encoder is not built at all.
 rem
 rem  The archive keeps ispc.exe next to ispc.dll / ispcrt*.dll, so the whole
 rem  bin\ folder is installed - ispc.exe does not run without those DLLs.
@@ -214,11 +212,11 @@ if "%KEEP%"=="1" (
 )
 
 echo.
-echo Next step - generate the kernels (ispc_texcomp.vcxproj does this through
-echo ISPC\win\ispc.exe), then re-run cmake configure for TexConv:
-echo     msbuild "ISPCTextureCompressor\ispc_texcomp\ispc_texcomp.vcxproj" /p:Configuration=Release /p:Platform=x64
-echo TexConv\CMakeLists.txt then finds x64\Release\kernel.obj and enables the
-echo Intel ISPC encoder automatically.
+echo Next step - just re-run the cmake configure step for TexConv.
+echo enc_intel\CMakeLists.txt picks up ISPC\win\ispc.exe and compiles
+echo kernel*.ispc into the build tree at build time, so TexEncIntel.dll gets
+echo built without running msbuild on ispc_texcomp.vcxproj first.
+echo To use another compiler:  cmake -DTEXCONV_ISPC_EXE=C:\path\to\ispc.exe
 exit /b 0
 
 rem ---------------------------------------------------------------------------

@@ -222,7 +222,7 @@ namespace texcore
             if(strcmp(p.provider->short_name, "Intel") == 0)
                 return p.provider;
 
-        // Intel 插件缺失(enc_intel 在 kernel*.obj 不存在时根本不参与构建)时,
+        // Intel 插件缺失(enc_intel 在找不到 ispc.exe 时不会构建)时,
         // 回落到 AMD 等于重新暴露已知的 BC7 死锁风险 —— 不能静默,只告警一次。
         struct FallbackWarn
         {
