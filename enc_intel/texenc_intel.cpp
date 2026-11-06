@@ -100,6 +100,36 @@ namespace
             return TEX_OK;
         }
 
+        if(strcmp(target_format, "BC5") == 0)
+        {
+            // BC5 压缩 R 和 G 双通道。
+            // 3/4 通道彩色源（典型如法线贴图）要求图像层提供 RGBA 布局（保留原图真彩，避免 GrayAlpha 转换为灰度），
+            // 由本插件在送入 ISPC 前将 R/G 提取为紧凑 16-bit RG8 表面。
+            if(src_channels >= 3)
+                *out_layout = TEX_LAYOUT_RGBA;
+            else if(src_channels == 2)
+                *out_layout = TEX_LAYOUT_GrayAlpha;
+            else
+                *out_layout = TEX_LAYOUT_Gray;
+
+            *out_pixel_type = TEX_PT_UInt8;
+            return TEX_OK;
+        }
+
+        if(is_bc4(target_format))
+        {
+            // BC4 压缩单通道。
+            if(src_channels >= 3)
+                *out_layout = TEX_LAYOUT_RGBA;
+            else if(src_channels == 2)
+                *out_layout = TEX_LAYOUT_GrayAlpha;
+            else
+                *out_layout = TEX_LAYOUT_Gray;
+
+            *out_pixel_type = TEX_PT_UInt8;
+            return TEX_OK;
+        }
+
         // 其它格式沿用旧版语义:1通道→Gray,2通道→GrayAlpha,3/4通道→RGBA;像素类型保持不变
         switch(src_channels)
         {
@@ -132,20 +162,23 @@ namespace
             return TEX_ERR_UNSUPPORTED;
 
         const int src_channels = (req->src_layout == TEX_LAYOUT_RGBA) ? 4
+                               : (req->src_layout == TEX_LAYOUT_RGB) ? 3
                                : (req->src_layout == TEX_LAYOUT_GrayAlpha) ? 2
                                : 1;
 
         // BC6H/BC6H_SF:kernel 的 load_block_interleaved_16bit 按 RGBA16F 交错读取,
         // 直接喂 Float32 会把浮点位模式当成半精度 → 先把源转成半精度 RGBA
         uint8_t *bc6h_source = nullptr;
+        uint8_t *bc5_source  = nullptr;
+        uint8_t *bc4_source  = nullptr;
+
+        const size_t pixel_total = size_t(req->width) * size_t(req->height);
 
         if(is_bc6h(target))
         {
             // 源布局/像素类型由 QuerySourceLayout 约定,不符说明调用方绕过了约定
             if(req->src_layout != TEX_LAYOUT_RGBA || req->src_pixel_type != TEX_PT_Float32)
                 return TEX_ERR_PARAM;
-
-            const size_t pixel_total = size_t(req->width) * size_t(req->height);
 
             bc6h_source = new uint8_t[pixel_total * 8];
 
@@ -160,16 +193,82 @@ namespace
                 half_pixel[3] = TexFloatToHalfBits(src_pixel[3]);
             }
         }
+        else if(strcmp(target, "BC5") == 0)
+        {
+            // ISPC kernel CompressBlocksBC5 依赖 load_block_interleaved_rg_8bit，
+            // 严格要求每像素 2 字节（8-bit R + 8-bit G 交错）。
+            if(req->src_layout == TEX_LAYOUT_RGBA || req->src_layout == TEX_LAYOUT_RGB)
+            {
+                bc5_source = new uint8_t[pixel_total * 2];
+                const uint8_t *src_bytes = reinterpret_cast<const uint8_t *>(req->src);
+                const int stride_ch = (req->src_layout == TEX_LAYOUT_RGBA) ? 4 : 3;
+                for(size_t i = 0; i < pixel_total; i++)
+                {
+                    bc5_source[i * 2 + 0] = src_bytes[i * stride_ch + 0];
+                    bc5_source[i * 2 + 1] = src_bytes[i * stride_ch + 1];
+                }
+            }
+            else if(req->src_layout == TEX_LAYOUT_Gray || req->src_layout == TEX_LAYOUT_Alpha)
+            {
+                bc5_source = new uint8_t[pixel_total * 2];
+                const uint8_t *src_bytes = reinterpret_cast<const uint8_t *>(req->src);
+                for(size_t i = 0; i < pixel_total; i++)
+                {
+                    bc5_source[i * 2 + 0] = src_bytes[i];
+                    bc5_source[i * 2 + 1] = 128;
+                }
+            }
+        }
+        else if(is_bc4(target))
+        {
+            // ISPC kernel CompressBlocksBC4 依赖 load_block_r_8bit，
+            // 严格要求每像素 1 字节（8-bit R）。
+            if(req->src_layout == TEX_LAYOUT_RGBA || req->src_layout == TEX_LAYOUT_RGB || req->src_layout == TEX_LAYOUT_GrayAlpha)
+            {
+                bc4_source = new uint8_t[pixel_total];
+                const uint8_t *src_bytes = reinterpret_cast<const uint8_t *>(req->src);
+                const int stride_ch = (req->src_layout == TEX_LAYOUT_RGBA) ? 4
+                                    : (req->src_layout == TEX_LAYOUT_RGB) ? 3
+                                    : 2;
+                for(size_t i = 0; i < pixel_total; i++)
+                {
+                    bc4_source[i] = src_bytes[i * stride_ch + 0];
+                }
+            }
+        }
 
         // ISPC 压缩器输入表面
         rgba_surface src;
         memset(&src, 0, sizeof(src));
 
-        src.ptr    = bc6h_source ? bc6h_source : const_cast<uint8_t *>(req->src);
-        src.width  = int(req->width);
-        src.height = int(req->height);
-        src.stride = bc6h_source ? int(req->width) * 8
-                                 : int(req->width) * (pixel_bytes * src_channels);
+        if(bc6h_source)
+        {
+            src.ptr    = bc6h_source;
+            src.width  = int(req->width);
+            src.height = int(req->height);
+            src.stride = int(req->width) * 8;
+        }
+        else if(bc5_source)
+        {
+            src.ptr    = bc5_source;
+            src.width  = int(req->width);
+            src.height = int(req->height);
+            src.stride = int(req->width) * 2;
+        }
+        else if(bc4_source)
+        {
+            src.ptr    = bc4_source;
+            src.width  = int(req->width);
+            src.height = int(req->height);
+            src.stride = int(req->width) * 1;
+        }
+        else
+        {
+            src.ptr    = const_cast<uint8_t *>(req->src);
+            src.width  = int(req->width);
+            src.height = int(req->height);
+            src.stride = int(req->width) * (pixel_bytes * src_channels);
+        }
 
         // 4x4 块;BC1/BC4 每块 8 字节,其余 16 字节
         const int block_x = (src.width  + 3) / 4;
@@ -223,11 +322,15 @@ namespace
         else
         {
             delete[] bc6h_source;
+            delete[] bc5_source;
+            delete[] bc4_source;
             delete[] dst;
             return TEX_ERR_UNSUPPORTED;
         }
 
         delete[] bc6h_source;
+        delete[] bc5_source;
+        delete[] bc4_source;
 
         *out_data  = dst;
         *out_bytes = dst_size;
