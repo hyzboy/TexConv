@@ -51,6 +51,7 @@ set_target_properties(TexConvQt PROPERTIES
 )
 
 texconv_deploy_im_runtime(TexConvQt)
+texconv_copy_to_tools(TexConvQt)
 
 # vcpkg applocal 只拷 bin 下的 DLL,不拷 plugins —— 平台插件自己部署
 if(TARGET Qt6::QWindowsIntegrationPlugin)

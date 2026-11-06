@@ -24,3 +24,6 @@ target_include_directories(TexImage PRIVATE ${ImageMagick_INCLUDE_DIRS})
 # 链接 Release 产物(见根 CMakeLists 的 texconv_link_teximage)。
 # 注意:Debug 构建前需先完成一次 Release 构建(提供 TexImage.lib/dll)。
 set_target_properties(TexImage PROPERTIES EXCLUDE_FROM_DEFAULT_BUILD_DEBUG TRUE)
+
+texconv_copy_to_tools(TexImage)
+

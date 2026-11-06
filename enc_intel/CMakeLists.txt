@@ -105,6 +105,8 @@ if(TEXCONV_ISPC_EXE AND EXISTS "${TEXCONV_ISPC_EXE}")
         ${ISPC_TC_SRC}/ispc_texcomp_astc.cpp
         PROPERTIES OBJECT_DEPENDS "${ISPC_KERNEL_HEADERS}")
 
+    texconv_copy_to_tools(TexEncIntel)
+
 else()
 
     message(STATUS

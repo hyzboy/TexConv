@@ -22,3 +22,6 @@ target_include_directories(TexEncAMD
         ${COMPRESSONATOR_ROOT}/Include
         ${CMAKE_CURRENT_SOURCE_DIR}/..
 )
+
+texconv_copy_to_tools(TexEncAMD)
+

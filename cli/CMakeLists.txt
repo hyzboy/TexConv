@@ -15,4 +15,16 @@ target_link_libraries(TexConv
         TexConvCore
 )
 
+if(TARGET TexImage)
+    add_dependencies(TexConv TexImage)
+endif()
+if(TARGET TexEncAMD)
+    add_dependencies(TexConv TexEncAMD)
+endif()
+if(TARGET TexEncIntel)
+    add_dependencies(TexConv TexEncIntel)
+endif()
+
 texconv_deploy_im_runtime(TexConv)
+texconv_copy_to_tools(TexConv)
+

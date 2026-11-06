@@ -15,3 +15,6 @@ target_compile_definitions(TexConvCore PRIVATE TEXCONV_SHARED_BUILD)
 target_link_libraries(TexConvCore PRIVATE TexCommon)
 
 texconv_link_teximage(TexConvCore)
+
+texconv_copy_to_tools(TexConvCore)
+

@@ -152,6 +152,27 @@ if(ImageMagick_Magick++_LIBRARY)
     endif()
 endif()
 
+if(NOT DEFINED ULRE_TOOLS_TEXCONV_DIR)
+    if(TEXCONV_STANDALONE)
+        set(ULRE_TOOLS_TEXCONV_DIR "${ULRE_ROOT}/Tools/TexConv")
+    else()
+        set(ULRE_TOOLS_TEXCONV_DIR "${CMAKE_SOURCE_DIR}/Tools/TexConv")
+    endif()
+endif()
+
+function(texconv_copy_to_tools TARGET_NAME)
+    if(NOT ULRE_TOOLS_TEXCONV_DIR)
+        return()
+    endif()
+
+    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${ULRE_TOOLS_TEXCONV_DIR}"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "$<TARGET_FILE:${TARGET_NAME}>"
+                "${ULRE_TOOLS_TEXCONV_DIR}/$<TARGET_FILE_NAME:${TARGET_NAME}>"
+        COMMENT "Copy $<TARGET_FILE_NAME:${TARGET_NAME}> -> ${ULRE_TOOLS_TEXCONV_DIR}")
+endfunction()
+
 function(texconv_deploy_im_runtime TARGET_NAME)
     if(NOT IM_RUNTIME_ROOT)
         return()
@@ -172,6 +193,22 @@ function(texconv_deploy_im_runtime TARGET_NAME)
             COMMAND ${CMAKE_COMMAND} -E copy_directory
                     "${IM_RUNTIME_ROOT}/modules" "$<TARGET_FILE_DIR:${TARGET_NAME}>/modules"
             COMMENT "Deploy ImageMagick modules -> $<TARGET_FILE_DIR:${TARGET_NAME}>/modules")
+    endif()
+
+    if(ULRE_TOOLS_TEXCONV_DIR)
+        foreach(_f IN LISTS IM_DLLS IM_XMLS)
+            get_filename_component(_n "${_f}" NAME)
+            add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                        "${_f}" "${ULRE_TOOLS_TEXCONV_DIR}/${_n}")
+        endforeach()
+
+        if(EXISTS "${IM_RUNTIME_ROOT}/modules")
+            add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_directory
+                        "${IM_RUNTIME_ROOT}/modules" "${ULRE_TOOLS_TEXCONV_DIR}/modules"
+                COMMENT "Deploy ImageMagick modules -> ${ULRE_TOOLS_TEXCONV_DIR}/modules")
+        endif()
     endif()
 endfunction()
 
@@ -212,6 +249,14 @@ function(texconv_link_teximage TARGET_NAME)
                 "${TEXCONV_RELEASE_TEXIMAGE_DLL}"
                 $<TARGET_FILE_DIR:${TARGET_NAME}>
         COMMENT "Deploy Release TexImage.dll -> $<TARGET_FILE_DIR:${TARGET_NAME}>")
+
+    if(ULRE_TOOLS_TEXCONV_DIR)
+        add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    "${TEXCONV_RELEASE_TEXIMAGE_DLL}"
+                    "${ULRE_TOOLS_TEXCONV_DIR}/TexImage.dll"
+            COMMENT "Deploy Release TexImage.dll -> ${ULRE_TOOLS_TEXCONV_DIR}")
+    endif()
 endfunction()
 
 # ---------------------------------------------------------------------------
