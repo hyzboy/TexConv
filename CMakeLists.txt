@@ -11,10 +11,11 @@ if(MSVC)
 endif()
 
 # ---------------------------------------------------------------------------
-# 独立配置支持(2026-09 重构后重新可用):
+# 独立配置支持:
 #
-#   重构后 hgl 仅链入 TexImage.dll,独立配置只需引用根工程"预编译"的 hgl 静态库,
-#   不再需要构建整个 ULRE。从根工程配置进来时(CMCore target 已存在)以下全部跳过。
+#   TexImage.dll 摘掉 hgl 后,TexConv 整棵树已是**零 hgl 依赖**,不再需要根工程
+#   的预编译产物 —— 可直接在本目录独立配置构建,无需先构建整个 ULRE。
+#   从根工程配置进来时(CMCore target 已存在)以下全部跳过。
 #
 #   用法(在 TexConv 目录下):
 #     cmake -B build -S . -G "Visual Studio 18 2026" -A x64 ^
@@ -24,7 +25,8 @@ endif()
 #   生成 TexConv.sln,内含 TexCommon/TexImage/TexEncAMD/TexEncIntel/TexConvCore/TexConv
 #   六个工程(按 CM/Tools/Texture 分组),可整体构建与调试。
 #
-#   前提:根工程已至少构建过一次(存在 build/out 下的 hgl 静态库)。
+#   例外:tests/unit_cubefile 用引擎侧 TextureCubeLoader 反查产出文件,只在根工程内
+#   配置时才生成(见 tests/CMakeLists.txt 的 TARGET 判断)。
 # ---------------------------------------------------------------------------
 if(NOT TARGET CMCore)
     set(TEXCONV_STANDALONE ON)
@@ -34,17 +36,8 @@ if(NOT TARGET CMCore)
     set(CMAKE_CXX_STANDARD_REQUIRED ON)
     set(CMAKE_CXX_EXTENSIONS OFF)
 
-    # 运行时库与预编译 hgl 静态库一致(MT/MTd),否则 LNK2038
+    # 固定静态 CRT(MT/MTd),与 Compressonator 的 MT 变体导入库保持同一 CRT
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-
-    # GLM 类型布局宏(必须与预编译 CMCore 等库编译时一致)
-    add_compile_definitions(GLM_FORCE_RADIANS
-                            GLM_FORCE_DEPTH_ZERO_TO_ONE
-                            GLM_ENABLE_EXPERIMENTAL
-                            GLM_FORCE_DEFAULT_ALIGNED_GENTYPES)
-    if(WIN32)
-        add_compile_definitions(GLM_FORCE_AVX2)
-    endif()
 
     set(ULRE_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../..")
 
@@ -52,48 +45,19 @@ if(NOT TARGET CMCore)
     include("${ULRE_ROOT}/CMCMakeModule/system_bit.cmake")
     include("${ULRE_ROOT}/CMCMakeModule/output_path.cmake")
 
-    # absl(vcpkg;CMCore 公开头文件直接包含 absl 头)
-    if(NOT DEFINED absl_DIR AND EXISTS "E:/vcpkg/installed/x64-windows/share/absl")
-        set(absl_DIR "E:/vcpkg/installed/x64-windows/share/absl")
-    endif()
-    find_package(absl CONFIG REQUIRED)
-
-    # 引用根工程预编译的 hgl 静态库
-    set(HGL_OUT_DEBUG   "${ULRE_ROOT}/build/out/${CMAKE_SYSTEM_NAME}_${HGL_BITS}_Debug")
-    set(HGL_OUT_RELEASE "${ULRE_ROOT}/build/out/${CMAKE_SYSTEM_NAME}_${HGL_BITS}_Release")
-
-    foreach(_lib CMCoreType CMPlatform CMUtil CMCore)
-        add_library(${_lib} STATIC IMPORTED)
-        set_target_properties(${_lib} PROPERTIES
-            IMPORTED_LOCATION                 "${HGL_OUT_RELEASE}/${_lib}.lib"
-            IMPORTED_LOCATION_DEBUG           "${HGL_OUT_DEBUG}/${_lib}.lib"
-            IMPORTED_LOCATION_RELEASE         "${HGL_OUT_RELEASE}/${_lib}.lib"
-            IMPORTED_LOCATION_RELWITHDEBINFO  "${HGL_OUT_RELEASE}/${_lib}.lib"
-            IMPORTED_LOCATION_MINSIZEREL      "${HGL_OUT_RELEASE}/${_lib}.lib"
-        )
-    endforeach()
-
-    # 对齐根工程 CMCore target 的公开依赖
-    target_link_libraries(CMCore INTERFACE
-        CMCoreType CMPlatform
-        absl::btree absl::flat_hash_map absl::node_hash_map)
-
-    # hgl 头文件路径
-    include_directories(
-        "${ULRE_ROOT}/inc"
-        "${ULRE_ROOT}/CMCoreType/inc"
-        "${ULRE_ROOT}/CMMath/inc"
-        "${ULRE_ROOT}/CMCore/inc"
-        "${ULRE_ROOT}/CMUtil/inc"
-    )
-
-    message(STATUS "TexConv: standalone configure (hgl libs from ${HGL_OUT_RELEASE})")
+    message(STATUS "TexConv: standalone configure (no hgl dependency)")
 endif()
 
-find_package(ImageMagick COMPONENTS Magick++ REQUIRED)
+# ImageMagick 缺失时只跳过 TexConv,不 FATAL —— 它是工具链里的一支,不该把整个
+# 引擎的 configure 卡死(vcpkg/CI 机器上常常没装 IM)。
+find_package(ImageMagick COMPONENTS Magick++ QUIET)
 
 if(NOT ImageMagick_FOUND)
-    message(FATAL_ERROR "ImageMagick not found. Please install ImageMagick with Magick++ support.")
+    message(STATUS
+        "[TexConv] 未找到 ImageMagick(Magick++)，跳过 TexConv 构建。\n"
+        "         安装含 Magick++ 的 ImageMagick 后重新配置，或用 -DImageMagick_DIR=<dir> 指定；\n"
+        "         不需要 TexConv 时加 -DULRE_ENABLE_TEXCONV=OFF 可把本子树整体摘掉。")
+    return()
 endif()
 
 SET(IMAGE_LIBS ${ImageMagick_LIBRARIES})
@@ -111,26 +75,35 @@ if(WIN32)
         PATH_SUFFIXES Include include
     )
 
-    include_directories(${COMPRESSONATOR_ROOT}/Include)
+    # Compressonator 缺失时只跳过 AMD 后端:TexConvCore 运行时枚举不到该插件,
+    # 会明确报"没有可用编码器",而不是在链接期以一条难懂的 LNK 报错收场。
+    if(COMPRESSONATOR_ROOT)
+        set(TEXCONV_HAVE_COMPRESSONATOR ON)
 
-    # 按运行时库变体选择 Compressonator 导入库
-    if(CMAKE_MSVC_RUNTIME_LIBRARY AND CMAKE_MSVC_RUNTIME_LIBRARY MATCHES "MultiThreaded[^D]")
-        SET(AMD_COM_LIB_DEBUG "Compressonator_MTd.lib")
-        SET(AMD_COM_LIB_RELEASE "Compressonator_MT.lib")
-        message(STATUS "Using static runtime: MT/MTd")
+        include_directories(${COMPRESSONATOR_ROOT}/Include)
+
+        # 按运行时库变体选择 Compressonator 导入库
+        if(CMAKE_MSVC_RUNTIME_LIBRARY AND CMAKE_MSVC_RUNTIME_LIBRARY MATCHES "MultiThreaded[^D]")
+            SET(AMD_COM_LIB_DEBUG "Compressonator_MTd.lib")
+            SET(AMD_COM_LIB_RELEASE "Compressonator_MT.lib")
+            message(STATUS "Using static runtime: MT/MTd")
+        else()
+            SET(AMD_COM_LIB_DEBUG "Compressonator_MDd.lib")
+            SET(AMD_COM_LIB_RELEASE "Compressonator_MD.lib")
+            message(STATUS "Using DLL runtime: MD/MDd")
+        endif()
+
+        SET(AMD_COM_LIB
+            $<$<CONFIG:Debug>:${AMD_COM_LIB_DEBUG}>
+            $<$<NOT:$<CONFIG:Debug>>:${AMD_COM_LIB_RELEASE}>
+        )
+
+        message(STATUS "AMD Compressonator Debug Library: ${AMD_COM_LIB_DEBUG}")
+        message(STATUS "AMD Compressonator Release Library: ${AMD_COM_LIB_RELEASE}")
     else()
-        SET(AMD_COM_LIB_DEBUG "Compressonator_MDd.lib")
-        SET(AMD_COM_LIB_RELEASE "Compressonator_MD.lib")
-        message(STATUS "Using DLL runtime: MD/MDd")
+        message(STATUS
+            "[TexConv] 未找到 AMD Compressonator SDK(compressonator.h)，跳过 TexEncAMD 构建。")
     endif()
-
-    SET(AMD_COM_LIB
-        $<$<CONFIG:Debug>:${AMD_COM_LIB_DEBUG}>
-        $<$<NOT:$<CONFIG:Debug>>:${AMD_COM_LIB_RELEASE}>
-    )
-
-    message(STATUS "AMD Compressonator Debug Library: ${AMD_COM_LIB_DEBUG}")
-    message(STATUS "AMD Compressonator Release Library: ${AMD_COM_LIB_RELEASE}")
 
 endif(WIN32)
 
@@ -213,56 +186,35 @@ function(texconv_deploy_im_runtime TARGET_NAME)
 endfunction()
 
 # ---------------------------------------------------------------------------
-# TexImage 链接辅助:TexImage.dll 恒按 Release 构建(ImageMagick 上游不支持
-# MSVC Debug 语义);Debug 宿主链接 Release 的 import lib,并把 Release 的
-# TexImage.dll 拷到自身运行目录(经 C ABI 调用,CRT 完全隔离)。
+# TexImage 链接辅助。
+#
+# TexImage.dll 是唯一与 ImageMagick 打交道的层,它与 IM 一样用**动态 CRT**
+# (/MD,见 image/CMakeLists.txt),因此 Debug/Release 都能自足构建 ——
+# 不再有"TexImage 恒 Release、Debug 宿主链 Release import lib"的特例,
+# 也就不再需要"先 Release 后 Debug"的构建顺序。
 # ---------------------------------------------------------------------------
-set(TEXCONV_RELEASE_TEXIMAGE_LIB "${OUTPUT_DIRECTORY_RELEASE}/TexImage.lib")
-set(TEXCONV_RELEASE_TEXIMAGE_DLL "${OUTPUT_DIRECTORY_RELEASE}/TexImage.dll")
-
 function(texconv_link_teximage TARGET_NAME)
-    # 非 Debug 配置链接 TexImage target，CMake 会自动建立构建依赖；
-    # Debug 链接的是 Release import lib 的字面路径，构建依赖由基线脚本前置保证，
-    # 这里不能 add_dependencies(TexImage) —— 那会在 Debug 下编出一个没人链接的
-    # Debug 版 TexImage（/MTd 混 IM 的 /MT，随时可能 LNK2038），纯浪费。
-    target_link_libraries(${TARGET_NAME} PRIVATE
-        $<$<CONFIG:Debug>:${TEXCONV_RELEASE_TEXIMAGE_LIB}>
-        $<$<NOT:$<CONFIG:Debug>>:TexImage>)
-
-    # Debug 宿主链的是 **Release** 的 import lib —— 它只在做过一次 Release 构建后才存在。
-    # 缺它时链接器只吐一句难懂的 LNK1104（全量构建 EXIT=1 的固定来源），
-    # 所以在 configure 阶段就把原因和修复命令说清楚。
-    # scripts/ci/build-baseline.ps1 已把这一步做成自动前置。
-    if(NOT EXISTS "${TEXCONV_RELEASE_TEXIMAGE_LIB}")
-        message(WARNING
-            "[TexConv] 缺少 Release 版 TexImage.lib\n"
-            "        路径：${TEXCONV_RELEASE_TEXIMAGE_LIB}\n"
-            "        原因：TexImage.dll 恒按 Release 构建（ImageMagick 上游只提供 /MT 版，\n"
-            "              Debug 编译会撞 RuntimeLibrary / _ITERATOR_DEBUG_LEVEL 不匹配），\n"
-            "              Debug 宿主必须链它的 import lib ⇒ 任何 Debug 构建之前需先做一次 Release 构建。\n"
-            "        修复：${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --config Release --target TexImage\n"
-            "        做完这一次之后，全量 Debug 构建即不再出现该 LNK1104。")
-    endif()
+    target_link_libraries(${TARGET_NAME} PRIVATE TexImage)
 
     add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                "${TEXCONV_RELEASE_TEXIMAGE_DLL}"
-                $<TARGET_FILE_DIR:${TARGET_NAME}>
-        COMMENT "Deploy Release TexImage.dll -> $<TARGET_FILE_DIR:${TARGET_NAME}>")
+                "$<TARGET_FILE:TexImage>"
+                "$<TARGET_FILE_DIR:${TARGET_NAME}>"
+        COMMENT "Deploy $<TARGET_FILE_NAME:TexImage> -> $<TARGET_FILE_DIR:${TARGET_NAME}>")
 
     if(ULRE_TOOLS_TEXCONV_DIR)
         add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                    "${TEXCONV_RELEASE_TEXIMAGE_DLL}"
-                    "${ULRE_TOOLS_TEXCONV_DIR}/TexImage.dll"
-            COMMENT "Deploy Release TexImage.dll -> ${ULRE_TOOLS_TEXCONV_DIR}")
+                    "$<TARGET_FILE:TexImage>"
+                    "${ULRE_TOOLS_TEXCONV_DIR}/$<TARGET_FILE_NAME:TexImage>"
+            COMMENT "Deploy $<TARGET_FILE_NAME:TexImage> -> ${ULRE_TOOLS_TEXCONV_DIR}")
     endif()
 endfunction()
 
 # ---------------------------------------------------------------------------
 # TexConv 模块化架构:
 #   TexCommon    公共 C 接口头 / 格式表(静态库)
-#   TexImage     图像核心(ImageMagick++;hgl 仅链入此 DLL)
+#   TexImage     图像核心(ImageMagick++;纯 STL/CRT,与 IM 同为 /MD)
 #   TexEncAMD    AMD Compressonator 编码器插件
 #   TexEncIntel  Intel ISPC 编码器插件(kernel*.obj 缺失时自动跳过构建)
 #   TexConvCore  编排核心:流水线 / .Tex2D/.TexOct/.TexCube 容器 / 插件管理(运行时加载编码器)
@@ -272,7 +224,9 @@ endfunction()
 # ---------------------------------------------------------------------------
 add_subdirectory(common)
 add_subdirectory(image)
-add_subdirectory(enc_amd)
+if(TEXCONV_HAVE_COMPRESSONATOR)
+    add_subdirectory(enc_amd)
+endif()
 add_subdirectory(enc_intel)
 add_subdirectory(core)
 add_subdirectory(cli)
