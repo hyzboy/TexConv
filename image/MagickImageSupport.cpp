@@ -1,12 +1,17 @@
 ﻿#include "MagickImage.h"
-#include <hgl/log/log.h>
-#include <hgl/filesystem/FileSystem.h>
+#include <windows.h>
+#include "ImageLog.h"
 #include <cstring>
 
-using namespace hgl;
+using namespace teximage;
 
 namespace
 {
+    bool FileExist(const std::wstring &filename)
+    {
+        return GetFileAttributesW(filename.c_str()) != INVALID_FILE_ATTRIBUTES;
+    }
+
     Magick::StorageType GetMagickStorageType(ImagePixelType pixel_type)
     {
         switch(pixel_type)
@@ -37,7 +42,7 @@ namespace
         }
     }
 
-    uint GetChannelCount(ImageChannelLayout layout)
+    uint32_t GetChannelCount(ImageChannelLayout layout)
     {
         switch(layout)
         {
@@ -67,44 +72,40 @@ namespace
         }
     }
 
-    // Convert OSString (wide or narrow) to UTF-8 std::string for ImageMagick
-    std::string ToUTF8String(const OSString& str)
+    // 宽字符 → UTF-8(ImageMagick 只接受 UTF-8 路径)
+    std::string ToUTF8String(const std::wstring &str)
     {
-#ifdef UNICODE
-        // Windows wide string to UTF-8
-        if(str.IsEmpty()) return std::string();
+        if(str.empty())
+            return std::string();
 
-        int size_needed = WideCharToMultiByte(CP_UTF8, 0, str.c_str(), (int)str.Length(),
-                                              nullptr, 0, nullptr, nullptr);
-        if(size_needed <= 0) return std::string();
+        const int size_needed = WideCharToMultiByte(CP_UTF8, 0, str.c_str(), (int)str.size(),
+                                                   nullptr, 0, nullptr, nullptr);
 
-        std::string result(size_needed, 0);
-        WideCharToMultiByte(CP_UTF8, 0, str.c_str(), (int)str.Length(),
-                           &result[0], size_needed, nullptr, nullptr);
+        if(size_needed <= 0)
+            return std::string();
+
+        std::string result((size_t)size_needed, 0);
+        WideCharToMultiByte(CP_UTF8, 0, str.c_str(), (int)str.size(),
+                            &result[0], size_needed, nullptr, nullptr);
         return result;
-#else
-        // Already narrow string, assume UTF-8
-        return std::string(str.c_str());
-#endif
     }
 
-    // Convert string from narrow to wide for logging
-    OSString ToOSString(const std::string& str)
+    // UTF-8 → 宽字符(日志用)
+    std::wstring ToWide(const std::string &str)
     {
-#ifdef UNICODE
-        if(str.empty()) return OSString();
+        if(str.empty())
+            return std::wstring();
 
-        int size_needed = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), (int)str.length(),
-                                              nullptr, 0);
-        if(size_needed <= 0) return OSString();
+        const int size_needed = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), (int)str.length(),
+                                                   nullptr, 0);
 
-        OSString result(size_needed, 0);
+        if(size_needed <= 0)
+            return std::wstring();
+
+        std::wstring result((size_t)size_needed, 0);
         MultiByteToWideChar(CP_UTF8, 0, str.c_str(), (int)str.length(),
-                           &result[0], size_needed);
+                            &result[0], size_needed);
         return result;
-#else
-        return OSString(str.c_str());
-#endif
     }
 
 }
@@ -140,8 +141,8 @@ void MagickImage::Refresh()
 {
     try
     {
-        m_width = static_cast<uint>(m_image.columns());
-        m_height = static_cast<uint>(m_image.rows());
+        m_width = static_cast<uint32_t>(m_image.columns());
+        m_height = static_cast<uint32_t>(m_image.rows());
         m_depth = 1;
 
         // Determine format based on image type
@@ -185,19 +186,19 @@ void MagickImage::Refresh()
             m_pixel_type = ImagePixelType::Float32;
 
         LogInfo("Image info:");
-        LogInfo("\t width: " + AnsiString::numberOf(m_width));
-        LogInfo("\t height: " + AnsiString::numberOf(m_height));
-        LogInfo("\t channels: " + AnsiString::numberOf(m_channels));
+        LogInfo("\t width: " + std::to_string(m_width));
+        LogInfo("\t height: " + std::to_string(m_height));
+        LogInfo("\t channels: " + std::to_string(m_channels));
     }
     catch(Magick::Exception &error)
     {
-        LogError(OS_TEXT("Refresh failed: ") + ToOSString(error.what()));
+        LogError(L"Refresh failed: " + ToWide(error.what()));
     }
 }
 
-const uint MagickImage::bit() const
+const uint32_t MagickImage::bit() const
 {
-    return m_channels * static_cast<uint>(GetBytesPerComponent(m_pixel_type)) * 8;
+    return m_channels * static_cast<uint32_t>(GetBytesPerComponent(m_pixel_type)) * 8;
 }
 
 void MagickImage::Bind()
@@ -205,13 +206,13 @@ void MagickImage::Bind()
     // No-op for ImageMagick, kept for compatibility
 }
 
-bool MagickImage::LoadFile(const OSString &filename)
+bool MagickImage::LoadFile(const std::wstring &filename)
 {
     try
     {
-        if(!filesystem::FileExist(filename))
+        if(!FileExist(filename))
         {
-            LogError(OS_TEXT("Can't find filename: ") + filename);
+            LogError(L"Can't find filename: " + filename);
             return false;
         }
 
@@ -227,19 +228,19 @@ bool MagickImage::LoadFile(const OSString &filename)
             LogInfo("Image flipped to upper-left origin.");
         }
 
-        LogInfo(OS_TEXT("\nFile: ") + filename);
+        LogInfo(L"\nFile: " + filename);
         Refresh();
 
         return true;
     }
     catch(Magick::Exception &error)
     {
-        LogError(OS_TEXT("Failed to load: ") + ToOSString(error.what()));
+        LogError(L"Failed to load: " + ToWide(error.what()));
         return false;
     }
 }
 
-bool MagickImage::CreateFromData(uint w, uint h, uint channels, ImagePixelType pixel_type, const void *data)
+bool MagickImage::CreateFromData(uint32_t w, uint32_t h, uint32_t channels, ImagePixelType pixel_type, const void *data)
 {
     if(w == 0 || h == 0 || channels < 1 || channels > 4 || !data)
         return false;
@@ -274,12 +275,12 @@ bool MagickImage::CreateFromData(uint w, uint h, uint channels, ImagePixelType p
     }
     catch(Magick::Exception &error)
     {
-        LogError(OS_TEXT("CreateFromData failed: ") + ToOSString(error.what()));
+        LogError(L"CreateFromData failed: " + ToWide(error.what()));
         return false;
     }
 }
 
-bool MagickImage::Resize(uint nw, uint nh)
+bool MagickImage::Resize(uint32_t nw, uint32_t nh)
 {
     if(nw == m_width && nh == m_height) return true;
     if(nw == 0 || nh == 0) return false;
@@ -293,12 +294,12 @@ bool MagickImage::Resize(uint nw, uint nh)
         m_width = nw;
         m_height = nh;
 
-        LogInfo("Resized to: " + AnsiString::numberOf(nw) + "x" + AnsiString::numberOf(nh));
+        LogInfo("Resized to: " + std::to_string(nw) + "x" + std::to_string(nh));
         return true;
     }
     catch(Magick::Exception &error)
     {
-        LogError(OS_TEXT("Resize failed: ") + ToOSString(error.what()));
+        LogError(L"Resize failed: " + ToWide(error.what()));
         return false;
     }
 }
@@ -340,7 +341,7 @@ bool MagickImage::Convert(ImageChannelLayout layout, ImagePixelType pixel_type)
     }
     catch(Magick::Exception &error)
     {
-        LogError(OS_TEXT("Convert failed: ") + ToOSString(error.what()));
+        LogError(L"Convert failed: " + ToWide(error.what()));
         return false;
     }
 }
@@ -357,7 +358,7 @@ void *MagickImage::GetData(ImageChannelLayout layout, ImagePixelType pixel_type)
     {
         const char* map = GetChannelMap(layout);
         Magick::StorageType storage = GetMagickStorageType(pixel_type);
-        uint channels = GetChannelCount(layout);
+        uint32_t channels = GetChannelCount(layout);
 
         size_t size = m_width * m_height * channels * GetBytesPerComponent(pixel_type);
         void *data = new uint8_t[size];
@@ -368,7 +369,7 @@ void *MagickImage::GetData(ImageChannelLayout layout, ImagePixelType pixel_type)
     }
     catch(Magick::Exception &error)
     {
-        LogError(OS_TEXT("GetData failed: ") + ToOSString(error.what()));
+        LogError(L"GetData failed: " + ToWide(error.what()));
         return nullptr;
     }
 }
@@ -424,7 +425,7 @@ void *MagickImage::GetAlpha(ImagePixelType pixel_type)
     }
     catch(Magick::Exception &error)
     {
-        LogError(OS_TEXT("GetAlpha failed: ") + ToOSString(error.what()));
+        LogError(L"GetAlpha failed: " + ToWide(error.what()));
         return nullptr;
     }
 }
@@ -458,9 +459,9 @@ constexpr ImageChannelLayout layout_by_channel[] =
     ImageChannelLayout::RGBA,
 };
 
-bool SaveImageToFile(const OSString &filename, uint w, uint h, const float scale, uint c, ImagePixelType pixel_type, void *data)
+bool SaveImageToFile(const std::wstring &filename, uint32_t w, uint32_t h, const float scale, uint32_t c, ImagePixelType pixel_type, void *data)
 {
-    if(filename.IsEmpty()) return false;
+    if(filename.empty()) return false;
     if(w <= 0 || h <= 0) return false;
     if(c < 1 || c > 4) return false;
     if(!data) return false;
@@ -476,8 +477,8 @@ bool SaveImageToFile(const OSString &filename, uint w, uint h, const float scale
         // Apply scaling if needed
         if(scale != 1.0f && scale > 0.0f)
         {
-            uint new_w = static_cast<uint>(w * scale);
-            uint new_h = static_cast<uint>(h * scale);
+            uint32_t new_w = static_cast<uint32_t>(w * scale);
+            uint32_t new_h = static_cast<uint32_t>(h * scale);
             image.filterType(Magick::LanczosFilter);
             image.resize(Magick::Geometry(new_w, new_h));
         }
@@ -493,7 +494,7 @@ bool SaveImageToFile(const OSString &filename, uint w, uint h, const float scale
     }
     catch(Magick::Exception &error)
     {
-        GLogError(OS_TEXT("SaveImageToFile failed: ") + ToOSString(error.what()));
+        LogError(L"SaveImageToFile failed: " + ToWide(error.what()));
         return false;
     }
 }

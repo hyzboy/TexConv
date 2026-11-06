@@ -1,12 +1,11 @@
 ﻿#pragma once
 
 #include <Magick++.h>
-#include <hgl/log/Log.h>
-#include <hgl/type/String.h>
 
-using namespace hgl;
+#include <stdint.h>
+#include <string>
 
-enum class ImagePixelType : uint8
+enum class ImagePixelType : uint8_t
 {
     Int8,
     UInt8,
@@ -19,7 +18,7 @@ enum class ImagePixelType : uint8
     Float64,
 };
 
-enum class ImageChannelLayout : uint8
+enum class ImageChannelLayout : uint8_t
 {
     Alpha,
     Gray,
@@ -30,14 +29,12 @@ enum class ImageChannelLayout : uint8
 
 class MagickImage
 {
-    OBJECT_LOGGER
-
 private:
     Magick::Image m_image;
-    uint m_width;
-    uint m_height;
-    uint m_depth;
-    uint m_channels;
+    uint32_t m_width;
+    uint32_t m_height;
+    uint32_t m_depth;
+    uint32_t m_channels;
     ImageChannelLayout m_layout;
     ImagePixelType m_pixel_type;
 
@@ -46,18 +43,18 @@ private:
     void *GetData(ImageChannelLayout layout, ImagePixelType pixel_type);
 
 public:
-    const uint width()  const { return m_width; }
-    const uint height() const { return m_height; }
-    const uint depth()  const { return m_depth; }
-    const uint bit()    const;
+    const uint32_t width()  const { return m_width; }
+    const uint32_t height() const { return m_height; }
+    const uint32_t depth()  const { return m_depth; }
+    const uint32_t bit()    const;
     const ImageChannelLayout layout() const { return m_layout; }
     const ImagePixelType pixelType()   const { return m_pixel_type; }
 
-    const uint pixel_total() const { return width() * height() * depth(); }
+    const uint32_t pixel_total() const { return width() * height() * depth(); }
 
 public:
 
-    const uint channels() const { return m_channels; }
+    const uint32_t channels() const { return m_channels; }
 
     bool isGray() const { return m_layout==ImageChannelLayout::Gray; }
     bool isGrayAlpha() const { return m_layout==ImageChannelLayout::GrayAlpha; }
@@ -69,15 +66,15 @@ public:
     MagickImage(MagickImage *);
     ~MagickImage();
 
-    bool LoadFile(const OSString &);
+    bool LoadFile(const std::wstring &);
 
     /// 由原始像素数据创建图像(数据布局与 Get* 输出一致,首行为顶部)
-    bool CreateFromData(uint w, uint h, uint channels, ImagePixelType pixel_type, const void *data);
+    bool CreateFromData(uint32_t w, uint32_t h, uint32_t channels, ImagePixelType pixel_type, const void *data);
 
     void Bind();
     void Copy(MagickImage *);
 
-    bool Resize(uint, uint);
+    bool Resize(uint32_t, uint32_t);
 
     // Pixel data accessors
     // Note: All Get* and To* methods allocate memory with 'new[]' that must be freed by caller with 'delete[]'
@@ -98,14 +95,14 @@ public:
     bool ConvertToGray(ImagePixelType pixel_type) { return Convert(ImageChannelLayout::Gray, pixel_type); }
 };
 
-bool SaveImageToFile(const OSString &filename, uint w, uint h, const float scale, uint c, ImagePixelType pixel_type, void *data);
+bool SaveImageToFile(const std::wstring &filename, uint32_t w, uint32_t h, const float scale, uint32_t c, ImagePixelType pixel_type, void *data);
 
-inline bool SaveImageToFile(const OSString &filename, uint w, uint h, uint c, ImagePixelType pixel_type, void *data)
+inline bool SaveImageToFile(const std::wstring &filename, uint32_t w, uint32_t h, uint32_t c, ImagePixelType pixel_type, void *data)
 {
     return SaveImageToFile(filename, w, h, 1.0f, c, pixel_type, data);
 }
 
-inline bool SaveImageToFile(const OSString &filename, uint w, uint h, uint c, void *data)
+inline bool SaveImageToFile(const std::wstring &filename, uint32_t w, uint32_t h, uint32_t c, void *data)
 {
     return SaveImageToFile(filename, w, h, 1.0f, c, ImagePixelType::UInt8, data);
 }

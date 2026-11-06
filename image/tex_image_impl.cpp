@@ -1,13 +1,9 @@
 ﻿// TexImage.dll —— TexImage C API 实现(包装 MagickImage / ImageMagick++)。
-// hgl 仅在本 DLL 内使用;对外一律 C ABI。
+// 本模块不依赖 hgl,与 ImageMagick 同用动态 CRT(/MD);对外一律 C ABI。
 
 #include "MagickImage.h"
+#include "ImageLog.h"
 #include "texconv/tex_image.h"
-
-#include <hgl/log/Logger.h>
-#include <hgl/log/LogMessage.h>
-#include <hgl/filesystem/FileSystem.h>
-#include <hgl/plugin/PlugIn.h>
 
 #include <windows.h>
 #include <string>
@@ -15,80 +11,15 @@
 
 EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 
-using namespace hgl;
-
-// hgl::logger::AddLogger / InitLog / CreateLoggerFile 在 CMCore 中已定义但未公开声明,此处补齐
-namespace hgl::logger
-{
-    bool    AddLogger(Logger *log);
-    PlugIn *InitLog();
-    void    CloseLog();
-    Logger *CreateLoggerFile(const OSString &project_code, hgl::LogLevel ll);
-}//namespace hgl::logger
-
 namespace
 {
-    TexLogFn    g_log_fn    = nullptr;
-    void       *g_log_user  = nullptr;
-    bool        g_inited    = false;
+    bool g_inited = false;
 
-    int MapLogLevel(hgl::LogLevel level)
-    {
-        using hgl::LogLevel;
-
-        if(level >= LogLevel::Error)    return TEX_LOG_ERROR;
-        if(level >= LogLevel::Warning)  return TEX_LOG_WARN;
-        if(level >= LogLevel::Info)     return TEX_LOG_INFO;
-        return TEX_LOG_VERBOSE;
-    }
-
-    /// 把 hgl 日志系统的输出转发给宿主回调
-    class ForwardLogger:public hgl::logger::Logger
-    {
-    public:
-
-        using Logger::Logger;
-
-        void Close() override {}
-
-        void Write(const hgl::logger::LogMessage *msg) override
-        {
-            if(!msg || !g_log_fn)
-                return;
-
-            std::string line;
-
-            if(msg->text.message_u8 && msg->text.message_u8_length > 0)
-            {
-                line.assign((const char *)msg->text.message_u8, msg->text.message_u8_length);
-            }
-            else if(msg->text.message_u16 && msg->text.message_u16_length > 0)
-            {
-                const wchar_t *w = (const wchar_t *)msg->text.message_u16;
-                int n = WideCharToMultiByte(CP_UTF8, 0, w, msg->text.message_u16_length,
-                                            nullptr, 0, nullptr, nullptr);
-                if(n > 0)
-                {
-                    line.resize(n);
-                    WideCharToMultiByte(CP_UTF8, 0, w, msg->text.message_u16_length,
-                                        &line[0], n, nullptr, nullptr);
-                }
-            }
-
-            if(!line.empty())
-                g_log_fn(g_log_user, MapLogLevel(msg->meta.level), line.c_str());
-        }
-    };
-
-    ImagePixelType ToHglPixelType(int pt)
+    ImagePixelType ToPixelType(int pt)
     {
         return (ImagePixelType)pt;      // 值序对齐,见 tex_pixel.h
     }
 
-    ImageChannelLayout ToHglLayout(int layout)
-    {
-        return (ImageChannelLayout)layout;
-    }
 }//namespace
 
 extern "C"
@@ -100,12 +31,6 @@ extern "C"
 
         if(g_inited)
             return TEX_OK;
-
-        if(cb)
-        {
-            g_log_fn    = cb->log;
-            g_log_user  = cb->user;
-        }
 
         // 显式给出模块路径:nullptr 在 Debug 配置下会导致 IM 的
         // coder/配置解析异常("no decode delegate"),与部署位置绑定才稳定
@@ -129,17 +54,11 @@ extern "C"
             Magick::InitializeMagick(dir_utf8.c_str());
         }
 
-        // 诊断文件日志(与旧版 InitLogger 行为一致,写入 %LOCALAPPDATA%\.cmgdk\TexConv*.log);
-        // 控制台输出不再由本库负责,由外壳打印 log 回调的行,避免 GUI/CLI 双重输出。
-        hgl::logger::Logger *file_logger =
-            hgl::logger::CreateLoggerFile(OS_TEXT("TexConv"), hgl::LogLevel::Verbose);
-
-        if(file_logger)
-            hgl::logger::AddLogger(file_logger);
-
-        hgl::logger::AddLogger(new ForwardLogger(hgl::LogLevel::Verbose));
-
-        hgl::logger::InitLog();
+        // 诊断文件日志(写入 %LOCALAPPDATA%\.cmgdk\TexConv*.log);
+        // 控制台输出不归本库负责,由外壳打印 log 回调的行,避免 GUI/CLI 双重输出。
+        teximage::LogInit(cb ? cb->log : nullptr,
+                          cb ? cb->user : nullptr,
+                          L"TexConv");
 
         g_inited = true;
         return TEX_OK;
@@ -147,7 +66,7 @@ extern "C"
 
     void TexImage_Shutdown(void)
     {
-        hgl::logger::CloseLog();
+        teximage::LogShutdown();
         g_inited = false;
     }
 
@@ -158,7 +77,7 @@ extern "C"
 
         MagickImage *img = new MagickImage;
 
-        if(!img->LoadFile(OSString((const os_char *)path)))
+        if(!img->LoadFile(std::wstring(path)))
         {
             delete img;
             return TEX_ERR_LOAD_IMAGE;
@@ -206,7 +125,7 @@ extern "C"
         MagickImage *mi = (MagickImage *)img;
         if(!mi)return TEX_ERR_PARAM;
 
-        ImagePixelType pt = ToHglPixelType(pixel_type);
+        ImagePixelType pt = ToPixelType(pixel_type);
 
         bool ok = false;
 
@@ -245,11 +164,11 @@ extern "C"
 
         switch((TexImageLayout)layout)
         {
-            case TEX_LAYOUT_Alpha:     data = mi->GetAlpha(ToHglPixelType(pixel_type)); break;
-            case TEX_LAYOUT_Gray:      data = mi->GetGray(ToHglPixelType(pixel_type));  break;
-            case TEX_LAYOUT_GrayAlpha: data = mi->GetRG(ToHglPixelType(pixel_type));    break;
-            case TEX_LAYOUT_RGB:       data = mi->GetRGB(ToHglPixelType(pixel_type));   break;
-            case TEX_LAYOUT_RGBA:      data = mi->GetRGBA(ToHglPixelType(pixel_type));  break;
+            case TEX_LAYOUT_Alpha:     data = mi->GetAlpha(ToPixelType(pixel_type)); break;
+            case TEX_LAYOUT_Gray:      data = mi->GetGray(ToPixelType(pixel_type));  break;
+            case TEX_LAYOUT_GrayAlpha: data = mi->GetRG(ToPixelType(pixel_type));    break;
+            case TEX_LAYOUT_RGB:       data = mi->GetRGB(ToPixelType(pixel_type));   break;
+            case TEX_LAYOUT_RGBA:      data = mi->GetRGBA(ToPixelType(pixel_type));  break;
             default:                                                                    return TEX_ERR_PARAM;
         }
 
@@ -281,7 +200,7 @@ extern "C"
         MagickImage *img = new MagickImage;
 
         if(!img->CreateFromData(width, height, channels,
-                                ToHglPixelType(pixel_type), data))
+                                ToPixelType(pixel_type), data))
         {
             delete img;
             return TEX_ERR_INTERNAL;
@@ -297,9 +216,9 @@ extern "C"
     {
         if(!path)return TEX_ERR_PARAM;
 
-        return SaveImageToFile(OSString((const os_char *)path),
+        return SaveImageToFile(std::wstring(path),
                                width, height, scale,
-                               channels, ToHglPixelType(pixel_type),
+                               channels, ToPixelType(pixel_type),
                                const_cast<void *>(data))
             ? TEX_OK : TEX_ERR_IO;
     }
