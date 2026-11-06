@@ -4,7 +4,7 @@
 
 ```
 TexCommon.lib     公共 C 接口头(common/include/texconv/*.h)+ 像素格式表(静态链接进各消费者)
-TexImage.dll      图像核心:ImageMagick++ 加载/预处理/通道转换(hgl 仅链入此 DLL)
+TexImage.dll      图像核心:ImageMagick++ 加载/预处理/通道转换(纯 STL/CRT,与 IM 同为 /MD)
 TexEncAMD.dll     AMD Compressonator 编码器插件(CMP_ConvertTexture)
 TexEncIntel.dll   Intel ISPC 编码器插件(ispc_texcomp;kernel*.obj 缺失时不构建)
 TexConvCore.dll   编排核心:转换流水线 / .Tex2D、.TexOct、.TexCube 容器 / 运行时加载 texenc*.dll 插件
@@ -99,11 +99,11 @@ TexConvQt 只依赖 `common/include/texconv/tex_core.h`(C API):
   Irradiance/Prefilter 两个附加产物均输出为 `.TexOct`。
 - **引擎加载**:`TextureManager::LoadTextureCube` 已有实现;`tests/unit_cubefile`
   用 `TextureCubeLoader` 解析产物校验类型/尺寸/mip/载荷字节数。
-- **Debug 配置可用**:TexImage.dll 恒按 Release 构建(ImageMagick 上游不支持
-  MSVC Debug 语义的动态 coder 加载);Debug 的 TexConvCore/TexConv/TexConvQt
-  链接 Release 的 TexImage.lib,POST_BUILD 自动把 Release 的 TexImage.dll 拷到
-  Debug 运行目录——经 C ABI 调用,CRT 完全隔离,Debug 转换产物与 Release
-  字节一致(已验证)。注意:首次 Debug 构建前需先完成一次 Release 构建。
+- **Debug 配置可用**:TexImage.dll 已摘掉 hgl,与 ImageMagick 一样统一使用动态
+  CRT(/MD,见 `image/CMakeLists.txt`),因此 Debug/Release 都能直接构建出对应的
+  TexImage —— 不再有"TexImage 恒 Release、首次 Debug 需先构建 Release"的顺序
+  依赖。TexImage 对外只暴露 C ABI(内存由 `TexImage_Free` 回收),宿主侧其余模块
+  仍是静态 CRT(MT/MTd),两者在 DLL 边界上互不传递 CRT 对象。
 - **已知限制(上游 AMD 缺陷)**:个别 512² RGBA 内容(如 sky_34 的 px.png)会令
   AMD Compressonator 的 BC7 编码死锁(旧版 exe 同样挂,与线程数无关)。此类文件
   请选 Intel 后端(ISPC 0.8 秒完成)——GUI 右键"压缩后端→Intel",或 CLI `/Intel`。
@@ -124,7 +124,8 @@ cmake --build E:\ULRE\build --config Release ^
 注意:`--clean-first` 会清空整个 out 目录(含全部示例程序),慎用。
 
 **2. 独立解决方案**(`src/Tools/TexConv/build/TexConv.slnx`,推荐日常开发):
-hgl 静态库仅链入 TexImage.dll,独立配置只需引用根工程预编译库,无需构建整个 ULRE。
+TexImage.dll 摘掉 hgl 后 TexConv 整棵树零 hgl 依赖,独立配置**不需要**根工程的
+任何预编译产物,可直接从零构建(仅需 ImageMagick / Compressonator / ispc)。
 
 ```
 cd src/Tools/TexConv
@@ -134,8 +135,8 @@ cmake --build build --config Release
 ```
 
 - 产物输出到 `src/Tools/TexConv/build/out/Windows_64_{Debug,Release}\`。
-- 前提:根工程至少构建过一次(存在 `build/out` 下的 hgl 静态库);
-  运行时库(MT)与 GLM 布局宏已由 CMakeLists 自动对齐。
+- 无需前置条件:不再要求根工程先构建过。`tests/unit_cubefile` 需要引擎侧
+  TextureCubeLoader,只在根工程内配置时才生成。
 - TexConv 设为启动工程,可直接 F5 调试;命令行参数在
   项目属性 -> Debugging -> Command Arguments 配置。
 - 两种构建的产物均通过 43/43 回归。
